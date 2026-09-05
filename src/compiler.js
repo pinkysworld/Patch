@@ -13,6 +13,10 @@ import {
   buildWindowInputMaskManifest,
   buildWindowInputPresentationManifest
 } from './window-input-presentation.js';
+import {
+  attachWindowListboxPresentations,
+  buildWindowListboxPresentationManifest
+} from './input-presentation.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
@@ -34,6 +38,7 @@ export function compile(source, options = {}) {
   const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
+  const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -54,10 +59,11 @@ export function compile(source, options = {}) {
   attachWindowLayoutPolicies(ast, windowLayoutPolicy);
   attachWindowInputPresentations(ast, windowInputPresentation);
   attachWindowInputMasks(ast, windowInputMask);
+  attachWindowListboxPresentations(ast, windowListboxPresentation);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
-    windowInputPresentation, windowInputMask
+    windowInputPresentation, windowInputMask, windowListboxPresentation
   };
 }
 
