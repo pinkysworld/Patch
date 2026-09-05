@@ -4,10 +4,13 @@
 
 /* The shared SVG is the visible Studio mark. Keep the image circular here as a
    layout guard, rather than relying on pseudo-elements on the replaced <img>
-   element, which browsers do not render consistently. */
+   element, which browsers do not render consistently. border-radius is kept as
+   the broad fallback; clip-path makes the circular boundary explicit for
+   browser/PWA shells that otherwise paint the replaced element as a square. */
 .brand-mark {
   position: relative;
   border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
   overflow: hidden;
   background: #1d4ed8;
 }
