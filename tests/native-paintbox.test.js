@@ -170,12 +170,12 @@ test('native PaintBox runtime refresh hooks cover ordinary, Slider and Timer sta
   assert.match(shared, /PatchPaintSimpleIdentV17/);
 });
 
-test('Panel Stage 1 still cannot contain PaintBox', () => {
+test('Panel Stage 2 still cannot contain PaintBox', () => {
   assert.throws(
     () => parse(`window "Panel PaintBox" as main:
   panel as group at 24, 24 size 280, 160:
     paintbox as canvas
 `),
-    error => error instanceof PatchSyntaxError && /cannot nest .* PaintBox/i.test(error.message)
+    error => error instanceof PatchSyntaxError && /cannot(?: yet)? nest .* PaintBox/i.test(error.message)
   );
 });

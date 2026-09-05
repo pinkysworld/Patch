@@ -128,7 +128,7 @@ test('playground delegates Run lifecycle and Window rendering to separate bounde
   assert.doesNotMatch(playground, /function executeRunProject\(/);
   assert.match(controller, /setTimeout\(callback, 0\)/);
   assert.match(controller, /triggerWindowEvent/);
-  assert.match(renderer, /PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0\.1'/);
+  assert.match(renderer, /PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0\.2'/);
   assert.match(renderer, /function renderWindows\(/);
   assert.match(renderer, /function renderRuntimeWindowsAfterEvent\(/);
   assert.match(buildSite, /'studio-run-controller\.js'/);

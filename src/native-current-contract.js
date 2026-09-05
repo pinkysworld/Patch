@@ -40,6 +40,7 @@ import {
   inspectNativeGuiPaintImagesV19,
   inspectNativeGuiSlidersV19
 } from './sealed-native-gui-v19.js';
+import { NativeGuiError } from './native-gui-frozen-lower.js';
 import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 import { resolveNativePictureResources } from './native-picture-resources.js';
 
@@ -61,7 +62,10 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
   linux: 'native-linux-runtime-v1.10'
 });
 
-export const buildCurrentNativeGuiIR = buildNativeGuiIRV19;
+export function buildCurrentNativeGuiIR(compiled) {
+  assertCurrentNativePanelLayout(compiled?.ast);
+  return buildNativeGuiIRV19(compiled);
+}
 export const validateCurrentNativeGuiIR = validateNativeGuiIRV19;
 export const flattenCurrentNativeGuiControls = flattenNativeGuiControlsV19;
 export const flattenCurrentNativeGuiMenuItems = flattenNativeGuiMenuItemsV19;
@@ -114,4 +118,20 @@ export function currentNativeContract() {
     runtime: PATCH_CURRENT_NATIVE_RUNTIME_VERSION,
     runtimeTags: PATCH_CURRENT_NATIVE_RUNTIME_TAGS
   });
+}
+
+function assertCurrentNativePanelLayout(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel') {
+      const positioned = (node.body ?? []).find(child => child?.kind === 'uiControl' && child.layout);
+      if (positioned) {
+        const name = node.id ? ` '${node.id}'` : '';
+        throw new NativeGuiError(`Panel Stage 2 relative child layout in Panel${name} is not supported by Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION}. Use flow-layout Panel children for native builds until a new native containment contract is promoted.`);
+      }
+      assertCurrentNativePanelLayout(node.body);
+      continue;
+    }
+    if (node?.kind === 'window') assertCurrentNativePanelLayout(node.body);
+    if (node?.kind === 'tabs') for (const page of node.body ?? []) assertCurrentNativePanelLayout(page.body);
+  }
 }

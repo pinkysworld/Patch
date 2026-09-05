@@ -10,7 +10,7 @@ const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
 
 test('Studio Window renderer is a bounded versioned browser module', () => {
   execFileSync(process.execPath, ['--check', 'web/studio-window-renderer.js'], { stdio: 'pipe' });
-  assert.match(renderer, /PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0\.1'/);
+  assert.match(renderer, /PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0\.2'/);
   assert.match(renderer, /export function createStudioWindowRenderer\(\{ dispatch \} = \{\}\)/);
   assert.match(renderer, /Studio Window renderer requires a dispatch callback/);
   assert.match(renderer, /renderInitial\(container, windows\)/);

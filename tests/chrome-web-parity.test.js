@@ -99,9 +99,14 @@ function safeTrigger(control,event,payload){triggered.push({control,event,payloa
 
   assert.equal(context.rendered.tagName, 'SECTION');
   assert.equal(context.rendered.className, 'patch-panel');
-  const flow = context.rendered.children.find(child => child.className === 'patch-panel-flow');
+  const surface = context.rendered.children.find(child => child.className === 'patch-panel-surface');
+  assert.ok(surface);
+  const flow = surface.children.find(child => child.className === 'patch-panel-flow');
+  const positioned = surface.children.find(child => child.className === 'patch-panel-positioned');
   assert.ok(flow);
+  assert.ok(positioned);
   assert.equal(flow.children.length, 2);
+  assert.equal(positioned.children.length, 0);
   assert.equal(timerCalls.length, 1, 'Timer without a ticked handler must not be scheduled');
   assert.equal(timerCalls[0].interval, 250);
   timerCalls[0].callback();

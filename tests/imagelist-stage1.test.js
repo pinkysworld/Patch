@@ -57,11 +57,11 @@ test('ImageList item diagnostics retain the exact offending Patch source line', 
   );
 });
 
-test('ImageList is Form-level only and cannot be nested into Panel or Tabs Stage 1', () => {
+test('ImageList is Form-level only and cannot be nested into Panel Stage 2 or Tabs Stage 1', () => {
   assert.throws(() => parse(`window "Panel":
   panel as host:
     imagelist as nested size 16, 16:
-`), /cannot nest.*ImageList/i);
+`), /cannot(?: yet)? nest.*ImageList/i);
   assert.throws(() => parse(`window "Tabs":
   tabs as pages:
     tab "One":
