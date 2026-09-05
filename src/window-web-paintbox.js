@@ -1,5 +1,8 @@
+import { patchInputMaskInputMode, patchInputMaskPlaceholder } from './input-presentation.js';
+
 export const PATCH_WINDOW_WEB_PAINTBOX_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_MASKED_EDIT_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
@@ -18,9 +21,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   const ast = built.compiled?.ast ?? [];
   const descriptors = collectPaintBoxDescriptors(ast);
   const passwordInputIds = collectPasswordInputIds(ast);
+  const maskedInputs = collectMaskedInputDescriptors(ast);
   const hasPaintBoxes = Object.keys(descriptors).length > 0;
   const hasPasswordEdits = passwordInputIds.length > 0;
-  if (!hasPaintBoxes && !hasPasswordEdits) return built;
+  const hasMaskedEdits = Object.keys(maskedInputs).length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits) return built;
 
   let html = built.html;
   if (hasPaintBoxes) {
@@ -29,6 +34,7 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
       .replace('</body>', `${paintBoxRuntime(descriptors)}\n</body>`);
   }
   if (hasPasswordEdits) html = html.replace('</body>', `${passwordEditRuntime(passwordInputIds)}\n</body>`);
+  if (hasMaskedEdits) html = html.replace('</body>', `${maskedEditRuntime(maskedInputs)}\n</body>`);
 
   return {
     ...built,
@@ -45,6 +51,12 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
         passwordEditStage: 1,
         passwordEditVersion: PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION,
         passwordEditMode: 'source-backed-masked-input'
+      } : {}),
+      ...(hasMaskedEdits ? {
+        maskedEditStage: 1,
+        maskedEditVersion: PATCH_WINDOW_WEB_MASKED_EDIT_VERSION,
+        maskedEditMode: 'source-backed-token-mask',
+        maskedEditTokens: '0=digit,A=letter,*=alphanumeric'
       } : {})
     }
   };
@@ -91,6 +103,19 @@ export function collectPasswordInputIds(ast) {
     ) ids.push(node.id);
   });
   return ids;
+}
+
+export function collectMaskedInputDescriptors(ast) {
+  const descriptors = {};
+  walk(ast, node => {
+    if (node.kind !== 'uiControl' || node.control !== 'input' || !node.id || !node.inputMask) return;
+    descriptors[node.id] = Object.freeze({
+      mask: node.inputMask,
+      placeholder: patchInputMaskPlaceholder(node.inputMask),
+      inputMode: patchInputMaskInputMode(node.inputMask)
+    });
+  });
+  return Object.freeze(descriptors);
 }
 
 function clonePaintNodes(nodes) {
@@ -263,6 +288,74 @@ function passwordEditRuntime(ids) {
       element.dataset.patchInputPresentation='password';
       element.setAttribute('aria-label',String(control?.id||'Password')+' password');
     }
+    return element;
+  };
+  render();
+})();
+</script>`;
+}
+
+function maskedEditRuntime(descriptors) {
+  const descriptorJson = JSON.stringify(descriptors).replace(/</g, '\\u003c');
+  return `<script data-patch-window-maskededit>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_MASKED_INPUTS=Object.freeze(${descriptorJson});
+  const patchMaskedOriginalRenderControl=renderControl;
+
+  function patchMaskSlots(mask){
+    const slots=[];const text=String(mask||'');
+    for(let index=0;index<text.length;index+=1){
+      const char=text[index];
+      if(char==='\\\\'){if(index+1<text.length)slots.push({kind:'literal',char:text[++index]});continue;}
+      if(char==='0')slots.push({kind:'digit'});
+      else if(char==='A')slots.push({kind:'letter'});
+      else if(char==='*')slots.push({kind:'alphanumeric'});
+      else slots.push({kind:'literal',char});
+    }
+    return slots;
+  }
+
+  function patchMaskMatches(kind,char){
+    if(kind==='digit')return /^[0-9]$/.test(char);
+    if(kind==='letter')return /^[A-Za-z]$/.test(char);
+    return /^[A-Za-z0-9]$/.test(char);
+  }
+
+  function patchApplyInputMask(mask,value){
+    const slots=patchMaskSlots(mask);
+    const literals=new Set(slots.filter(slot=>slot.kind==='literal').map(slot=>slot.char));
+    const raw=[...String(value??'')].filter(char=>!literals.has(char));
+    const out=[];let sourceIndex=0;let filled=0;
+    const tokenCount=slots.filter(slot=>slot.kind!=='literal').length;
+    function nextMatching(kind){while(sourceIndex<raw.length){const char=raw[sourceIndex++];if(patchMaskMatches(kind,char))return char;}return null;}
+    for(let index=0;index<slots.length;index+=1){
+      const slot=slots[index];
+      if(slot.kind!=='literal'){const char=nextMatching(slot.kind);if(char===null)break;out.push(char);filled+=1;continue;}
+      const hasFutureToken=slots.slice(index+1).some(candidate=>candidate.kind!=='literal');
+      const show=filled===0?raw.length>sourceIndex:hasFutureToken?raw.length>sourceIndex:filled===tokenCount;
+      if(show)out.push(slot.char);
+    }
+    return out.join('');
+  }
+
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchMaskedOriginalRenderControl(control,windowId,controlIndex);
+    const descriptor=control?.type==='input'?PATCH_MASKED_INPUTS[String(control?.id||'')]:null;
+    if(!descriptor||element?.tagName!=='INPUT')return element;
+    element.type='text';
+    element.dataset.patchInputPresentation='masked';
+    element.dataset.patchInputMask=descriptor.mask;
+    element.inputMode=descriptor.inputMode||'text';
+    element.maxLength=String(descriptor.placeholder||'').length;
+    element.setAttribute('aria-label',String(control?.id||'Input')+' masked input, pattern '+descriptor.placeholder);
+    element.value=patchApplyInputMask(descriptor.mask,element.value);
+    element.addEventListener('input',function(){
+      const next=patchApplyInputMask(descriptor.mask,element.value);
+      if(next===element.value)return;
+      element.value=next;
+      try{element.setSelectionRange(next.length,next.length);}catch{}
+    },true);
     return element;
   };
   render();
