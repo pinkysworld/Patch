@@ -1,16 +1,64 @@
-import { parseStoredStudioProject, studioStateFromBundle } from '../src/studio-project.js';
+import { parseStoredStudioProject, parseStudioProjectBundle, studioStateFromBundle } from '../src/studio-project.js';
+import {
+  activateStudioProjectFile,
+  getStudioProjectBundle,
+  persistStudioProjectFromDom
+} from './project-lifecycle.js';
 
 const CURRENT_KEYS = ['patchStudio.project.v4', 'patchStudio.project.v3', 'patchStudio.project.v2', 'patchStudio.project.v1'];
 const buildTarget = document.querySelector('#buildTarget');
 const nativeBuildMode = document.querySelector('#nativeBuildMode');
 const sample = document.querySelector('#sample');
 
+// Canonical browser copy of examples/patch-studio-showcase.patchproject. The
+// studio-showcase-loader regression keeps this byte-for-byte synchronized so the
+// complete project remains available in both hosted and fully offline Studio.
+const PATCH_STUDIO_SHOWCASE_PROJECT = String.raw`{
+  "format": "patch-studio-project",
+  "version": 4,
+  "project": {
+    "name": "Patch Studio Showcase",
+    "kind": "window",
+    "entry": "main.patch",
+    "build": {
+      "target": "web",
+      "nativeMode": "prebuilt"
+    }
+  },
+  "files": [
+    {
+      "path": "main.patch",
+      "content": "create text user_name = \"Ada\"\ncreate text secret = \"\"\ncreate text phone = \"\"\ncreate text notes = \"Patch Studio Showcase keeps the complete current Studio/Web surface visible in one project.\"\ncreate boolean active = true\ncreate text access = \"User\"\ncreate text theme = \"Blue\"\ncreate list features = [\"Designer\", \"Web\"]\ncreate number level = 60\ncreate text status = \"Patch Studio Showcase ready\"\ncreate boolean can_save = true\ncreate boolean pinned = false\ncreate text selected_path = \"No file selected\"\ncreate number ticks = 0\ncreate text nested_code = \"\"\ncreate text gallery_status = \"Component Gallery ready\"\ncreate text dialog_status = \"Dialogs ready\"\n\nwindow \"Patch Studio Showcase\" as main size 1100, 760 icon \"patch-resource:showcase.logo\":\n  menu \"File\":\n    item \"Open file...\" as menu_open shortcut \"Primary+O\"\n    item \"Save file...\" as menu_save enabled can_save shortcut \"Primary+S\"\n    separator\n    item \"Pinned\" as menu_pinned checked pinned shortcut \"Primary+P\"\n  menu \"View\":\n    item \"Component Gallery\" as menu_gallery\n    item \"Dialog Lab\" as menu_dialogs\n  menu \"Help\":\n    item \"About Showcase\" as menu_about shortcut \"F1\"\n\n  # @locked\n  picture as showcase_logo from \"patch-resource:showcase.logo\" description \"Patch Studio Showcase logo\" at 24, 18 size 56, 56\n  text \"Patch Studio Showcase\" at 96, 18 size 360, 32\n  text \"Component Registry 0.10 · project v4 · complete current Studio/Web acceptance project\" at 96, 52 size 760, 22\n  text \"{status}\" at 820, 24 size 250, 44\n\n  imagelist as showcase_images size 20, 20:\n    image mark from \"patch-resource:showcase.logo\"\n\n  text \"Input presentations\" at 24, 98 size 220, 26\n  text \"Plain Input\" at 24, 132 size 120, 22\n  # @taborder 0\n  input user_name at 24, 156 size 220, 36\n  text \"PasswordEdit\" at 262, 132 size 140, 22\n  # @input-mode password\n  # @taborder 1\n  input secret at 262, 156 size 220, 36\n  text \"MaskedEdit · phone\" at 500, 132 size 180, 22\n  # @input-mask \"(000) 000-0000\"\n  # @taborder 2\n  input phone at 500, 156 size 220, 36\n  text \"Memo / TextArea\" at 738, 132 size 160, 22\n  # @taborder 3\n  memo notes at 738, 156 size 332, 92\n\n  text \"Choices and state\" at 24, 222 size 220, 26\n  checkbox \"Account active\" as active at 24, 256 size 180, 36\n  radio \"User\", \"Admin\", \"Guest\" as access at 220, 256 size 240, 84\n  combo \"Blue\", \"Green\", \"Amber\", \"System\" as theme at 478, 256 size 190, 36\n  listbox \"Designer\", \"Web\", \"Native\", \"Offline\" as features at 686, 256 size 190, 100\n  text \"Level {level}\" at 894, 256 size 150, 22\n  slider 0..100 as level step 10 at 894, 284 size 176, 38\n\n  text \"Containers and source-backed metadata\" at 24, 382 size 340, 26\n  tabs as showcase_tabs at 24, 416 size 620, 200:\n    tab \"Nested controls\":\n      text \"Tabs Stage 1 keeps supported flow controls source-backed.\"\n      # @input-mask \"AA-000\"\n      input nested_code\n      button \"Apply\" as nested_apply\n    tab \"Project v4\":\n      text \"Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle.\"\n      picture as nested_picture from \"patch-resource:showcase.logo\" description \"Project resource preview\"\n    tab \"Semantics\":\n      text \"Persistent application state changes only through explicit change blocks.\"\n      text \"Designer metadata such as layout, TabOrder, Locked, PasswordEdit and MaskedEdit stays source-backed.\"\n\n  # @layout anchor right bottom\n  panel as actions_panel at 674, 408 size 396, 208:\n    text \"Project actions\" at 16, 14 size 180, 22\n    button \"Component Gallery\" as open_gallery image showcase_images.mark at 16, 48 size 174, 40\n    button \"Dialog Lab\" as open_dialogs at 206, 48 size 158, 40\n    button \"Confirm reset\" as confirm_reset at 16, 100 size 174, 40\n    button \"About\" as about_button at 206, 100 size 158, 40\n    text \"Selected path: {selected_path}\" at 16, 156 size 348, 36\n\n  timer as showcase_clock interval 4000\n  # @layout anchor left right bottom\n  statusbar \"{status} · timer {ticks}\" as showcase_status at 0, 732 size 1100, 28\n"
+    },
+    {
+      "path": "forms.patch",
+      "content": "window \"Component Gallery\" as components size 980, 680:\n  text \"Component Gallery\" at 24, 20 size 300, 30\n  text \"{gallery_status}\" at 340, 20 size 600, 30\n  text \"Data and graphics\" at 24, 68 size 220, 26\n\n  table \"Control\", \"Contract\", \"Surface\" as gallery_table at 24, 104 size 500, 210:\n    row \"Memo\", \"changed(value)\", \"Studio/Web\"\n    row \"PasswordEdit\", \"Input presentation\", \"Studio/Web\"\n    row \"MaskedEdit\", \"Input mask\", \"Studio/Web\"\n    row \"Table\", \"changed(value)\", \"Ready\"\n    row \"TreeView\", \"changed(value)\", \"Ready\"\n\n  tree as gallery_tree at 546, 104 size 200, 210:\n    node \"Registry 0.10\"\n      node \"Basic\"\n        node \"Text\"\n        node \"Button\"\n        node \"Input\"\n        node \"Memo\"\n      node \"Choices\"\n        node \"Checkbox\"\n        node \"Radio\"\n        node \"ComboBox\"\n        node \"ListBox\"\n        node \"Slider\"\n      node \"Data\"\n        node \"Table\"\n        node \"TreeView\"\n      node \"Containers\"\n        node \"Tabs\"\n        node \"Panel\"\n      node \"Graphics\"\n        node \"Picture\"\n        node \"Shape\"\n        node \"PaintBox\"\n      node \"Chrome\"\n        node \"StatusBar\"\n      node \"Nonvisual\"\n        node \"Timer\"\n        node \"ImageList\"\n\n  # @locked\n  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 18 opacity 1 at 770, 104 size 176, 96\n  paintbox as gallery_canvas at 770, 218 size 176, 96\n\n  text \"Resource-backed controls\" at 24, 344 size 250, 26\n  picture as gallery_picture from \"patch-resource:showcase.logo\" description \"Showcase project PNG resource\" at 24, 382 size 96, 96\n  imagelist as gallery_images size 24, 24:\n    image mark from \"patch-resource:showcase.logo\"\n  button \"Resource button\" as gallery_resource_button image gallery_images.mark at 144, 382 size 190, 42\n  text \"The same project-v4 PNG drives Window icon, Picture, ImageList/Button and PaintBox draw image.\" at 144, 438 size 500, 46\n\n  panel as gallery_panel at 546, 344 size 400, 134:\n    text \"Panel Stage 1 + Stage 2 Web authoring\" at 16, 14 size 340, 24\n    text \"Positioned children stay source-backed.\" at 16, 48 size 330, 22\n    button \"Update gallery\" as gallery_update at 16, 82 size 160, 36\n\n  button \"Open Dialog Lab\" as gallery_dialogs at 24, 530 size 180, 40\n  button \"Close Gallery\" as close_gallery at 220, 530 size 180, 40\n  statusbar \"{gallery_status}\" as gallery_statusbar at 0, 652 size 980, 28\n\nwindow \"Dialog Lab\" as dialogs size 760, 520:\n  text \"Dialog Lab\" at 24, 20 size 260, 30\n  text \"{dialog_status}\" at 300, 20 size 420, 30\n  text \"Result-bearing dialogs keep their values transient until an explicit change persists them.\" at 24, 72 size 700, 44\n\n  button \"Confirm\" as dialog_confirm at 24, 138 size 160, 40\n  button \"Open file\" as dialog_open at 200, 138 size 160, 40\n  button \"Save file\" as dialog_save at 376, 138 size 160, 40\n  button \"Information\" as dialog_info at 552, 138 size 160, 40\n\n  text \"Last selected path\" at 24, 212 size 200, 24\n  text \"{selected_path}\" at 24, 242 size 688, 44\n  text \"Menus on the main Form demonstrate portable shortcuts plus source-backed enabled and checked state.\" at 24, 310 size 688, 44\n  button \"Back to Gallery\" as dialog_gallery at 24, 390 size 180, 40\n  button \"Close Dialog Lab\" as close_dialogs at 220, 390 size 180, 40\n  statusbar \"{dialog_status}\" as dialog_statusbar at 0, 492 size 760, 28\n"
+    },
+    {
+      "path": "logic.patch",
+      "content": "when user_name changed:\n  change user_name:\n    set = value\n  change status:\n    set = \"Plain Input changed\"\n\nwhen secret changed:\n  change secret:\n    set = value\n  change status:\n    set = \"PasswordEdit changed without exposing its presentation\"\n\nwhen phone changed:\n  change phone:\n    set = value\n  change status:\n    set = \"MaskedEdit accepted formatted input\"\n\nwhen notes changed:\n  change notes:\n    set = value\n  change status:\n    set = \"Memo changed\"\n\nwhen active changed:\n  change active:\n    set = value\n  change status:\n    set = \"Checkbox changed\"\n\nwhen access changed:\n  change access:\n    set = value\n  change status:\n    set = \"Radio group changed\"\n\nwhen theme changed:\n  change theme:\n    set = value\n  change status:\n    set = \"ComboBox changed\"\n\nwhen features changed:\n  change features:\n    set = value\n  change status:\n    set = \"ListBox selection changed\"\n\nwhen level changed:\n  change level:\n    set = value\n  change status:\n    set = \"Slider changed\"\n\nwhen nested_code changed:\n  change nested_code:\n    set = value\n  change status:\n    set = \"Nested Tabs MaskedEdit changed\"\n\nwhen nested_apply clicked:\n  change status:\n    set = \"Nested Tabs action executed\"\n\nwhen showcase_logo clicked:\n  change status:\n    set = \"Resource Picture clicked\"\n\nwhen showcase_clock ticked:\n  change ticks:\n    add 1\n\nwhen open_gallery clicked:\n  open components\n  change gallery_status:\n    set = \"Opened from main Form\"\n\nwhen open_dialogs clicked:\n  open dialogs\n  change dialog_status:\n    set = \"Dialog Lab opened\"\n\nwhen menu_gallery clicked:\n  open components\n  change gallery_status:\n    set = \"Opened from menu\"\n\nwhen menu_dialogs clicked:\n  open dialogs\n  change dialog_status:\n    set = \"Opened from menu\"\n\nwhen menu_pinned clicked:\n  if pinned:\n    change pinned:\n      set = false\n  else:\n    change pinned:\n      set = true\n  change status:\n    set = \"Menu checked state changed explicitly\"\n\nwhen menu_about clicked:\n  dialog \"Patch Studio Showcase\", \"Project v4, Component Registry 0.10 and current Studio/Web RAD features are exercised here.\"\n\nwhen about_button clicked:\n  dialog \"About\", \"This project is maintained as the complete current Patch Studio acceptance showcase.\"\n\nwhen menu_open clicked:\n  open file \"Choose a Patch file\" as menu_open_result\n\nwhen menu_open_result chosen:\n  change selected_path:\n    set = value\n  change status:\n    set = \"Menu Open result persisted explicitly\"\n\nwhen menu_open_result cancelled:\n  change status:\n    set = \"Menu Open cancelled\"\n\nwhen menu_save clicked:\n  save file \"Save Patch project data\" as menu_save_result\n\nwhen menu_save_result chosen:\n  change selected_path:\n    set = value\n  change status:\n    set = \"Menu Save result persisted explicitly\"\n\nwhen menu_save_result cancelled:\n  change status:\n    set = \"Menu Save cancelled\"\n\nwhen confirm_reset clicked:\n  confirm \"Reset showcase?\", \"Reset the selected path and status?\" as reset_confirm\n\nwhen reset_confirm confirmed:\n  change selected_path:\n    set = \"No file selected\"\n  change status:\n    set = \"Showcase reset confirmed\"\n\nwhen reset_confirm cancelled:\n  change status:\n    set = \"Showcase reset cancelled\"\n\nwhen gallery_table changed:\n  change gallery_status:\n    set = \"Table selection changed\"\n\nwhen gallery_tree changed:\n  change gallery_status:\n    set = \"TreeView selection changed\"\n\nwhen gallery_picture clicked:\n  change gallery_status:\n    set = \"Resource Picture clicked\"\n\nwhen gallery_resource_button clicked:\n  change gallery_status:\n    set = \"ImageList-backed Button clicked\"\n\nwhen gallery_update clicked:\n  change gallery_status:\n    set = \"Panel child action handled\"\n\nwhen gallery_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 10, 10 size 58, 30 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 82, 10 size 30, 30 fill #dcfce7 stroke #16a34a width 2\n  draw image \"patch-resource:showcase.logo\" at 126, 8 size 40, 40\n  draw line 10, 58 to 166, 58 stroke #64748b width 2\n  draw text \"Patch\" at 10, 70 color #111827 size 14\n\nwhen gallery_dialogs clicked:\n  open dialogs\n  change dialog_status:\n    set = \"Opened from Component Gallery\"\n\nwhen close_gallery clicked:\n  close components\n  change status:\n    set = \"Component Gallery closed\"\n\nwhen dialog_confirm clicked:\n  confirm \"Confirm showcase action\", \"Persist a confirmation status?\" as dialog_confirm_result\n\nwhen dialog_confirm_result confirmed:\n  change dialog_status:\n    set = \"Confirmation accepted\"\n\nwhen dialog_confirm_result cancelled:\n  change dialog_status:\n    set = \"Confirmation cancelled\"\n\nwhen dialog_open clicked:\n  open file \"Open any file\" as dialog_open_result\n\nwhen dialog_open_result chosen:\n  change selected_path:\n    set = value\n  change dialog_status:\n    set = \"Open file result persisted explicitly\"\n\nwhen dialog_open_result cancelled:\n  change dialog_status:\n    set = \"Open file cancelled\"\n\nwhen dialog_save clicked:\n  save file \"Choose save path\" as dialog_save_result\n\nwhen dialog_save_result chosen:\n  change selected_path:\n    set = value\n  change dialog_status:\n    set = \"Save file result persisted explicitly\"\n\nwhen dialog_save_result cancelled:\n  change dialog_status:\n    set = \"Save file cancelled\"\n\nwhen dialog_info clicked:\n  dialog \"Informational dialog\", \"Informational dialogs carry no hidden persistent result state.\"\n\nwhen dialog_gallery clicked:\n  open components\n  change gallery_status:\n    set = \"Returned from Dialog Lab\"\n\nwhen close_dialogs clicked:\n  close dialogs\n  change status:\n    set = \"Dialog Lab closed\"\n"
+    }
+  ],
+  "resources": [
+    {
+      "id": "showcase.logo",
+      "path": "resources/showcase-logo.png",
+      "mediaType": "image/png",
+      "size": 220,
+      "sha256": "3f7750ba9f6ff2f75739006ac9e0c140c49b5af6674adc23cc458ec261dd8fda",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg=="
+    }
+  ]
+}
+`;
+
 installDesignerObserverCoordinator();
+installStudioShowcaseSample();
 
 // Example selection is an explicit load action, not project persistence. Keep the
-// fast Counter example selected at startup so the large Workshop Desk showcase is
-// never injected automatically before the Studio module graph has settled. This
-// also prevents a saved v4/v3/v2/v1 project from being overwritten by sample startup.
+// fast Counter example selected at startup so the large Workshop Desk or complete
+// Studio Showcase is never injected automatically before the module graph settles.
+// This also prevents a saved v4/v3/v2/v1 project from being overwritten at startup.
 if (sample && hasOption(sample, 'counterWindow')) sample.value = 'counterWindow';
 
 try {
@@ -24,6 +72,88 @@ try {
   }
 } catch {
   // project-lifecycle owns corruption/quarantine reporting; startup restoration remains best-effort here.
+}
+
+function installStudioShowcaseSample() {
+  if (!sample) return;
+  let option = sample.querySelector('option[value="studioShowcase"]');
+  if (!option) {
+    option = document.createElement('option');
+    option.value = 'studioShowcase';
+    option.textContent = 'Patch Studio Showcase';
+    const workshop = sample.querySelector('option[value="workshopDesk"]');
+    sample.insertBefore(option, workshop ?? sample.firstElementChild);
+  }
+
+  sample.addEventListener('change', event => {
+    if (sample.value !== 'studioShowcase') return;
+    event.stopImmediatePropagation();
+    try {
+      loadStudioShowcaseProject();
+    } catch (error) {
+      const status = document.querySelector('#saveState');
+      if (status) {
+        status.textContent = 'Showcase load stopped';
+        status.title = error?.message ?? String(error);
+      }
+    }
+  }, { capture: true });
+}
+
+function loadStudioShowcaseProject() {
+  const incoming = parseStudioProjectBundle(PATCH_STUDIO_SHOWCASE_PROJECT);
+  const entry = incoming.files.find(file => file.path === incoming.project.entry);
+  if (!entry) throw new Error(`Showcase entry '${incoming.project.entry}' is missing.`);
+
+  // Flush the current editor state first. The final forced persist then records one
+  // recovery snapshot for the previous project instead of a chain of intermediate
+  // add-file/add-resource snapshots.
+  persistStudioProjectFromDom({ snapshot: 'none' });
+  const live = getStudioProjectBundle();
+  if (!live) throw new Error('Patch Studio project state is unavailable.');
+
+  live.format = incoming.format;
+  live.version = incoming.version;
+  live.project = {
+    ...incoming.project,
+    build: { ...incoming.project.build }
+  };
+  live.files = incoming.files.map(file => ({ ...file }));
+  live.resources = incoming.resources.map(resource => ({ ...resource }));
+
+  const projectName = document.querySelector('#projectName');
+  const projectKind = document.querySelector('#projectKind');
+  const code = document.querySelector('#code');
+  if (projectName) projectName.value = incoming.project.name;
+  if (projectKind) projectKind.value = incoming.project.kind;
+  if (buildTarget && hasOption(buildTarget, incoming.project.build.target)) buildTarget.value = incoming.project.build.target;
+  if (nativeBuildMode && hasOption(nativeBuildMode, incoming.project.build.nativeMode)) nativeBuildMode.value = incoming.project.build.nativeMode;
+  if (code) code.value = entry.content;
+
+  persistStudioProjectFromDom({ snapshot: 'force' });
+  activateStudioProjectFile(incoming.project.entry);
+
+  const detail = {
+    entry: incoming.project.entry,
+    activeFile: incoming.project.entry,
+    files: incoming.files.map(file => file.path),
+    resources: incoming.resources.map(resource => resource.id)
+  };
+  window.dispatchEvent(new CustomEvent('patch:studio-project-files-changed', { detail }));
+  window.dispatchEvent(new CustomEvent('patch:studio-project-resources-changed', { detail }));
+
+  buildTarget?.dispatchEvent(new Event('change', { bubbles: true }));
+  nativeBuildMode?.dispatchEvent(new Event('change', { bubbles: true }));
+  projectKind?.dispatchEvent(new Event('change', { bubbles: true }));
+  code?.dispatchEvent(new Event('input', { bubbles: true }));
+  code?.dispatchEvent(new Event('change', { bubbles: true }));
+  document.querySelector('#tabDesigner')?.click();
+
+  const status = document.querySelector('#saveState');
+  if (status) {
+    status.textContent = 'Patch Studio Showcase loaded';
+    status.title = 'Complete current Project v4 Studio showcase loaded locally.';
+  }
 }
 
 function installDesignerObserverCoordinator() {
@@ -58,7 +188,7 @@ function installDesignerObserverCoordinator() {
     observe(target, options) {
       this.active = true;
       const existing = this.observations.findIndex(item => item.target === target);
-      const record = { target, options: { ...(options ?? {}) } };
+      const record = { target, options: { ...(options ?? {}) };
       if (existing >= 0) this.observations[existing] = record;
       else this.observations.push(record);
       if (isDesignerTarget(target)) {
