@@ -21,7 +21,7 @@ import {
   collectWindowInputMasks,
   readWindowInputMask,
   setWindowInputMask
-} from '../src/window-input-mask.js';
+} from '../src/window-input-presentation.js';
 
 test('MaskedEdit input-mask contract is versioned and uses explicit token semantics', () => {
   assert.equal(PATCH_INPUT_MASK_VERSION, '0.1');
