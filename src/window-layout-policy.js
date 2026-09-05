@@ -9,7 +9,7 @@ const TAB_ORDER_RE = /^\s*#\s*@taborder\s+(\d+)\s*$/i;
 const TAB_ORDER_PREFIX_RE = /^\s*#\s*@taborder\b/i;
 const LOCKED_RE = /^\s*#\s*@locked\s*$/i;
 const LOCKED_PREFIX_RE = /^\s*#\s*@locked\b/i;
-const METADATA_RE = /^\s*#\s*@(layout|taborder|locked)\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
 
 export function buildWindowLayoutPolicyManifest(source, ast) {
