@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from '../src/parser.js';
+import { compile } from '../src/compiler.js';
 import {
   PATCH_INPUT_PRESENTATION_VERSION,
   assertPatchInputPresentationTarget,
@@ -79,7 +80,25 @@ test('Window input presentation manifest binds metadata to the matching Input so
   assert.match(JSON.stringify(ast), /"inputPresentation":"password"/);
 });
 
-test('Input presentation metadata works inside Tabs flow pages and rejects non-Input controls', () => {
+test('compile exposes PasswordEdit presentation as metadata without changing Change IR 0.10', () => {
+  const source = `create text secret = ""
+window "Login" as main size 520, 300:
+  # @input-mode password
+  input secret at 24, 24 size 220, 36
+when secret changed:
+  change secret:
+    set = value
+`;
+  const compiled = compile(source, { name: 'Login', kind: 'window' });
+  assert.equal(compiled.ir.version, '0.10');
+  assert.equal(compiled.windowInputPresentation.version, '0.1');
+  assert.deepEqual(compiled.windowInputPresentation.controls, [{ line: 4, mode: 'password' }]);
+  const input = compiled.ast.find(node => node.kind === 'window').body.find(node => node.control === 'input');
+  assert.equal(input.inputPresentation, 'password');
+  assert.match(JSON.stringify(compiled.ast), /"inputPresentation":"password"/);
+});
+
+test('Input presentation metadata works inside Tabs and Panels and rejects non-Input controls', () => {
   const tabsSource = `window "Login" as main size 520, 300:
   tabs as pages at 24, 24 size 420, 220:
     tab "Credentials":
@@ -89,10 +108,21 @@ test('Input presentation metadata works inside Tabs flow pages and rejects non-I
       text "Other"
 `;
   const tabsAst = parse(tabsSource);
-  const manifest = buildWindowInputPresentationManifest(tabsSource, tabsAst);
-  assert.deepEqual(manifest.controls.map(control => control.mode), ['password']);
-  attachWindowInputPresentations(tabsAst, manifest);
+  const tabsManifest = buildWindowInputPresentationManifest(tabsSource, tabsAst);
+  assert.deepEqual(tabsManifest.controls.map(control => control.mode), ['password']);
+  attachWindowInputPresentations(tabsAst, tabsManifest);
   assert.equal(tabsAst[0].body[0].body[0].body[0].inputPresentation, 'password');
+
+  const panelSource = `window "Panel Login" as main size 520, 300:
+  panel as credentials at 24, 24 size 320, 140:
+    # @input-mode password
+    input secret at 16, 16 size 220, 36
+`;
+  const panelAst = parse(panelSource);
+  const panelManifest = buildWindowInputPresentationManifest(panelSource, panelAst);
+  assert.deepEqual(panelManifest.controls.map(control => control.mode), ['password']);
+  attachWindowInputPresentations(panelAst, panelManifest);
+  assert.equal(panelAst[0].body[0].body[0].inputPresentation, 'password');
 
   const invalid = `window "Bad" as main size 400, 240:
   # @input-mode password
