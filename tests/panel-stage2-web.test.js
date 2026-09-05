@@ -75,4 +75,4 @@ test('Panel Stage 2 Designer surface exposes source-backed relative geometry con
   assert.match(ui, /dataset\.panelChildLayout/);
   assert.match(css, /\.patch-panel-surface/);
   assert.match(css, /\.patch-panel-positioned/);
-}
+});
