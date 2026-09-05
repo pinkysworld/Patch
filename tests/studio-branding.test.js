@@ -18,13 +18,16 @@ test('Patch Studio uses the compiler-oriented brand mark across browser and inst
   assert.match(icon, /<circle cx="256" cy="256" r="224" fill="url\(#patch-main\)"\/?>/);
   assert.match(icon, /stroke-linecap="round"/);
   assert.match(beta35, /\.brand-mark\s*\{[\s\S]*?border-radius:\s*50%/);
+  assert.match(beta35, /\.brand-mark\s*\{[\s\S]*?clip-path:\s*circle\(50% at 50% 50%\)/);
   assert.doesNotMatch(beta35, /\.brand-mark::before/);
   assert.doesNotMatch(beta35, /\.brand-mark::after/);
   assert.match(html, /class="brand-mark" src="\.\/icon\.svg"/);
   assert.match(html, /data-patch-brand-mark="compiler-p-v1"/);
   assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);
   assert.match(html, /value="counterWindow" selected>Window app/);
-  assert.match(manifest, /"src": "\.\/icon\.svg"/);
+  assert.match(manifest, /"src": "\.\/icon\.svg\?v=compiler-p-v2"/);
+  assert.match(manifest, /"purpose": "any"/);
+  assert.doesNotMatch(manifest, /maskable/);
   assert.match(manifest, /"theme_color": "#1d4ed8"/);
   assert.match(workspace, /compiler-p-v1/);
 });
