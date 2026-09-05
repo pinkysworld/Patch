@@ -140,8 +140,8 @@ export function parse(source) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
       if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls.', child.line);
-      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView or PaintBox.', child.line);
+      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox', 'memo'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView, PaintBox or Memo.', child.line);
       }
     }
     return uiControl({ control: 'panel', textExpr: null, id, body, line: row.line }, layout);
@@ -226,8 +226,8 @@ export function parse(source) {
       const body = childBlock(indent,row);
       for (const child of body) {
         if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
-        if (['panel', 'timer', 'imagelist', 'statusbar'].includes(child.control)) {
-          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList or StatusBar.',child.line);
+        if (['panel', 'timer', 'imagelist', 'statusbar', 'memo'].includes(child.control)) {
+          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList, StatusBar or Memo.',child.line);
         }
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
@@ -332,6 +332,7 @@ export function parse(source) {
       return uiControl({control:'statusbar',textExpr:'"Ready"',id:m[1],line:row.line},ui.layout);
     }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^memo\s+([A-Za-z_]\w*)$/))) return uiControl({control:'memo',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled|ticked|paint)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {
       const parts=splitArgs(m[1]);
@@ -354,7 +355,7 @@ export function parse(source) {
     if ((m = row.text.match(/^([A-Za-z_]\w*)(?:\.([A-Za-z_]\w*))?\s+may\s+(increase|decrease|add|remove|set|clear)(?:\s+up\s+to\s+([0-9]+(?:\.[0-9]+)?))?$/))) {
       safeThingField(m[2], row.line);
       const maxAmount=m[4]===undefined?null:Number(m[4]);
-      if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, or remove.`,row.line);
+      if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, remove.`,row.line);
       return {kind:'capRule',target:m[1],field:m[2]??null,operation:m[3],maxAmount,line:row.line};
     }
     if (/^draw\b/i.test(row.text)) {
