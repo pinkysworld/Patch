@@ -188,7 +188,7 @@ function installDesignerObserverCoordinator() {
     observe(target, options) {
       this.active = true;
       const existing = this.observations.findIndex(item => item.target === target);
-      const record = { target, options: { ...(options ?? {}) };
+      const record = { target, options: { ...(options ?? {}) } };
       if (existing >= 0) this.observations[existing] = record;
       else this.observations.push(record);
       if (isDesignerTarget(target)) {
