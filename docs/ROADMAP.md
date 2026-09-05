@@ -44,14 +44,14 @@ The Current Ready Window-icon line includes platform packaging evidence:
 - the normal Offline Compiler carries Current Ready v1.10 plus a separate v1.8 compatibility underlay;
 - Windows, Linux, macOS Apple Silicon and macOS Intel promotion smokes are green.
 
-## Current product milestone: RAD R0 hardening + native R1 follow-through
+## Current product milestone: RAD R0 hardening + R2/R3 follow-through
 
 The native R1 promotion gate is complete. Near-term work is now split between:
 
 1. completing the remaining R0 Studio architecture/reliability work;
-2. continuing broader R1/R2 resource and Designer parity without weakening the promoted native boundary;
+2. extending the now-shipped R2 Designer workflow contracts and Panel Stage 2 foundation without weakening the promoted native boundary;
 3. starting Offline Studio Stage 2 local-native-build integration;
-4. moving into broader R2+ RAD parity only after those boundaries are stable.
+4. moving into broader R3+ component parity through explicit, testable contracts.
 
 ### RAD R0 architecture hardening (#282)
 
@@ -69,6 +69,7 @@ Completed foundations include:
 - [x] real-Chrome Workshop and 10-Form/200-control performance gates
 - [x] local Tabs reconciliation
 - [x] Designer selection/Object Inspector/structural-editor state survives Form materialization transitions
+- [x] Build controller and Studio Window renderer extracted from the main playground orchestration path
 
 Remaining R0 work:
 
@@ -76,7 +77,7 @@ Remaining R0 work:
 - [ ] define and implement a versioned Worker boundary for parse/compile/design-model work
 - [ ] bound any remaining design-time expression evaluation
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
-- [ ] split runtime lifecycle, Window rendering, transient UI state and Build controller out of `web/playground.js`
+- [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
 - [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
 - [ ] reduce CI notification noise and shrink Offline Compiler triggers to the real dependency closure
 
@@ -85,6 +86,7 @@ Remaining R0 work:
 Implemented:
 
 - [x] project bundle v4 resource inventory and Resource Manager
+- [x] Resource Manager drag-to-Form Picture placement plus keyboard/touch `Place on Form`
 - [x] PNG/JPEG/WebP/SVG Studio/Web project resources
 - [x] Picture source-backed authoring and Standalone Web embedding
 - [x] native PNG/JPEG Picture decoding with explicit deferred WebP/SVG policy
@@ -100,6 +102,7 @@ Implemented:
 - [x] Windows PE, macOS app-bundle and Linux desktop application-icon packaging contracts
 - [x] generated component capability matrix infrastructure
 - [x] Current Ready promotion to IR 1.9 / payload v19 / runtime v1.10
+- [x] circular shared Studio compiler mark with explicit browser clipping and refreshed non-maskable PWA icon contract
 
 Still open inside the broader R1/R2 product surface:
 
@@ -129,15 +132,26 @@ Future native feature work must use a new explicit versioned contract rather tha
 
 ## RAD R2: Form Designer parity
 
-After the R0 architecture and native-promotion gates are stable:
+Implemented:
 
-- [ ] independent source-backed `TabOrder` that does not alter source/z-order
-- [ ] visual Tab Order mode
+- [x] independent source-backed `TabOrder` that does not alter source/z-order
+- [x] visual Tab Order editor with keyboard reordering and reset-to-source-order
+- [x] source-backed clipboard schema for copy/cut/paste across Forms/projects with id/event remapping
+- [x] duplicate-with-offset and optional copied event handlers
+- [x] Lock Controls with source-backed `# @locked` metadata
+- [x] design-grid visibility/snap preference and smart alignment guides
+- [x] Layers/Object Tree for visual z-order and Panel/Tabs containment inspection
+- [x] Panel Stage 2 source-backed child coordinates relative to the Panel content area
+- [x] mixed legacy-flow and positioned Panel children in Studio and Standalone Web DOM rendering
+- [x] Current Ready native fails closed for positioned Panel children instead of flattening them silently
+
+Still open:
+
 - [ ] richer smart-guide configuration beyond the current grid/alignment guides
-- [ ] source-backed clipboard schema for copy/cut/paste across Forms/projects
-- [ ] Lock Controls and design-only guide visibility
-- [ ] Layers/Object Tree for visual z-order and containment
-- [ ] complete Panel Stage 2 native child containment with relative coordinates, clipping and nested Panels
+- [ ] Panel child Anchors/Dock relative to their container
+- [ ] nested Panels
+- [ ] visual move/reparent into and out of Panels
+- [ ] true native Panel parent-child containment and clipping parity through a new explicit native contract
 
 ## RAD R3-R6: component and project expansion
 
@@ -255,4 +269,4 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
 - **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
-- **current:** R0 architecture hardening, Offline Studio Stage 2, broader R1/R2 Designer/resource expansion, and future native work only through new explicit contracts
+- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, circular Studio/PWA brand hardening, Offline Studio Stage 2, broader R2/R3 Designer/component expansion, and future native work only through new explicit contracts
