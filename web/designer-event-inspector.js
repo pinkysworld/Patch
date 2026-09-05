@@ -11,7 +11,7 @@ const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 const inspector = doc?.querySelector('#designerInspector') ?? null;
-const DOUBLE_CLICK_TYPES = new Set(['button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'paintbox']);
+const DOUBLE_CLICK_TYPES = new Set(['button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'paintbox']);
 let cachedSource = null;
 let cachedControls = [];
 let cachedPickerSignature = null;
@@ -23,6 +23,7 @@ const EVENT_SPECS = Object.freeze({
   paintbox: Object.freeze({ event: 'paint', label: 'OnPaint', value: false }),
   timer: Object.freeze({ event: 'ticked', label: 'OnTick', value: false }),
   input: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
+  memo: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
   checkbox: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
   radio: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
   combo: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
