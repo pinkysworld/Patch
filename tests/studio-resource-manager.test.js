@@ -10,6 +10,7 @@ const sw = fs.readFileSync('web/sw.js', 'utf8');
 
 test('Studio Resources manager is browser-valid and loaded by the Designer workspace', () => {
   execFileSync(process.execPath, ['--check', 'web/resource-manager.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'src/studio-resource-picture-placement.js'], { stdio: 'pipe' });
   assert.match(workspace, /import '\.\/resource-manager\.js'/);
   assert.match(manager, /id = 'resourcesProject'/);
   assert.match(manager, /id = 'studioResourceManager'/);
@@ -41,9 +42,11 @@ test('Picture resource picker writes an ordinary visible patch-resource source e
   assert.match(manager, /code\.dispatchEvent\(new Event\('change'/);
 });
 
-test('public Site and PWA contain the Resources manager and canonical resource model', () => {
+test('public Site and PWA contain the Resources manager and complete Picture-placement resource model', () => {
   assert.ok(buildSite.includes("'designer-workspace.js'"));
   assert.ok(buildSite.includes("'resource-manager.js'"));
+  assert.ok(buildSite.includes("'studio-resource-picture-placement.js'"));
   assert.ok(sw.includes("'./resource-manager.js'"));
   assert.ok(sw.includes("'../src/studio-resources.js'"));
+  assert.ok(sw.includes("'../src/studio-resource-picture-placement.js'"));
 });
