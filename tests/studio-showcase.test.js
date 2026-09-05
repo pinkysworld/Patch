@@ -128,7 +128,7 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.memoStage, 1);
   assert.equal(built.metadata.passwordEditStage, 1);
   assert.equal(built.metadata.maskedEditStage, 1);
-  assert.match(built.html, /<textarea/);
+  assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /data-patch-window-maskededit/);
   assert.match(built.html, /rel="icon"/);
