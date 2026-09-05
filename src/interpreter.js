@@ -214,7 +214,7 @@ export class PatchInterpreter {
     }
     return lists;
   }
-  buildUIItems(nodes, lists=new Map()){
+  buildUIItems(nodes, lists=new Map(), panelChildren=false){
     const items=[];
     for(const node of nodes??[]){
       if(node.kind==='uiControl'){
@@ -227,6 +227,15 @@ export class PatchInterpreter {
           source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
         };
+        if(panelChildren&&node.layout){
+          item.panelLayout={
+            x:node.layout.x,
+            y:node.layout.y,
+            width:node.layout.width??null,
+            height:node.layout.height??null
+          };
+        }
+        if(node.control==='panel') item.controls=this.buildUIItems(node.body, lists, true);
         if(node.control==='slider'){
           item.min=node.min;
           item.max=node.max;
@@ -256,7 +265,7 @@ export class PatchInterpreter {
           id:node.id,
           pages:(node.body??[]).map(page=>({
             title:this.uiText(page.titleExpr),
-            controls:this.buildUIItems(page.body, lists)
+            controls:this.buildUIItems(page.body, lists, panelChildren)
           }))
         });
       }
