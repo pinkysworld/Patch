@@ -139,11 +139,10 @@ export function parse(source) {
   function panelNode(row, indent, id, layout) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
-      if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls in Panel Stage 1.', child.line);
+      if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls.', child.line);
       if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, ImageList, StatusBar, Table, TreeView or PaintBox.', child.line);
+        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView or PaintBox.', child.line);
       }
-      if (child.layout) throw new PatchSyntaxError('Controls inside a panel use flow layout in Panel Stage 1. Remove at/size from the nested control.', child.line);
     }
     return uiControl({ control: 'panel', textExpr: null, id, body, line: row.line }, layout);
   }
