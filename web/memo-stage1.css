@@ -1,0 +1,28 @@
+/* Patch Memo/TextArea Stage 1. Keep this scoped so the source editor textarea contract is untouched. */
+.patch-window textarea.patch-memo {
+  width: 100%;
+  max-width: 100%;
+  height: 140px;
+  min-height: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  resize: none;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  tab-size: 2;
+  box-sizing: border-box;
+}
+.patch-window textarea.patch-memo:focus-visible {
+  outline: 3px solid var(--focus, #2563eb);
+  outline-offset: 2px;
+}
+.patch-tab-panel > textarea.patch-memo,
+.patch-panel-flow > textarea.patch-memo {
+  width: 100%;
+  max-width: 100%;
+  min-height: 110px;
+}
