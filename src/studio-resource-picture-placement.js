@@ -8,7 +8,6 @@ import {
 import { formControlDefaultSize } from './form-layout.js';
 import { studioResourceSourceExpression } from './studio-resources.js';
 
-const FORM_MARGIN = 24;
 const DEFAULT_FORM = Object.freeze({ width: 640, height: 420 });
 
 /**
@@ -65,8 +64,8 @@ export function placeResourcePictureInSource(source, resourceId, options = {}) {
   if (layout) {
     const beforeWidth = positiveDimension(beforeWindow?.width, DEFAULT_FORM.width);
     const beforeHeight = positiveDimension(beforeWindow?.height, DEFAULT_FORM.height);
-    const desiredWidth = Math.max(beforeWidth, Number(layout.x) + Number(layout.width) + FORM_MARGIN);
-    const desiredHeight = Math.max(beforeHeight, Number(layout.y) + Number(layout.height) + FORM_MARGIN);
+    const desiredWidth = Math.max(beforeWidth, Number(layout.x) + Number(layout.width));
+    const desiredHeight = Math.max(beforeHeight, Number(layout.y) + Number(layout.height));
     const afterWindow = listDesignerWindows(next).find(item => item.windowIndex === windowIndex) ?? null;
     if (afterWindow && (afterWindow.width !== desiredWidth || afterWindow.height !== desiredHeight)) {
       next = updateDesignerWindow(next, windowIndex, { width: desiredWidth, height: desiredHeight });
