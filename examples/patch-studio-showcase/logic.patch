@@ -56,11 +56,11 @@ when nested_code changed:
   change nested_code:
     set = value
   change status:
-    set = "Nested Panel MaskedEdit changed"
+    set = "Nested Tabs MaskedEdit changed"
 
 when nested_apply clicked:
   change status:
-    set = "Nested Panel action executed"
+    set = "Nested Tabs action executed"
 
 when showcase_logo clicked:
   change status:
