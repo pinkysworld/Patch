@@ -1,6 +1,6 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-09-01**
+Status synchronized: **2026-09-05**
 
 This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the now-completed native Window-icon implementation/promotion sequence and can close with the Current Ready v1.10 promotion. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
@@ -192,7 +192,7 @@ Status: **implemented foundation**.
 - [x] project v4 export/import/recovery persistence;
 - [x] deterministic Web/native resource packaging where supported;
 - [ ] richer rename/reference refactoring;
-- [ ] drag asset directly onto Form as Picture;
+- [x] drag asset directly onto Form as Picture, with `Place on Form` keyboard/touch parity and ordinary visible source output;
 - [ ] visual application-branding workflow.
 
 ## P1.2 Picture / Image
