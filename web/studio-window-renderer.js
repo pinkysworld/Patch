@@ -418,6 +418,23 @@ function createControlElement(control, context) {
     el.value = control.value ?? '';
     el.placeholder = control.id ?? '';
     el.wrap = 'soft';
+    Object.assign(el.style, {
+      width: '100%',
+      maxWidth: '100%',
+      height: context.topLevel ? '140px' : '120px',
+      minHeight: '0',
+      padding: '10px 12px',
+      border: '1px solid var(--border-strong)',
+      borderRadius: '9px',
+      resize: 'none',
+      outline: '0',
+      background: 'var(--surface)',
+      color: 'var(--text)',
+      font: 'inherit',
+      lineHeight: '1.45',
+      tabSize: '2',
+      boxSizing: 'border-box'
+    });
     if (context.interactive) el.addEventListener('input', () => context.dispatch(control.id, 'changed', { value: el.value }));
     else el.readOnly = true;
   } else if (control.type === 'checkbox') {
