@@ -6,6 +6,7 @@ import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
 import { addDesignerControl, listDesignerControls, updateDesignerControl } from '../src/designer.js';
+import { addDesignerTabPageControl, supportedDesignerTabControlTypes } from '../src/designer-tabs-nested.js';
 import { listDesignerTabOrder } from '../web/designer-layout-policy.js';
 
 const SOURCE = `create text notes = "Line one"
@@ -57,6 +58,28 @@ test('Designer adds Memo with multiline geometry and preserves changed handlers 
   assert.match(renamed, /memo notes at 24, 24 size 320, 140/);
   assert.match(renamed, /when notes changed:/);
   assert.doesNotMatch(renamed, /when memo_1 changed:/);
+});
+
+test('Memo Stage 1 remains outside nested Tabs Stage 1 authoring', () => {
+  const tabsSource = `window "Tabs" as main size 640, 420:
+  tabs as pages at 24, 24 size 480, 260:
+    tab "One":
+      text "One"
+    tab "Two":
+      text "Two"
+`;
+  const tabs = listDesignerControls(tabsSource).find(control => control.type === 'tabs');
+  assert.ok(tabs);
+  assert.equal(supportedDesignerTabControlTypes().includes('memo'), false);
+  assert.throws(
+    () => addDesignerTabPageControl(tabsSource, tabs, 0, 'memo'),
+    /Tabs Designer cannot add 'memo' controls in this stage/
+  );
+  const handWrittenNestedMemo = tabsSource.replace('      text "One"', '      memo notes');
+  assert.throws(
+    () => parse(handWrittenNestedMemo),
+    /Tabs Stage 1 pages cannot contain Panel, Timer, ImageList, StatusBar or Memo/
+  );
 });
 
 test('Memo participates in independent Delphi-style TabOrder without moving source declarations', () => {
