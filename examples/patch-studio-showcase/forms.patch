@@ -15,6 +15,7 @@ window "Component Gallery" as components size 1080, 760:
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
+    row "ScrollBox", "Panel auto-scroll", "Studio/Web"
     row "TreeView", "changed(value)", "Ready"
 
   tree as gallery_tree at 476, 178 size 188, 222:
@@ -37,6 +38,7 @@ window "Component Gallery" as components size 1080, 760:
         node "Tabs"
         node "Panel"
         node "GroupBox"
+        node "ScrollBox"
       node "Graphics"
         node "Picture"
         node "Shape"
@@ -68,10 +70,12 @@ window "Component Gallery" as components size 1080, 760:
 
   # @panel-mode group
   panel as gallery_panel at 708, 446 size 348, 220:
-    text "GroupBox presentation" at 18, 18 size 250, 26
-    text "The same Panel Stage 2 containment stays source-backed beneath this grouped presentation." at 18, 52 size 312, 52
+    # @panel-scroll auto
+    text "GroupBox + ScrollBox" at 18, 18 size 250, 26
+    text "The same Panel Stage 2 containment stays source-backed while overflow remains transient UI state." at 18, 52 size 312, 52
     button "Update gallery" as gallery_update at 18, 124 size 150, 40
-    button "Dialog Lab" as gallery_dialogs at 182, 124 size 148, 40
+    text "Scroll for the second action" at 18, 174 size 250, 22
+    button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40
 
   button "Close Gallery" as close_gallery at 24, 690 size 180, 40
   statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28
