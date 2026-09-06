@@ -6,6 +6,8 @@ import {
 } from '../src/designer.js';
 import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
+
 export function duplicateDesignerControl(source, selector, options = {}) {
   const controls = listDesignerControls(source);
   const control = requireControl(controls, selector);
@@ -18,9 +20,10 @@ export function duplicateDesignerControl(source, selector, options = {}) {
   const lines = normalizeLines(source);
   const windowControls = controls.filter(item => item.windowIndex === control.windowIndex);
   const localIndex = windowControls.findIndex(item => item.controlIndex === control.controlIndex);
-  const start = control.line - 1;
-  const end = localIndex + 1 < windowControls.length
-    ? windowControls[localIndex + 1].line - 1
+  const start = metadataStartBefore(lines, control.line - 1);
+  const nextControl = windowControls[localIndex + 1] ?? null;
+  const end = nextControl
+    ? metadataStartBefore(lines, nextControl.line - 1)
     : blockEnd(lines, window.line - 1);
   const copied = lines.slice(start, end);
   // One effective UI/event namespace is shared by Controls, nested controls,
@@ -112,6 +115,12 @@ function collectControlIdRecords(node, out = []) {
     for (const child of node.body ?? []) collectControlIdRecords(child, out);
   }
   return out;
+}
+
+function metadataStartBefore(lines, declarationIndex) {
+  let start = declarationIndex;
+  while (start > 0 && METADATA_RE.test(lines[start - 1] ?? '')) start -= 1;
+  return start;
 }
 
 function rewriteControlIdAt(lines, index, record, newId) {
