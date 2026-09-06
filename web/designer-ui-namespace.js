@@ -283,7 +283,8 @@ function syncGroupBoxPresentation() {
   const groupIds = new Set([...modes.values()].filter(record => record.mode === 'group').map(record => record.id).filter(Boolean));
   for (const element of doc.querySelectorAll('.patch-panel-runtime[data-patch-panel-runtime="true"]')) {
     const aria = String(element.getAttribute('aria-label') ?? '');
-    const id = aria.startsWith('Panel ') ? aria.slice(6) : '';
+    const id = element.dataset.patchPanelId || (aria.startsWith('Panel ') ? aria.slice(6) : '');
+    if (id) element.dataset.patchPanelId = id;
     decorateGroupBoxElement(element, groupIds.has(id), id);
   }
 
@@ -298,9 +299,18 @@ function syncGroupBoxPresentation() {
 function decorateGroupBoxElement(element, group, id) {
   element.classList.toggle('patch-groupbox', Boolean(group));
   element.dataset.patchPanelPresentation = group ? 'group' : 'plain';
-  if (!group) return;
-  const caption = groupBoxCaption(id);
   const title = element.querySelector(':scope > .patch-panel-legend, :scope > .patch-panel-title');
+  if (!group) {
+    const plainTitle = String(id ?? '').trim() || 'Panel';
+    if (title && title.textContent !== plainTitle) title.textContent = plainTitle;
+    if (element.classList.contains('patch-panel-runtime')) {
+      element.setAttribute('aria-label', id ? `Panel ${id}` : 'Panel');
+    } else if (id) {
+      element.setAttribute('aria-label', `Select Panel ${id}`);
+    }
+    return;
+  }
+  const caption = groupBoxCaption(id);
   if (title && title.textContent !== caption) title.textContent = caption;
   if (caption) element.setAttribute('aria-label', `GroupBox ${caption}`);
 }
