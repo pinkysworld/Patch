@@ -68,6 +68,7 @@ export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeSliderPresentation(compiled?.ast);
   assertCurrentNativePanelPresentation(compiled?.ast);
   assertCurrentNativePanelScroll(compiled?.ast);
+  assertCurrentNativePanelSplit(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -205,6 +206,16 @@ function assertCurrentNativePanelScroll(nodes) {
   }
 }
 
+function assertCurrentNativePanelSplit(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel' && node.panelSplit) {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`SplitContainer Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no split-pane containment contract; validation fails closed rather than flattening its two panes as a plain Panel.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) assertCurrentNativePanelSplit(node.body);
+    if (node?.kind === 'tabs') for (const page of node.body ?? []) assertCurrentNativePanelSplit(page.body);
+  }
+}
 function assertCurrentNativePanelLayout(nodes) {
   for (const node of nodes ?? []) {
     if (node?.kind === 'uiControl' && node.control === 'panel') {

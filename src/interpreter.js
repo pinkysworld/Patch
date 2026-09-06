@@ -227,6 +227,7 @@ export class PatchInterpreter {
           source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
         };
+        if(panelChildren&&node.splitPane)item.splitPane=node.splitPane;
         if(panelChildren&&node.layout){
           item.panelLayout={
             x:node.layout.x,
@@ -238,6 +239,7 @@ export class PatchInterpreter {
         if(node.control==='panel'){
           item.panelPresentation=node.panelPresentation??'plain';
           item.panelScroll=node.panelScroll??'none';
+          item.panelSplit=node.panelSplit?{orientation:node.panelSplit.orientation,ratio:node.panelSplit.ratio}:null;
           item.controls=this.buildUIItems(node.body, lists, true);
         }
         if(node.control==='slider'){
