@@ -6,7 +6,12 @@ import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 import { validateCallSites } from './call-site-validation.js';
-import { attachWindowLayoutPolicies, buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
+import {
+  attachWindowLayoutPolicies,
+  attachWindowSliderPresentations,
+  buildWindowLayoutPolicyManifest,
+  buildWindowSliderPresentationManifest
+} from './window-layout-policy.js';
 import {
   attachWindowInputMasks,
   attachWindowInputPresentations,
@@ -17,10 +22,6 @@ import {
   attachWindowListboxPresentations,
   buildWindowListboxPresentationManifest
 } from './input-presentation.js';
-import {
-  attachWindowSliderPresentations,
-  buildWindowSliderPresentationManifest
-} from './slider-presentation.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
