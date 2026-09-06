@@ -3,14 +3,23 @@ export const PATCH_WINDOW_LAYOUT_POLICY_FORMAT = 'patch-window-layout-policy';
 export const PATCH_WINDOW_TAB_ORDER_VERSION = '0.1';
 export const PATCH_WINDOW_TAB_ORDER_FORMAT = 'patch-window-tab-order';
 export const PATCH_WINDOW_TAB_ORDER_MAX = 32767;
+export const PATCH_SLIDER_PRESENTATION_VERSION = '0.1';
+export const PATCH_SLIDER_PRESENTATION_DIRECTIVE = 'slider-mode';
+export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.1';
+export const PATCH_WINDOW_SLIDER_PRESENTATION_FORMAT = 'patch-window-slider-presentation';
 
 const DIRECTIVE_RE = /^\s*#\s*@layout\s+(anchor\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))*|dock\s+(?:left|right|top|bottom|fill))\s*$/i;
 const TAB_ORDER_RE = /^\s*#\s*@taborder\s+(\d+)\s*$/i;
 const TAB_ORDER_PREFIX_RE = /^\s*#\s*@taborder\b/i;
 const LOCKED_RE = /^\s*#\s*@locked\s*$/i;
 const LOCKED_PREFIX_RE = /^\s*#\s*@locked\b/i;
+const SLIDER_MODE_PREFIX_RE = /^\s*#\s*@slider-mode\b/i;
 const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
+const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress']);
+const SLIDER_PRESENTATION_MODE_SET = new Set(SLIDER_PRESENTATION_MODES);
+const PLAIN_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
+const PROGRESS_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });
 
 export function buildWindowLayoutPolicyManifest(source, ast) {
   const rows = sourceRows(source);
@@ -20,11 +29,7 @@ export function buildWindowLayoutPolicyManifest(source, ast) {
     const controls = [];
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      controls.push({
-        line: child.line ?? null,
-        policy: readWindowLayoutPolicyFromRows(rows, child.line),
-        tabOrder: readWindowTabOrderFromRows(rows, child.line)
-      });
+      controls.push({ line: child.line ?? null, policy: readWindowLayoutPolicyFromRows(rows, child.line), tabOrder: readWindowTabOrderFromRows(rows, child.line) });
     }
     windows.push({ line: node.line ?? null, width: node.width ?? 640, height: node.height ?? 420, controls });
   }
@@ -53,9 +58,7 @@ export function attachWindowLayoutPolicies(ast, manifest) {
 }
 
 export function validateWindowLayoutPolicyManifest(manifest) {
-  if (!manifest || manifest.format !== PATCH_WINDOW_LAYOUT_POLICY_FORMAT || manifest.version !== PATCH_WINDOW_LAYOUT_POLICY_VERSION) {
-    throw new Error('Window layout policy manifest format/version is unsupported.');
-  }
+  if (!manifest || manifest.format !== PATCH_WINDOW_LAYOUT_POLICY_FORMAT || manifest.version !== PATCH_WINDOW_LAYOUT_POLICY_VERSION) throw new Error('Window layout policy manifest format/version is unsupported.');
   if (!Array.isArray(manifest.windows)) throw new Error('Window layout policy manifest is incomplete.');
   for (const form of manifest.windows) {
     if (!Number.isFinite(Number(form.width)) || !Number.isFinite(Number(form.height)) || !Array.isArray(form.controls)) throw new Error('Window layout policy Form is incomplete.');
@@ -116,10 +119,8 @@ export function applyWindowResizePolicy(layout, policy, resize) {
   if (normalized.kind !== 'anchor') return current;
   const edges = new Set(normalized.edges);
   let { x, y, width, height } = current;
-  if (edges.has('left') && edges.has('right')) width = Math.max(16, width + deltaWidth);
-  else if (!edges.has('left') && edges.has('right')) x = Math.max(0, x + deltaWidth);
-  if (edges.has('top') && edges.has('bottom')) height = Math.max(16, height + deltaHeight);
-  else if (!edges.has('top') && edges.has('bottom')) y = Math.max(0, y + deltaHeight);
+  if (edges.has('left') && edges.has('right')) width = Math.max(16, width + deltaWidth); else if (!edges.has('left') && edges.has('right')) x = Math.max(0, x + deltaWidth);
+  if (edges.has('top') && edges.has('bottom')) height = Math.max(16, height + deltaHeight); else if (!edges.has('top') && edges.has('bottom')) y = Math.max(0, y + deltaHeight);
   return rounded({ x, y, width, height });
 }
 
@@ -135,8 +136,7 @@ export function buildWindowTabOrderManifest(source, ast) {
     }
     windows.push({ line: node.line ?? null, controls });
   }
-  const manifest = { format: PATCH_WINDOW_TAB_ORDER_FORMAT, version: PATCH_WINDOW_TAB_ORDER_VERSION, windows };
-  return validateWindowTabOrderManifest(manifest);
+  return validateWindowTabOrderManifest({ format: PATCH_WINDOW_TAB_ORDER_FORMAT, version: PATCH_WINDOW_TAB_ORDER_VERSION, windows });
 }
 
 export function attachWindowTabOrders(ast, manifest) {
@@ -149,8 +149,7 @@ export function attachWindowTabOrders(ast, manifest) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      const tabOrder = normalizeWindowTabOrder(tabForm.controls?.[controlIndex++]?.tabOrder);
-      Object.defineProperty(child, 'tabOrder', { value: tabOrder, enumerable: false, configurable: true, writable: false });
+      Object.defineProperty(child, 'tabOrder', { value: normalizeWindowTabOrder(tabForm.controls?.[controlIndex++]?.tabOrder), enumerable: false, configurable: true, writable: false });
     }
   }
   if (windowIndex !== manifest.windows.length) throw new Error('Window TabOrder manifest has more Forms than the compiled program.');
@@ -158,9 +157,7 @@ export function attachWindowTabOrders(ast, manifest) {
 }
 
 export function validateWindowTabOrderManifest(manifest) {
-  if (!manifest || manifest.format !== PATCH_WINDOW_TAB_ORDER_FORMAT || manifest.version !== PATCH_WINDOW_TAB_ORDER_VERSION) {
-    throw new Error('Window TabOrder manifest format/version is unsupported.');
-  }
+  if (!manifest || manifest.format !== PATCH_WINDOW_TAB_ORDER_FORMAT || manifest.version !== PATCH_WINDOW_TAB_ORDER_VERSION) throw new Error('Window TabOrder manifest format/version is unsupported.');
   if (!Array.isArray(manifest.windows)) throw new Error('Window TabOrder manifest is incomplete.');
   for (const form of manifest.windows) {
     if (!Array.isArray(form.controls)) throw new Error('Window TabOrder Form is incomplete.');
@@ -178,31 +175,18 @@ export function validateWindowTabOrderManifest(manifest) {
 export function normalizeWindowTabOrder(value) {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
-  if (!Number.isInteger(number) || number < 0 || number > PATCH_WINDOW_TAB_ORDER_MAX) {
-    throw new Error(`TabOrder must be an integer from 0 to ${PATCH_WINDOW_TAB_ORDER_MAX}.`);
-  }
+  if (!Number.isInteger(number) || number < 0 || number > PATCH_WINDOW_TAB_ORDER_MAX) throw new Error(`TabOrder must be an integer from 0 to ${PATCH_WINDOW_TAB_ORDER_MAX}.`);
   return number;
 }
 
-export function readWindowTabOrder(source, sourceLine) {
-  return readWindowTabOrderFromRows(sourceRows(source), sourceLine);
-}
-
-export function setWindowTabOrder(source, sourceLine, tabOrder) {
-  return setWindowTabOrders(source, [{ sourceLine, tabOrder }]);
-}
+export function readWindowTabOrder(source, sourceLine) { return readWindowTabOrderFromRows(sourceRows(source), sourceLine); }
+export function setWindowTabOrder(source, sourceLine, tabOrder) { return setWindowTabOrders(source, [{ sourceLine, tabOrder }]); }
 
 export function setWindowTabOrders(source, entries) {
   const original = String(source ?? '').replace(/\r\n/g, '\n');
   const rows = original.split('\n');
-  const normalizedEntries = (entries ?? []).map(entry => ({
-    sourceLine: Number(entry?.sourceLine),
-    tabOrder: normalizeWindowTabOrder(entry?.tabOrder),
-    lineIndex: resolveSourceLineIndex(rows, entry?.sourceLine)
-  }));
-  for (const entry of normalizedEntries) {
-    if (entry.lineIndex < 0) throw new Error('Selected control line is outside the Patch source.');
-  }
+  const normalizedEntries = (entries ?? []).map(entry => ({ sourceLine: Number(entry?.sourceLine), tabOrder: normalizeWindowTabOrder(entry?.tabOrder), lineIndex: resolveSourceLineIndex(rows, entry?.sourceLine) }));
+  for (const entry of normalizedEntries) if (entry.lineIndex < 0) throw new Error('Selected control line is outside the Patch source.');
   normalizedEntries.sort((a, b) => b.lineIndex - a.lineIndex);
   for (const entry of normalizedEntries) setWindowTabOrderInRows(rows, entry.lineIndex, entry.tabOrder);
   return preserveTrailingNewline(original, rows.join('\n'));
@@ -210,11 +194,7 @@ export function setWindowTabOrders(source, entries) {
 
 export function resolveWindowTabOrders(source, controls) {
   const rows = sourceRows(source);
-  const result = (controls ?? []).map((control, sourceIndex) => ({
-    ...control,
-    sourceIndex,
-    explicitTabOrder: readWindowTabOrderFromRows(rows, control?.line)
-  }));
+  const result = (controls ?? []).map((control, sourceIndex) => ({ ...control, sourceIndex, explicitTabOrder: readWindowTabOrderFromRows(rows, control?.line) }));
   const used = new Set();
   for (const control of result) {
     if (control.explicitTabOrder === null) continue;
@@ -223,10 +203,7 @@ export function resolveWindowTabOrders(source, controls) {
   }
   let next = 0;
   for (const control of result) {
-    if (control.explicitTabOrder !== null) {
-      control.tabOrder = control.explicitTabOrder;
-      continue;
-    }
+    if (control.explicitTabOrder !== null) { control.tabOrder = control.explicitTabOrder; continue; }
     while (used.has(next)) next += 1;
     control.tabOrder = next;
     used.add(next);
@@ -254,22 +231,125 @@ export function setWindowDesignerLock(source, sourceLine, locked) {
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
   if (lineIndex < 0) throw new Error('Selected control line is outside the Patch source.');
   let existingIndex = -1;
-  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
-    if (LOCKED_PREFIX_RE.test(rows[index])) existingIndex = index;
-  }
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) if (LOCKED_PREFIX_RE.test(rows[index])) existingIndex = index;
   if (!locked) {
     if (existingIndex >= 0) rows.splice(existingIndex, 1);
     return preserveTrailingNewline(original, rows.join('\n'));
   }
   const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
   const directive = `${indent}# @locked`;
-  if (existingIndex >= 0) rows[existingIndex] = directive;
-  else rows.splice(lineIndex, 0, directive);
+  if (existingIndex >= 0) rows[existingIndex] = directive; else rows.splice(lineIndex, 0, directive);
   return preserveTrailingNewline(original, rows.join('\n'));
 }
 
-export function isDesignerMetadataDirective(line) {
-  return METADATA_RE.test(String(line ?? ''));
+export function isDesignerMetadataDirective(line) { return METADATA_RE.test(String(line ?? '')); }
+export function patchSliderPresentationModes() { return [...SLIDER_PRESENTATION_MODES]; }
+
+export function normalizePatchSliderPresentation(mode) {
+  const normalized = String(mode ?? 'plain').trim().toLowerCase() || 'plain';
+  if (!SLIDER_PRESENTATION_MODE_SET.has(normalized)) throw new Error(`Unsupported Slider presentation '${mode}'. Use plain or progress.`);
+  return normalized;
+}
+
+export function parsePatchSliderPresentationDirective(line) {
+  const text = String(line ?? '');
+  if (!SLIDER_MODE_PREFIX_RE.test(text)) return null;
+  const match = text.match(/^\s*#\s*@slider-mode\s+(plain|progress)\s*$/i);
+  if (!match) throw new Error(`Invalid # @slider-mode directive '${text.trim()}'. Use '# @slider-mode progress'.`);
+  return normalizePatchSliderPresentation(match[1]);
+}
+
+export function formatPatchSliderPresentationDirective(mode) {
+  const normalized = normalizePatchSliderPresentation(mode);
+  return normalized === 'plain' ? null : `# @slider-mode ${normalized}`;
+}
+
+export function patchSliderPresentationTargetSupport(mode) { return normalizePatchSliderPresentation(mode) === 'progress' ? PROGRESS_SLIDER_TARGETS : PLAIN_SLIDER_TARGETS; }
+
+export function assertPatchSliderPresentationTarget(mode, target) {
+  const normalizedMode = normalizePatchSliderPresentation(mode);
+  const normalizedTarget = String(target ?? '').trim().toLowerCase();
+  if (patchSliderPresentationTargetSupport(normalizedMode)[normalizedTarget] !== 'supported') {
+    throw new Error(`Slider presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` + (normalizedMode === 'progress' ? 'ProgressBar Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.' : 'Select a supported Patch target.'));
+  }
+  return true;
+}
+
+export function buildWindowSliderPresentationManifest(source, ast) {
+  const rows = sourceRows(source);
+  const stateTypes = new Map((ast ?? []).filter(node => node?.kind === 'create' && node.name).map(node => [node.name, node.valueType]));
+  const controls = [];
+  walkWindowControls(ast, node => {
+    const mode = readWindowSliderPresentationFromRows(rows, node.line);
+    if (mode !== null && node.control !== 'slider') throw new Error(`# @slider-mode belongs only to Slider controls, not '${node.control}' on source line ${node.line ?? '?'}.`);
+    if (node.control !== 'slider') return;
+    const effective = mode ?? 'plain';
+    if (effective === 'progress') {
+      const stateType = node.id ? stateTypes.get(node.id) : null;
+      if (stateType !== 'number') throw new Error(`ProgressBar '${node.id ?? '?'}' needs a matching 'create number ${node.id ?? 'name'} = ...' state declaration so the passive bar has one explicit numeric value source.`);
+    }
+    controls.push({ line: node.line ?? null, id: node.id ?? null, mode: effective });
+  });
+  return validateWindowSliderPresentationManifest({ format: PATCH_WINDOW_SLIDER_PRESENTATION_FORMAT, version: PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, controls });
+}
+
+export function attachWindowSliderPresentations(ast, manifest) {
+  validateWindowSliderPresentationManifest(manifest);
+  const byLine = new Map(manifest.controls.map(control => [control.line, control.mode]));
+  let attached = 0;
+  walkWindowControls(ast, node => {
+    if (node.control !== 'slider') return;
+    Object.defineProperty(node, 'sliderPresentation', { value: normalizePatchSliderPresentation(byLine.get(node.line) ?? 'plain'), enumerable: true, configurable: true, writable: false });
+    attached += 1;
+  });
+  if (attached !== manifest.controls.length) throw new Error('Window Slider presentation manifest does not match the compiled Slider controls.');
+  return ast;
+}
+
+export function validateWindowSliderPresentationManifest(manifest) {
+  if (!manifest || manifest.format !== PATCH_WINDOW_SLIDER_PRESENTATION_FORMAT || manifest.version !== PATCH_WINDOW_SLIDER_PRESENTATION_VERSION || !Array.isArray(manifest.controls)) throw new Error('Window Slider presentation manifest format/version is unsupported.');
+  const lines = new Set();
+  for (const control of manifest.controls) {
+    if (!Number.isInteger(control?.line) || control.line < 1) throw new Error('Window Slider presentation control line is invalid.');
+    if (lines.has(control.line)) throw new Error(`Window Slider presentation source line ${control.line} appears more than once.`);
+    lines.add(control.line);
+    control.mode = normalizePatchSliderPresentation(control.mode);
+    if (control.id !== null && control.id !== undefined && !/^[A-Za-z_]\w*$/.test(String(control.id))) throw new Error(`Window Slider presentation control id '${control.id}' is invalid.`);
+  }
+  return manifest;
+}
+
+export function readWindowSliderPresentation(source, sourceLine) { return readWindowSliderPresentationFromRows(sourceRows(source), sourceLine) ?? 'plain'; }
+
+export function setWindowSliderPresentation(source, sourceLine, mode) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const normalized = normalizePatchSliderPresentation(mode);
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 0) throw new Error('Selected Slider line is outside the Patch source.');
+  if (!/^\s*slider\b/i.test(rows[lineIndex])) throw new Error('Slider presentation can only be changed on a Slider control.');
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (!SLIDER_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (existingIndex >= 0) throw new Error(`Slider presentation is declared more than once before source line ${sourceLine}.`);
+    parsePatchSliderPresentationDirective(rows[index]);
+    existingIndex = index;
+  }
+  const directive = formatPatchSliderPresentationDirective(normalized);
+  if (!directive) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
+  }
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  const rendered = `${indent}${directive}`;
+  if (existingIndex >= 0) rows[existingIndex] = rendered; else rows.splice(lineIndex, 0, rendered);
+  return preserveTrailingNewline(original, rows.join('\n'));
+}
+
+export function collectWindowProgressBarIds(ast) {
+  const ids = [];
+  walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'progress' && node.id) ids.push(node.id); });
+  return ids;
 }
 
 function readWindowLayoutPolicyFromRows(rows, sourceLine) {
@@ -286,28 +366,36 @@ function readWindowTabOrderFromRows(rows, sourceLine) {
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
   if (lineIndex < 1) return null;
   for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
-    const line = rows[index];
-    if (!TAB_ORDER_PREFIX_RE.test(line)) continue;
-    const match = line.match(TAB_ORDER_RE);
+    if (!TAB_ORDER_PREFIX_RE.test(rows[index])) continue;
+    const match = rows[index].match(TAB_ORDER_RE);
     if (!match) throw new Error(`Invalid TabOrder directive on source line ${index + 1}.`);
     return normalizeWindowTabOrder(match[1]);
   }
   return null;
 }
 
+function readWindowSliderPresentationFromRows(rows, sourceLine) {
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 1) return null;
+  let found = null;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (!SLIDER_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (found !== null) throw new Error(`Slider presentation is declared more than once before source line ${sourceLine}.`);
+    found = parsePatchSliderPresentationDirective(rows[index]);
+  }
+  return found;
+}
+
 function setWindowTabOrderInRows(rows, lineIndex, tabOrder) {
   let existingIndex = -1;
-  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
-    if (TAB_ORDER_PREFIX_RE.test(rows[index])) existingIndex = index;
-  }
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) if (TAB_ORDER_PREFIX_RE.test(rows[index])) existingIndex = index;
   if (tabOrder === null) {
     if (existingIndex >= 0) rows.splice(existingIndex, 1);
     return;
   }
   const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
   const directive = `${indent}# @taborder ${tabOrder}`;
-  if (existingIndex >= 0) rows[existingIndex] = directive;
-  else rows.splice(lineIndex, 0, directive);
+  if (existingIndex >= 0) rows[existingIndex] = directive; else rows.splice(lineIndex, 0, directive);
 }
 
 function resolveSourceLineIndex(rows, sourceLine) {
@@ -320,10 +408,20 @@ function resolveSourceLineIndex(rows, sourceLine) {
   return raw >= 1 && raw <= rows.length ? raw - 1 : -1;
 }
 
-function looksLikeControlLine(line) {
-  return /^\s*(?:text|button|input|memo|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(String(line));
-}
+function looksLikeControlLine(line) { return /^\s*(?:text|button|input|memo|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(String(line)); }
 function sourceRows(source) { return String(source ?? '').replace(/\r\n/g, '\n').split('\n'); }
+
+function walkWindowControls(nodes, visit) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl') {
+      visit(node);
+      if (node.control === 'panel') walkWindowControls(node.body, visit);
+      continue;
+    }
+    if (node?.kind === 'window') walkWindowControls(node.body, visit);
+    if (node?.kind === 'tabs') for (const page of node.body ?? []) walkWindowControls(page.body, visit);
+  }
+}
 
 function dockLayout(layout, side, formWidth, formHeight) {
   if (side === 'fill') return rounded({ x: 0, y: 0, width: Math.max(16, formWidth), height: Math.max(16, formHeight) });
@@ -332,11 +430,7 @@ function dockLayout(layout, side, formWidth, formHeight) {
   if (side === 'left') return rounded({ x: 0, y: 0, width: layout.width, height: Math.max(16, formHeight) });
   return rounded({ x: Math.max(0, formWidth - layout.width), y: 0, width: layout.width, height: Math.max(16, formHeight) });
 }
-
 function fixedPolicy() { return { kind: 'fixed' }; }
 function normalizeLayout(layout) { return rounded({ x: Number(layout?.x ?? 0), y: Number(layout?.y ?? 0), width: Math.max(16, Number(layout?.width ?? 120)), height: Math.max(16, Number(layout?.height ?? 36)) }); }
 function rounded(layout) { return { x: Math.max(0, Math.round(layout.x)), y: Math.max(0, Math.round(layout.y)), width: Math.max(16, Math.round(layout.width)), height: Math.max(16, Math.round(layout.height)) }; }
-function preserveTrailingNewline(original, text) {
-  const hasNewline = /\n$/.test(original);
-  return text.replace(/\s+$/, '') + (hasNewline ? '\n' : '');
-}
+function preserveTrailingNewline(original, text) { const hasNewline = /\n$/.test(original); return text.replace(/\s+$/, '') + (hasNewline ? '\n' : ''); }
