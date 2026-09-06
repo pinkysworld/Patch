@@ -1,0 +1,101 @@
+name: SplitContainer core patch
+
+on:
+  push:
+    branches: [splitcontainer-stage1]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: splitcontainer-stage1
+          fetch-depth: 0
+      - name: Wire compiler runtime native and browser packaging
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          nl = chr(10)
+
+          p = Path('src/compiler.js')
+          s = p.read_text()
+          anchor = "} from './panel-scroll.js';"
+          insert = anchor + nl + "import {" + nl + "  attachWindowPanelSplits," + nl + "  buildWindowPanelSplitManifest" + nl + "} from './panel-split.js';"
+          if s.count(anchor) != 1 or "from './panel-split.js'" in s:
+              raise SystemExit('compiler split import anchor invalid')
+          s = s.replace(anchor, insert, 1)
+          anchor = "  const windowPanelScroll = buildWindowPanelScrollManifest(source, ast);"
+          s = s.replace(anchor, anchor + nl + "  const windowPanelSplit = buildWindowPanelSplitManifest(source, ast);", 1)
+          anchor = "  attachWindowPanelScroll(ast, windowPanelScroll);"
+          s = s.replace(anchor, anchor + nl + "  attachWindowPanelSplits(ast, windowPanelSplit);", 1)
+          anchor = "    windowSliderPresentation, windowPanelPresentation, windowPanelScroll"
+          replacement = "    windowSliderPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit"
+          if s.count(anchor) != 1:
+              raise SystemExit('compiler return anchor invalid')
+          p.write_text(s.replace(anchor, replacement, 1))
+
+          p = Path('src/interpreter.js')
+          s = p.read_text()
+          anchor = "          item.panelScroll=node.panelScroll??'none';"
+          replacement = anchor + nl + "          item.panelSplit=node.panelSplit?{orientation:node.panelSplit.orientation,ratio:node.panelSplit.ratio}:null;"
+          if s.count(anchor) != 1 or 'item.panelSplit=' in s:
+              raise SystemExit('interpreter panelSplit anchor invalid')
+          s = s.replace(anchor, replacement, 1)
+          anchor = "        if(panelChildren&&node.layout){"
+          replacement = "        if(panelChildren&&node.splitPane)item.splitPane=node.splitPane;" + nl + anchor
+          if s.count(anchor) != 1:
+              raise SystemExit('interpreter splitPane anchor invalid')
+          p.write_text(s.replace(anchor, replacement, 1))
+
+          p = Path('src/native-current-contract.js')
+          s = p.read_text()
+          anchor = "  assertCurrentNativePanelScroll(compiled?.ast);"
+          if s.count(anchor) != 1 or 'assertCurrentNativePanelSplit(compiled?.ast)' in s:
+              raise SystemExit('native split call anchor invalid')
+          s = s.replace(anchor, anchor + nl + "  assertCurrentNativePanelSplit(compiled?.ast);", 1)
+          marker = "function assertCurrentNativePanelLayout(nodes) {"
+          if s.count(marker) != 1:
+              raise SystemExit('native split function insertion marker invalid')
+          fn = nl.join([
+              "function assertCurrentNativePanelSplit(nodes) {",
+              "  for (const node of nodes ?? []) {",
+              "    if (node?.kind === 'uiControl' && node.control === 'panel' && node.panelSplit) {",
+              "      const name = node.id ? ` '${node.id}'` : '';",
+              "      throw new NativeGuiError(`SplitContainer Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no split-pane containment contract; validation fails closed rather than flattening its two panes as a plain Panel.`);",
+              "    }",
+              "    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) assertCurrentNativePanelSplit(node.body);",
+              "    if (node?.kind === 'tabs') for (const page of node.body ?? []) assertCurrentNativePanelSplit(page.body);",
+              "  }",
+              "}",
+              ""
+          ])
+          p.write_text(s.replace(marker, fn + marker, 1))
+
+          p = Path('scripts/build-site.js')
+          s = p.read_text()
+          anchor = "'window-layout-policy.js','panel-scroll.js','input-presentation.js'"
+          replacement = "'window-layout-policy.js','panel-scroll.js','panel-split.js','input-presentation.js'"
+          if s.count(anchor) != 1:
+              raise SystemExit('site source packaging anchor invalid')
+          p.write_text(s.replace(anchor, replacement, 1))
+
+          p = Path('web/sw.js')
+          s = p.read_text()
+          anchor = "'../src/window-layout-policy.js', '../src/panel-scroll.js', '../src/studio-project.js'"
+          replacement = "'../src/window-layout-policy.js', '../src/panel-scroll.js', '../src/panel-split.js', '../src/studio-project.js'"
+          if s.count(anchor) != 1:
+              raise SystemExit('service worker split packaging anchor invalid')
+          p.write_text(s.replace(anchor, replacement, 1))
+          PY
+          rm .github/workflows/splitcontainer-core-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/compiler.js src/interpreter.js src/native-current-contract.js scripts/build-site.js web/sw.js .github/workflows/splitcontainer-core-patch.yml
+          git commit -m "feat: wire SplitContainer compiler and fail-closed boundary"
+          git push origin HEAD:splitcontainer-stage1
