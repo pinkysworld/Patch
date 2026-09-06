@@ -162,12 +162,13 @@ Implemented R4 Stage 1 surfaces:
 - [x] PasswordEdit as `# @input-mode password` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
 - [x] MaskedEdit as `# @input-mask "..."` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
 - [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
-- [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.10 Studio/Web surface and is explicitly loadable in hosted and Offline Studio
+- [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
+- [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.10 Studio/Web surface, including current R4 presentation presets, and is explicitly loadable in hosted and Offline Studio
 
 Next component/project priorities:
 
 - [ ] GroupBox, ScrollBox and SplitContainer
-- [ ] ProgressBar, SpinEdit/NumberEdit, Date/Time controls
+- [ ] SpinEdit/NumberEdit and Date/Time controls
 - [ ] richer TreeView/ListView/Table metadata and image bindings
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands
@@ -288,4 +289,4 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
 - **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
-- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, Offline Studio Stage 2 host-build integration, Registry 0.10, hosted/offline Project-v4 Showcase loading, and R4 Memo/PasswordEdit/MaskedEdit/CheckedListBox Stage 1 with explicit native fail-closed boundaries
+- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, Offline Studio Stage 2 host-build integration, Registry 0.10, hosted/offline Project-v4 Showcase loading, and R4 Memo/PasswordEdit/MaskedEdit/CheckedListBox/ProgressBar Stage 1 with explicit native fail-closed boundaries
