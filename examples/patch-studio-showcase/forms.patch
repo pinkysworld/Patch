@@ -1,16 +1,22 @@
-window "Component Gallery" as components size 980, 680:
-  text "Component Gallery" at 24, 20 size 300, 30
-  text "{gallery_status}" at 340, 20 size 600, 30
-  text "Data and graphics" at 24, 68 size 220, 26
+window "Component Gallery" as components size 1080, 760:
+  # @locked
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 20 opacity 1 at 24, 18 size 1032, 84
+  text "Component Gallery" at 44, 36 size 360, 32
+  text "Registry 0.10 · source-backed controls, graphics and resources" at 44, 68 size 560, 22
+  text "{gallery_status}" at 700, 42 size 324, 38
 
-  table "Control", "Contract", "Surface" as gallery_table at 24, 104 size 500, 210:
+  # @locked
+  shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 122 size 660, 300
+  text "Data & component contracts" at 44, 140 size 300, 26
+  table "Control", "Contract", "Surface" as gallery_table at 44, 178 size 414, 222:
     row "Memo", "changed(value)", "Studio/Web"
     row "PasswordEdit", "Input presentation", "Studio/Web"
     row "MaskedEdit", "Input mask", "Studio/Web"
-    row "Table", "changed(value)", "Ready"
+    row "CheckedListBox", "List presentation", "Studio/Web"
+    row "ProgressBar", "Passive Slider", "Studio/Web"
     row "TreeView", "changed(value)", "Ready"
 
-  tree as gallery_tree at 546, 104 size 200, 210:
+  tree as gallery_tree at 476, 178 size 188, 222:
     node "Registry 0.10"
       node "Basic"
         node "Text"
@@ -40,38 +46,54 @@ window "Component Gallery" as components size 980, 680:
         node "ImageList"
 
   # @locked
-  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 18 opacity 1 at 770, 104 size 176, 96
-  paintbox as gallery_canvas at 770, 218 size 176, 96
+  shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 708, 122 size 348, 300
+  text "Graphics" at 728, 140 size 180, 26
+  text "Shape" at 728, 178 size 100, 20
+  # @locked
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 18 opacity 1 at 728, 204 size 140, 84
+  text "PaintBox" at 888, 178 size 100, 20
+  paintbox as gallery_canvas at 888, 204 size 148, 116
+  text "Both remain source-visible and deterministic." at 728, 342 size 288, 44
 
-  text "Resource-backed controls" at 24, 344 size 250, 26
-  picture as gallery_picture from "patch-resource:showcase.logo" description "Showcase project PNG resource" at 24, 382 size 96, 96
+  # @locked
+  shape rounded as resources_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 446 size 660, 220
+  text "Project resources" at 44, 464 size 260, 26
+  picture as gallery_picture from "patch-resource:showcase.logo" description "Showcase project PNG resource" at 44, 508 size 104, 104
   imagelist as gallery_images size 24, 24:
     image mark from "patch-resource:showcase.logo"
-  button "Resource button" as gallery_resource_button image gallery_images.mark at 144, 382 size 190, 42
-  text "The same project-v4 PNG drives Window icon, Picture, ImageList/Button and PaintBox draw image." at 144, 438 size 500, 46
+  button "Resource button" as gallery_resource_button image gallery_images.mark at 172, 508 size 190, 42
+  text "One project-v4 PNG is reused for the Window icon, Picture, ImageList/Button and PaintBox draw image." at 172, 564 size 472, 54
 
-  panel as gallery_panel at 546, 344 size 400, 134:
-    text "Panel Stage 1 + Stage 2 Web authoring" at 16, 14 size 340, 24
-    text "Positioned children stay source-backed." at 16, 48 size 330, 22
-    button "Update gallery" as gallery_update at 16, 82 size 160, 36
+  panel as gallery_panel at 708, 446 size 348, 220:
+    text "Panel Stage 2" at 18, 18 size 250, 26
+    text "Positioned children keep their coordinates relative to this source-backed container." at 18, 52 size 312, 52
+    button "Update gallery" as gallery_update at 18, 124 size 150, 40
+    button "Dialog Lab" as gallery_dialogs at 182, 124 size 148, 40
 
-  button "Open Dialog Lab" as gallery_dialogs at 24, 530 size 180, 40
-  button "Close Gallery" as close_gallery at 220, 530 size 180, 40
-  statusbar "{gallery_status}" as gallery_statusbar at 0, 652 size 980, 28
+  button "Close Gallery" as close_gallery at 24, 690 size 180, 40
+  statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28
 
-window "Dialog Lab" as dialogs size 760, 520:
-  text "Dialog Lab" at 24, 20 size 260, 30
-  text "{dialog_status}" at 300, 20 size 420, 30
-  text "Result-bearing dialogs keep their values transient until an explicit change persists them." at 24, 72 size 700, 44
+window "Dialog Lab" as dialogs size 820, 560:
+  # @locked
+  shape rounded as dialog_header fill #f5f3ff stroke #ddd6fe stroke-width 1 radius 20 opacity 1 at 24, 18 size 772, 84
+  text "Dialog Lab" at 44, 36 size 300, 32
+  text "Transient dialog results become persistent only through explicit change." at 44, 68 size 520, 22
+  text "{dialog_status}" at 586, 42 size 190, 38
 
-  button "Confirm" as dialog_confirm at 24, 138 size 160, 40
-  button "Open file" as dialog_open at 200, 138 size 160, 40
-  button "Save file" as dialog_save at 376, 138 size 160, 40
-  button "Information" as dialog_info at 552, 138 size 160, 40
+  # @locked
+  shape rounded as dialog_actions_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 124 size 772, 142
+  text "Result-bearing dialogs" at 44, 142 size 260, 26
+  button "Confirm" as dialog_confirm at 44, 188 size 164, 42
+  button "Open file" as dialog_open at 224, 188 size 164, 42
+  button "Save file" as dialog_save at 404, 188 size 164, 42
+  button "Information" as dialog_info at 584, 188 size 172, 42
 
-  text "Last selected path" at 24, 212 size 200, 24
-  text "{selected_path}" at 24, 242 size 688, 44
-  text "Menus on the main Form demonstrate portable shortcuts plus source-backed enabled and checked state." at 24, 310 size 688, 44
-  button "Back to Gallery" as dialog_gallery at 24, 390 size 180, 40
-  button "Close Dialog Lab" as close_dialogs at 220, 390 size 180, 40
-  statusbar "{dialog_status}" as dialog_statusbar at 0, 492 size 760, 28
+  # @locked
+  shape rounded as dialog_path_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 288 size 772, 152
+  text "Last selected path" at 44, 306 size 220, 24
+  text "{selected_path}" at 44, 338 size 712, 40
+  text "Open/Save results remain transient until their chosen handler performs change selected_path." at 44, 388 size 712, 30
+
+  button "Back to Gallery" as dialog_gallery at 44, 466 size 180, 40
+  button "Close Dialog Lab" as close_dialogs at 240, 466 size 180, 40
+  statusbar "{dialog_status}" as dialog_statusbar at 0, 532 size 820, 28

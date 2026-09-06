@@ -17,7 +17,7 @@ create text nested_code = ""
 create text gallery_status = "Component Gallery ready"
 create text dialog_status = "Dialogs ready"
 
-window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showcase.logo":
+window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showcase.logo":
   menu "File":
     item "Open file..." as menu_open shortcut "Primary+O"
     item "Save file..." as menu_save enabled can_save shortcut "Primary+S"
@@ -30,65 +30,85 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
     item "About Showcase" as menu_about shortcut "F1"
 
   # @locked
-  picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 24, 18 size 56, 56
-  text "Patch Studio Showcase" at 96, 18 size 360, 32
-  text "Component Registry 0.10 · project v4 · complete current Studio/Web acceptance project" at 96, 52 size 760, 22
-  text "{status}" at 820, 24 size 250, 44
+  shape rounded as hero_card fill #eef2ff stroke #c7d2fe stroke-width 1 radius 22 opacity 1 at 24, 18 size 1132, 92
+  # @locked
+  picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 44, 36 size 56, 56
+  text "Patch Studio Showcase" at 120, 34 size 430, 34
+  text "A polished Project-v4 workspace for the complete Registry 0.10 Studio/Web surface." at 120, 68 size 660, 24
+  text "{status}" at 824, 42 size 300, 42
 
   imagelist as showcase_images size 20, 20:
     image mark from "patch-resource:showcase.logo"
 
-  text "Input presentations" at 24, 98 size 220, 26
-  text "Plain Input" at 24, 132 size 120, 22
+  # @locked
+  shape rounded as account_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 132 size 548, 280
+  text "Account & input" at 44, 150 size 260, 28
+  text "Plain, password, masked and multiline input stay ordinary source-backed Patch controls." at 44, 180 size 492, 38
+
+  text "Name" at 44, 226 size 120, 20
   # @taborder 0
-  input user_name at 24, 156 size 220, 36
-  text "PasswordEdit" at 262, 132 size 140, 22
+  input user_name at 44, 250 size 236, 38
+  text "Password" at 306, 226 size 120, 20
   # @input-mode password
   # @taborder 1
-  input secret at 262, 156 size 220, 36
-  text "MaskedEdit · phone" at 500, 132 size 180, 22
+  input secret at 306, 250 size 236, 38
+
+  text "Phone" at 44, 302 size 120, 20
   # @input-mask "(000) 000-0000"
   # @taborder 2
-  input phone at 500, 156 size 220, 36
-  text "Memo / TextArea" at 738, 132 size 160, 22
+  input phone at 44, 326 size 236, 38
+  text "Notes" at 306, 302 size 120, 20
   # @taborder 3
-  memo notes at 738, 156 size 332, 92
+  memo notes at 306, 326 size 236, 66
 
-  text "Choices and state" at 24, 222 size 220, 26
-  checkbox "Account active" as active at 24, 256 size 180, 36
-  radio "User", "Admin", "Guest" as access at 220, 256 size 240, 84
-  combo "Blue", "Green", "Amber", "System" as theme at 478, 256 size 190, 36
+  # @locked
+  shape rounded as preference_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 596, 132 size 560, 280
+  text "Preferences & state" at 616, 150 size 280, 28
+  text "Interactive controls emit transient values. Only explicit change blocks persist them." at 616, 180 size 504, 38
+
+  checkbox "Account active" as active at 616, 226 size 200, 34
+  radio "User", "Admin", "Guest" as access at 616, 268 size 218, 78
+
+  text "Theme" at 860, 226 size 100, 20
+  combo "Blue", "Green", "Amber", "System" as theme at 860, 250 size 260, 38
+  text "Enabled surfaces" at 860, 300 size 160, 20
   # @listbox-mode checked
-  listbox "Designer", "Web", "Native", "Offline" as features at 686, 256 size 190, 100
-  text "Level {level}" at 894, 256 size 150, 22
-  slider 0..100 as level step 10 at 894, 284 size 176, 38
-  text "Progress {completion}%" at 894, 326 size 176, 20
-  # @slider-mode progress
-  slider 0..100 as completion step 1 at 894, 348 size 176, 26
+  listbox "Designer", "Web", "Native", "Offline" as features at 860, 324 size 260, 68
 
-  text "Containers and source-backed metadata" at 24, 382 size 340, 26
-  tabs as showcase_tabs at 24, 416 size 620, 200:
+  text "Experience level {level}" at 616, 354 size 200, 20
+  slider 0..100 as level step 10 at 616, 378 size 218, 26
+  text "Demo progress {completion}%" at 860, 354 size 200, 20
+  # @slider-mode progress
+  slider 0..100 as completion step 1 at 860, 378 size 260, 26
+
+  # @locked
+  shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 436 size 732, 318
+  text "Details & semantics" at 44, 454 size 280, 28
+  text "Tabs keep secondary concepts available without crowding the primary dashboard." at 44, 484 size 660, 24
+  tabs as showcase_tabs at 44, 516 size 692, 218:
     tab "Nested controls":
       text "Tabs Stage 1 keeps supported flow controls source-backed."
       # @input-mask "AA-000"
       input nested_code
-      button "Apply" as nested_apply
+      button "Apply nested code" as nested_apply
     tab "Project v4":
       text "Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle."
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar stays source-backed."
+      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar metadata stays source-backed."
 
   # @layout anchor right bottom
-  panel as actions_panel at 674, 408 size 396, 208:
-    text "Project actions" at 16, 14 size 180, 22
-    button "Component Gallery" as open_gallery image showcase_images.mark at 16, 48 size 174, 40
-    button "Dialog Lab" as open_dialogs at 206, 48 size 158, 40
-    button "Confirm reset" as confirm_reset at 16, 100 size 174, 40
-    button "About" as about_button at 206, 100 size 158, 40
-    text "Selected path: {selected_path}" at 16, 156 size 348, 36
+  panel as actions_panel at 780, 436 size 376, 318:
+    text "Quick actions" at 20, 18 size 220, 28
+    text "Open focused Forms for components and dialogs, or exercise project-level actions." at 20, 50 size 336, 42
+    button "Component Gallery" as open_gallery image showcase_images.mark at 20, 106 size 160, 42
+    button "Dialog Lab" as open_dialogs at 196, 106 size 160, 42
+    button "Confirm reset" as confirm_reset at 20, 164 size 160, 42
+    button "About" as about_button at 196, 164 size 160, 42
+    text "Selected file" at 20, 224 size 160, 20
+    text "{selected_path}" at 20, 248 size 336, 48
 
   timer as showcase_clock interval 4000
   # @layout anchor left right bottom
-  statusbar "{status} · timer {ticks}" as showcase_status at 0, 732 size 1100, 28
+  statusbar "{status} · timer {ticks}" as showcase_status at 0, 792 size 1180, 28

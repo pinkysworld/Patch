@@ -2,69 +2,69 @@ when user_name changed:
   change user_name:
     set = value
   change status:
-    set = "Plain Input changed"
+    set = "Account name updated"
 
 when secret changed:
   change secret:
     set = value
   change status:
-    set = "PasswordEdit changed without exposing its presentation"
+    set = "PasswordEdit updated securely"
 
 when phone changed:
   change phone:
     set = value
   change status:
-    set = "MaskedEdit accepted formatted input"
+    set = "Masked phone input updated"
 
 when notes changed:
   change notes:
     set = value
   change status:
-    set = "Memo changed"
+    set = "Notes updated"
 
 when active changed:
   change active:
     set = value
   change status:
-    set = "Checkbox changed"
+    set = "Account activity changed"
 
 when access changed:
   change access:
     set = value
   change status:
-    set = "Radio group changed"
+    set = "Access role changed"
 
 when theme changed:
   change theme:
     set = value
   change status:
-    set = "ComboBox changed"
+    set = "Theme preference changed"
 
 when features changed:
   change features:
     set = value
   change status:
-    set = "ListBox selection changed"
+    set = "Enabled surfaces changed"
 
 when level changed:
   change level:
     set = value
   change status:
-    set = "Slider changed"
+    set = "Experience level changed"
 
 when nested_code changed:
   change nested_code:
     set = value
   change status:
-    set = "Nested Tabs MaskedEdit changed"
+    set = "Nested masked input updated"
 
 when nested_apply clicked:
   change status:
-    set = "Nested Tabs action executed"
+    set = "Nested code applied"
 
 when showcase_logo clicked:
   change status:
-    set = "Resource Picture clicked"
+    set = "Project resource selected"
 
 when showcase_clock ticked:
   change ticks:
@@ -79,22 +79,22 @@ when showcase_clock ticked:
 when open_gallery clicked:
   open components
   change gallery_status:
-    set = "Opened from main Form"
+    set = "Component Gallery opened from dashboard"
 
 when open_dialogs clicked:
   open dialogs
   change dialog_status:
-    set = "Dialog Lab opened"
+    set = "Dialog Lab opened from dashboard"
 
 when menu_gallery clicked:
   open components
   change gallery_status:
-    set = "Opened from menu"
+    set = "Component Gallery opened from menu"
 
 when menu_dialogs clicked:
   open dialogs
   change dialog_status:
-    set = "Opened from menu"
+    set = "Dialog Lab opened from menu"
 
 when menu_pinned clicked:
   if pinned:
@@ -104,13 +104,13 @@ when menu_pinned clicked:
     change pinned:
       set = true
   change status:
-    set = "Menu checked state changed explicitly"
+    set = "Pinned menu state changed explicitly"
 
 when menu_about clicked:
-  dialog "Patch Studio Showcase", "Project v4, Component Registry 0.10 and current Studio/Web RAD features are exercised here."
+  dialog "Patch Studio Showcase", "A polished Project-v4 workspace for Component Registry 0.10 and current Studio/Web RAD features."
 
 when about_button clicked:
-  dialog "About", "This project is maintained as the complete current Patch Studio acceptance showcase."
+  dialog "About", "Patch Studio Showcase combines a dashboard, Component Gallery and Dialog Lab while keeping persistent state changes explicit."
 
 when menu_open clicked:
   open file "Choose a Patch file" as menu_open_result
@@ -119,11 +119,11 @@ when menu_open_result chosen:
   change selected_path:
     set = value
   change status:
-    set = "Menu Open result persisted explicitly"
+    set = "Selected file persisted explicitly"
 
 when menu_open_result cancelled:
   change status:
-    set = "Menu Open cancelled"
+    set = "Open file cancelled"
 
 when menu_save clicked:
   save file "Save Patch project data" as menu_save_result
@@ -132,36 +132,40 @@ when menu_save_result chosen:
   change selected_path:
     set = value
   change status:
-    set = "Menu Save result persisted explicitly"
+    set = "Save path persisted explicitly"
 
 when menu_save_result cancelled:
   change status:
-    set = "Menu Save cancelled"
+    set = "Save file cancelled"
 
 when confirm_reset clicked:
-  confirm "Reset showcase?", "Reset the selected path and status?" as reset_confirm
+  confirm "Reset showcase?", "Restore the dashboard progress, level, selected path and status?" as reset_confirm
 
 when reset_confirm confirmed:
   change selected_path:
     set = "No file selected"
+  change level:
+    set = 60
+  change completion:
+    set = 35
   change status:
-    set = "Showcase reset confirmed"
+    set = "Showcase restored to its demo defaults"
 
 when reset_confirm cancelled:
   change status:
-    set = "Showcase reset cancelled"
+    set = "Reset cancelled"
 
 when gallery_table changed:
   change gallery_status:
-    set = "Table selection changed"
+    set = "Component contract selected"
 
 when gallery_tree changed:
   change gallery_status:
-    set = "TreeView selection changed"
+    set = "Registry tree selection changed"
 
 when gallery_picture clicked:
   change gallery_status:
-    set = "Resource Picture clicked"
+    set = "Project Picture resource selected"
 
 when gallery_resource_button clicked:
   change gallery_status:
@@ -169,32 +173,32 @@ when gallery_resource_button clicked:
 
 when gallery_update clicked:
   change gallery_status:
-    set = "Panel child action handled"
+    set = "Panel child action completed"
 
 when gallery_canvas paint:
   draw clear #f8fafc
   draw rectangle 10, 10 size 58, 30 fill #dbeafe stroke #2563eb width 2
   draw ellipse 82, 10 size 30, 30 fill #dcfce7 stroke #16a34a width 2
-  draw image "patch-resource:showcase.logo" at 126, 8 size 40, 40
-  draw line 10, 58 to 166, 58 stroke #64748b width 2
-  draw text "Patch" at 10, 70 color #111827 size 14
+  draw image "patch-resource:showcase.logo" at 102, 56 size 36, 36
+  draw line 10, 50 to 138, 50 stroke #64748b width 2
+  draw text "Patch" at 10, 76 color #111827 size 14
 
 when gallery_dialogs clicked:
   open dialogs
   change dialog_status:
-    set = "Opened from Component Gallery"
+    set = "Dialog Lab opened from Component Gallery"
 
 when close_gallery clicked:
   close components
   change status:
-    set = "Component Gallery closed"
+    set = "Returned to Showcase dashboard"
 
 when dialog_confirm clicked:
   confirm "Confirm showcase action", "Persist a confirmation status?" as dialog_confirm_result
 
 when dialog_confirm_result confirmed:
   change dialog_status:
-    set = "Confirmation accepted"
+    set = "Confirmation accepted and persisted"
 
 when dialog_confirm_result cancelled:
   change dialog_status:
@@ -207,7 +211,7 @@ when dialog_open_result chosen:
   change selected_path:
     set = value
   change dialog_status:
-    set = "Open file result persisted explicitly"
+    set = "Open-file result persisted explicitly"
 
 when dialog_open_result cancelled:
   change dialog_status:
@@ -220,7 +224,7 @@ when dialog_save_result chosen:
   change selected_path:
     set = value
   change dialog_status:
-    set = "Save file result persisted explicitly"
+    set = "Save-file result persisted explicitly"
 
 when dialog_save_result cancelled:
   change dialog_status:
@@ -237,4 +241,4 @@ when dialog_gallery clicked:
 when close_dialogs clicked:
   close dialogs
   change status:
-    set = "Dialog Lab closed"
+    set = "Returned to Showcase dashboard"
