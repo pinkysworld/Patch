@@ -1,4 +1,5 @@
 import { parse } from '../src/parser.js';
+import { readWindowListboxPresentation } from '../src/input-presentation.js';
 import {
   listDesignerControls,
   listDesignerWindows,
@@ -26,6 +27,7 @@ export function duplicateDesignerControl(source, selector, options = {}) {
     ? metadataStartBefore(lines, nextControl.line - 1)
     : blockEnd(lines, window.line - 1);
   const copied = lines.slice(start, end);
+  const checkedListboxState = checkedListboxBackingState(source, ast, control);
   // One effective UI/event namespace is shared by Controls, nested controls,
   // MenuItems and result-dialog targets. Duplication must reserve all of it,
   // not just ids returned by the flat Designer control list.
@@ -44,6 +46,11 @@ export function duplicateDesignerControl(source, selector, options = {}) {
   }
 
   lines.splice(end, 0, ...copied);
+  if (checkedListboxState) {
+    const nextId = idMap.get(control.id);
+    if (!nextId) throw new Error('CheckedListBox duplicate could not allocate a new control/state id.');
+    insertDuplicatedListState(lines, checkedListboxState, control.id, nextId);
+  }
   if (duplicatedHandlers.length) appendEventBlocks(lines, duplicatedHandlers);
   let next = validateAndPreserve(source, lines);
   let duplicate = listDesignerControls(next).find(item =>
@@ -115,6 +122,27 @@ function collectControlIdRecords(node, out = []) {
     for (const child of node.body ?? []) collectControlIdRecords(child, out);
   }
   return out;
+}
+
+function checkedListboxBackingState(source, ast, control) {
+  if (control.type !== 'listbox' || !control.id) return null;
+  if (readWindowListboxPresentation(source, control.line) !== 'checked') return null;
+  const state = (ast ?? []).find(node =>
+    node.kind === 'create' && node.valueType === 'list' && node.name === control.id
+  );
+  if (!state || !Number.isInteger(state.line)) {
+    throw new Error(`CheckedListBox '${control.id}' cannot be duplicated without its source-backed create list state.`);
+  }
+  return state;
+}
+
+function insertDuplicatedListState(lines, state, oldId, newId) {
+  const lineIndex = state.line - 1;
+  const line = lines[lineIndex];
+  if (typeof line !== 'string') throw new Error('CheckedListBox backing list state line could not be located safely.');
+  const pattern = new RegExp(`^(\\s*create\\s+list\\s+)${escapeRegExp(oldId)}(\\s*=.*)$`, 'i');
+  if (!pattern.test(line)) throw new Error(`CheckedListBox backing list state '${oldId}' could not be duplicated safely.`);
+  lines.splice(lineIndex + 1, 0, line.replace(pattern, `$1${newId}$2`));
 }
 
 function metadataStartBefore(lines, declarationIndex) {
