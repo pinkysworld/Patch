@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
+import { PatchInterpreter } from '../src/interpreter.js';
 import { removeDesignerControl } from '../src/designer.js';
 import { PATCH_COMPONENT_REGISTRY_VERSION } from '../src/component-registry.js';
 import {
@@ -39,6 +40,8 @@ test('ScrollBox Stage 1 is a versioned Panel behavior without an IR or Registry 
   const panel = compiled.ast[0].body.find(node => node.kind === 'uiControl' && node.control === 'panel');
   assert.equal(panel.panelPresentation, 'group');
   assert.equal(panel.panelScroll, 'auto');
+  const runtimePanel = new PatchInterpreter().runAst(compiled.ast).ui[0].controls.find(control => control.type === 'panel');
+  assert.equal(runtimePanel.panelScroll, 'auto');
   const lowered = compiled.ir.instructions[0].body.find(node => node.code === 'UI_CONTROL' && node.control === 'panel');
   assert.equal(lowered.panelScroll, undefined);
 });
@@ -65,7 +68,7 @@ test('ScrollBox target support is Studio/Web only and Current Ready native fails
   assert.doesNotThrow(() => assertPatchPanelScrollTarget('auto', 'studio'));
   assert.doesNotThrow(() => assertPatchPanelScrollTarget('auto', 'web'));
   assert.throws(() => assertPatchPanelScrollTarget('auto', 'windows'), /ScrollBox Stage 1 is Studio\/Web only/i);
-  const compiled = compile(SOURCE, { name: 'ScrollBoxStage1', kind: 'window', entry: 'main.patch' });
+  const compiled = compile(SOURCE.replace('  # @panel-mode group\n', ''), { name: 'ScrollBoxStage1', kind: 'window', entry: 'main.patch' });
   assert.throws(
     () => buildCurrentNativeGuiIR(compiled),
     /ScrollBox Stage 1.*Studio\/Web only.*Current Ready native 1\.10/i
