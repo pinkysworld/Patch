@@ -39,7 +39,7 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Studio project/resource bundle **v4**;
 - Component Registry **0.10**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
-- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit and CheckedListBox presentation contracts;
+- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar presentation contracts;
 - source-backed Anchors/Dock, independent TabOrder, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Layers/Object Tree, Lock Controls and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
@@ -318,7 +318,9 @@ Complete:
 - [x] paste into another Form/project;
 - [x] duplicate with offset;
 - [x] source-backed presentation metadata follows delete/copy/cut/paste/duplicate as one control unit;
-- [x] CheckedListBox duplication creates an explicit fresh backing `create list` state and collision-free TabOrder.
+- [x] clipboard v2 carries explicit backing-state records while remaining backward-readable for v1 payloads;
+- [x] CheckedListBox duplication creates an explicit fresh backing `create list` state and collision-free TabOrder;
+- [x] ProgressBar duplication creates an explicit fresh backing `create number` state and collision-free TabOrder.
 
 ## P1.11 Lock Controls
 
@@ -388,7 +390,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] MaskedEdit Stage 1: ordinary Input plus `# @input-mask`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] PasswordEdit Stage 1: ordinary Input plus `# @input-mode password`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] CheckedListBox Stage 1: list-backed ListBox plus `# @listbox-mode checked`, Studio/Web supported, Current Ready native unsupported/fail-closed;
-- [ ] ProgressBar;
+- [x] ProgressBar Stage 1: number-backed Slider plus `# @slider-mode progress`, passive Studio/Web presentation with no control event, Current Ready native unsupported/fail-closed;
 - [ ] SpinEdit/NumberEdit;
 - [ ] DatePicker;
 - [ ] TimePicker;
@@ -626,7 +628,7 @@ Still open:
 1. Finish the remaining R0.1 Worker/adapter-specific maintainability follow-ups without reopening R0.
 2. Finish the user-facing Offline Studio Stage 2 artifact/build-selection workflow on top of the implemented narrow host-build bridge.
 3. Close the remaining R2/R3 gaps: explicit cross-target TabOrder parity, Panel child Anchors/Dock, reparenting and later native containment.
-4. Continue R4 standard controls from the implemented Memo/PasswordEdit/MaskedEdit/CheckedListBox Stage-1 baseline, updating the canonical Showcase with each addition.
+4. Continue R4 standard controls from the implemented Memo/PasswordEdit/MaskedEdit/CheckedListBox/ProgressBar Stage-1 baseline, updating the canonical Showcase with each addition.
 5. Add ActionList/dialog/project-setting infrastructure and application branding.
 6. Build professional editor/debugger/refactoring features only on top of the stable source-backed model.
 7. Add packages, localization, accessibility inspection and installed-workspace maturity after core contracts are versioned.
