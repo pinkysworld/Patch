@@ -67,6 +67,7 @@ export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeListboxPresentation(compiled?.ast);
   assertCurrentNativeSliderPresentation(compiled?.ast);
   assertCurrentNativePanelPresentation(compiled?.ast);
+  assertCurrentNativePanelScroll(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -185,6 +186,21 @@ function assertCurrentNativePanelPresentation(nodes) {
     }
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativePanelPresentation(page.body);
+    }
+  }
+}
+
+function assertCurrentNativePanelScroll(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel' && node.panelScroll === 'auto') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`ScrollBox Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no Panel scrolling contract; validation fails closed rather than clipping or lowering it as a plain Panel.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativePanelScroll(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativePanelScroll(page.body);
     }
   }
 }
