@@ -1,6 +1,6 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-09-05**
+Status synchronized: **2026-09-06**
 
 This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the now-completed native Window-icon implementation/promotion sequence and can close with the Current Ready v1.10 promotion. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
@@ -37,18 +37,19 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Change IR **0.10**;
 - Current Ready Native GUI IR **1.9**, payload **v19**, runtime **v1.10**;
 - Studio project/resource bundle **v4**;
-- Component Registry **0.9**;
+- Component Registry **0.10**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
-- Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel Stage 1 authoring;
-- source-backed Anchors/Dock, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
+- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit and CheckedListBox presentation contracts;
+- source-backed Anchors/Dock, independent TabOrder, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Layers/Object Tree, Lock Controls and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
 - project Resource Manager with deterministic resource metadata and recovery/export/import;
+- canonical multi-file Project-v4 Patch Studio Showcase, explicitly loadable in hosted and Offline Studio;
 - Standalone Web and Current Ready native Windows/macOS/Linux paths;
 - token-free Offline Compiler/linker with Current Ready v1.10 plus explicit v17/runtime-v1.8 compatibility;
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
-- six-Form Workshop Desk acceptance/stress application;
-- Offline Studio rolling Stage 1 release channel **`offline-studio-v0.2`**;
+- seven-Form Workshop Desk acceptance/stress application;
+- Offline Studio rolling channel **`offline-studio-v0.2`** with authenticated Stage 2 localhost host-build foundation;
 - Offline Compiler rolling release channel **`offline-compiler-v0.2`**.
 
 ### Promoted native resource line
@@ -88,8 +89,8 @@ Status: **substantially implemented**.
 
 - [x] shared namespace enumeration across core controls, nested Panel/Tabs controls, MenuItems and result-dialog targets;
 - [x] Object Inspector collision guard;
-- [ ] use the same namespace guard for every duplicate/paste/structural-editor path;
-- [ ] explicit regression coverage for every nested/new component family.
+- [x] shared namespace guard on the generic duplicate/copy/paste and Form-duplicate paths;
+- [ ] explicit regression coverage for every future nested/new component family.
 
 ## P0.2 Undo/Redo transaction model
 
@@ -113,7 +114,7 @@ Completed:
 - [x] `studio-design-model/0.1` declaration-only initial design model;
 - [x] bounded top-level design-model budget;
 - [x] `studio-design-cache/0.1` bounded LRU source-revision cache;
-- [x] six-Form Workshop Desk preserved by the declaration-only model;
+- [x] seven-Form Workshop Desk preserved by the declaration-only model;
 - [x] 10-Form / 200-control acceptance fixture;
 - [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache;
 - [x] hosted and Offline Studio package the same design-model/cache modules;
@@ -150,30 +151,30 @@ Remaining:
 
 ## P0.6 Consistent selection and property ownership
 
-- [ ] one selection contract for core controls and specialized adapters;
-- [ ] one dirty/apply/error contract for Object Inspector adapters;
-- [ ] one delete/duplicate/reveal-source command path;
-- [ ] remove adapter-specific behavior that can diverge.
+- [x] shared primary selection contract for core controls and specialized adapters;
+- [x] shared dirty/apply/error contract for Object Inspector adapters adopted by the converged specialized inspectors;
+- [x] shared delete/duplicate/reveal-source command IDs and dispatch path;
+- [ ] finish removing any remaining adapter-specific behavior that can diverge.
 
 ## P0.7 Studio module boundaries
 
-`web/playground.js` still owns too much orchestration and runtime behavior.
+`web/playground.js` is now substantially reduced to orchestration, while bounded modules own the major runtime/build surfaces.
 
-- [ ] extract Studio Run/runtime lifecycle;
-- [ ] extract Window/control DOM renderer;
-- [ ] extract transient runtime selection/state;
-- [ ] extract Build controller;
-- [ ] keep `playground.js` as orchestration rather than a second framework;
+- [x] extract Studio Run/runtime lifecycle;
+- [x] extract Window/control DOM renderer;
+- [x] extract bounded transient runtime selection/state helpers;
+- [x] extract Build controller;
+- [x] keep `playground.js` as orchestration rather than a second framework for the extracted paths;
 - [ ] remove obsolete duplicate Workshop/Harbor compatibility source once migration coverage no longer needs it.
 
 ## P0.8 CI/deployment reliability
 
-- [ ] make Pages deployment release-aware so just-publishing runtime assets do not create expected red workflows;
+- [x] make Pages deployment release-aware so just-publishing runtime assets do not create expected red workflows;
 - [x] retain fail-closed runtime/digest verification;
 - [x] live HTTP/Chrome verification after deploy;
 - [x] deployed Tutorials/Examples handbook surfaces live-smoked after Pages deployment;
-- [ ] reduce notification noise without weakening gates;
-- [ ] shrink Offline Compiler triggers/package closure so unrelated source changes do not rebuild every platform.
+- [x] reduce PR notification noise with draft suppression and one canonical ready-PR Patch CI matrix;
+- [x] shrink Offline Compiler triggers/package closure to the real compiler dependency graph.
 
 **R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI. The milestone itself is complete; unchecked entries above are post-R0 follow-ups tracked by #308 unless another owner is named.
 
@@ -286,19 +287,19 @@ Complete:
 
 ## P1.7 Independent TabOrder
 
-- [ ] explicit source-backed `TabOrder` independent from source/z-order;
-- [ ] Object Inspector property;
-- [ ] visual Tab Order overlay/mode;
-- [ ] keyboard reorder;
-- [ ] Web/Win32/AppKit/GTK honor one order.
+- [x] explicit source-backed `TabOrder` independent from source/z-order;
+- [x] Object Inspector property;
+- [x] visual Tab Order overlay/mode;
+- [x] keyboard reorder and reset-to-source-order;
+- [ ] verify one explicit focus-order transport contract across Web/Win32/AppKit/GTK before calling target parity complete.
 
 ## P1.8 Layers and z-order
 
 - [x] front/back/forward/backward source-backed actions;
-- [ ] Layers/Object Tree view;
-- [ ] explicit containment visualization;
+- [x] Layers/Object Tree view;
+- [x] explicit Panel/Tabs containment visualization;
 - [ ] source-backed z-order metadata only where source order is insufficient;
-- [ ] keyboard layer operations.
+- [x] keyboard-accessible Layers navigation and existing source-backed z-order commands.
 
 ## P1.9 Grid and smart guides
 
@@ -310,18 +311,20 @@ Complete:
 
 ## P1.10 Clipboard and cross-Form operations
 
-- [ ] versioned clipboard schema;
-- [ ] copy/cut/paste controls and nested content;
-- [ ] collision-safe ID rewriting;
-- [ ] optional event-handler copy;
-- [ ] paste into another Form/project;
-- [ ] duplicate with offset.
+- [x] versioned clipboard schema;
+- [x] copy/cut/paste controls and nested content;
+- [x] collision-safe ID rewriting;
+- [x] optional event-handler copy;
+- [x] paste into another Form/project;
+- [x] duplicate with offset;
+- [x] source-backed presentation metadata follows delete/copy/cut/paste/duplicate as one control unit;
+- [x] CheckedListBox duplication creates an explicit fresh backing `create list` state and collision-free TabOrder.
 
 ## P1.11 Lock Controls
 
-- [ ] lock drag/resize without preventing selection/inspection;
-- [ ] per-control/Form lock state as design-only IDE metadata;
-- [ ] keyboard command and visual indication.
+- [x] lock drag/resize without preventing selection/inspection;
+- [x] per-control source-backed design metadata via `# @locked`;
+- [x] command/visual indication through the Designer surface.
 
 ---
 
@@ -329,13 +332,20 @@ Complete:
 
 ## P1.12 Panel Stage 2 native containment
 
-- [ ] child coordinates relative to Panel;
+Implemented source/Web foundation:
+
+- [x] child coordinates relative to Panel;
+- [x] Web DOM nesting parity for positioned children;
+- [x] mixed legacy-flow and positioned Panel children remain source-backed;
+- [x] Current Ready native fails closed for Panel Stage 2 relative child layout instead of flattening it.
+
+Still open:
+
 - [ ] child Anchors/Dock relative to container;
-- [ ] clipping;
+- [ ] clipping parity contract;
 - [ ] nested Panels;
 - [ ] visual move into/out of Panel with drop highlighting;
-- [ ] true Win32/AppKit/GTK parent-child containment;
-- [ ] Web DOM nesting parity.
+- [ ] true Win32/AppKit/GTK parent-child containment through a new explicit native contract.
 
 ## P1.13 GroupBox
 
@@ -370,12 +380,14 @@ Complete:
 
 # Milestone R4 - Standard component library
 
+Stage-1 controls may be checked here while still having an explicit native fail-closed boundary. “Ready” remains governed by the cross-target matrix below.
+
 ## P1 controls
 
-- [ ] Memo/TextArea;
-- [ ] MaskedEdit;
-- [ ] PasswordEdit;
-- [ ] CheckedListBox;
+- [x] Memo/TextArea Stage 1: source-backed Studio/Web `changed(value)` control, Current Ready native unsupported/fail-closed;
+- [x] MaskedEdit Stage 1: ordinary Input plus `# @input-mask`, Studio/Web supported, Current Ready native unsupported/fail-closed;
+- [x] PasswordEdit Stage 1: ordinary Input plus `# @input-mode password`, Studio/Web supported, Current Ready native unsupported/fail-closed;
+- [x] CheckedListBox Stage 1: list-backed ListBox plus `# @listbox-mode checked`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [ ] ProgressBar;
 - [ ] SpinEdit/NumberEdit;
 - [ ] DatePicker;
@@ -406,6 +418,8 @@ Every component must report:
 `Syntax | Designer | Object Inspector | Events | Web | Win32 | AppKit | GTK | Offline build | Accessibility | Tests`
 
 A component is Ready only when the required columns are green.
+
+The canonical multi-file Project-v4 **Patch Studio Showcase** is the current Studio/Web acceptance project and is explicitly selectable in hosted and Offline Studio. New standard controls should extend that fixture as part of their Stage-1 acceptance work.
 
 ---
 
@@ -460,7 +474,7 @@ A component is Ready only when the required columns are green.
 - [ ] CRUD-style app;
 - [ ] Tool/utility app;
 - [ ] Graphics/PaintBox demo;
-- [ ] Workshop Desk Showcase;
+- [x] maintained Project-v4 Patch Studio Showcase acceptance project;
 - [ ] reusable Form/component templates.
 
 ---
@@ -483,11 +497,11 @@ A component is Ready only when the required columns are green.
 
 ## P1.23 Designer-Code navigation
 
-- [ ] F12/View Source and View Form;
+- [x] F12/View Source and Designer return path;
 - [ ] double-click control opens default event;
-- [ ] Object Inspector event double-click;
-- [ ] Form > Control > Event breadcrumb;
-- [ ] synchronize selected control/source symbol.
+- [x] Object Inspector event double-click creates/opens the source-visible handler;
+- [x] Form > Control > Event breadcrumb;
+- [x] synchronize selected control/source symbol where the target is unambiguous.
 
 ## P2.24 Refactoring
 
@@ -581,11 +595,20 @@ A component is Ready only when the required columns are green.
 
 ## Offline Studio Stage 2
 
-- [ ] embed/install the offline compiler and host-native runtimes beside Offline Studio;
-- [ ] authenticated narrow localhost build bridge rather than a general shell API;
-- [ ] host-native Windows/macOS/Linux Build without GitHub or network access;
-- [ ] artifact pane with diagnostics/checksums;
-- [ ] local-vs-remote build selector with local as the offline path.
+Implemented foundation:
+
+- [x] authenticated narrow localhost build bridge rather than a general shell API;
+- [x] project-v4 workspace snapshots with resource-integrity validation;
+- [x] embedded/matching offline compiler path on supported installed hosts;
+- [x] host-native installed Build path for Windows x64, Linux x64 and macOS Apple Silicon;
+- [x] structured compiler diagnostics returned through the narrow bridge;
+- [x] deterministic Offline Studio release-bundle verification across Windows x64/ARM64, Linux x64/ARM64, macOS Apple Silicon/Intel, portable Unix and FreeBSD compatibility evidence.
+
+Still open:
+
+- [ ] artifact pane with user-facing output/diagnostic/checksum workflow;
+- [ ] explicit local-vs-remote build selector with local as the offline path;
+- [ ] broaden host-native local Build only where a real supported host compiler/runtime exists.
 
 ## Distribution maturity
 
@@ -600,10 +623,10 @@ A component is Ready only when the required columns are green.
 
 # Execution order from the current baseline
 
-1. Finish R0.1 selection/property/module-boundary and Worker follow-ups without reopening R0.
-2. Start Offline Studio Stage 2 so installed Studio can invoke the already-promoted local compiler/runtime path safely.
-3. Build R2 Form Designer parity: independent TabOrder, clipboard/cross-Form operations, layers and locking.
-4. Expand R3 container semantics and R4 standard controls.
+1. Finish the remaining R0.1 Worker/adapter-specific maintainability follow-ups without reopening R0.
+2. Finish the user-facing Offline Studio Stage 2 artifact/build-selection workflow on top of the implemented narrow host-build bridge.
+3. Close the remaining R2/R3 gaps: explicit cross-target TabOrder parity, Panel child Anchors/Dock, reparenting and later native containment.
+4. Continue R4 standard controls from the implemented Memo/PasswordEdit/MaskedEdit/CheckedListBox Stage-1 baseline, updating the canonical Showcase with each addition.
 5. Add ActionList/dialog/project-setting infrastructure and application branding.
 6. Build professional editor/debugger/refactoring features only on top of the stable source-backed model.
 7. Add packages, localization, accessibility inspection and installed-workspace maturity after core contracts are versioned.

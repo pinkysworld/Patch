@@ -13,7 +13,7 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 - current sealed native GUI payload: **v19**
 - current token-free Ready/offline runtime: **v1.10** on Windows, macOS and Linux
 - Studio project format: **multi-file/resource bundle v4**
-- Component Registry: **0.9**
+- Component Registry: **0.10**
 - Offline Studio manifest: **v1**, rolling channel **`offline-studio-v0.2`**
 - Offline Compiler rolling channel: **`offline-compiler-v0.2`**
 - formal runtime-correspondence milestone: **beta.32**
@@ -44,14 +44,14 @@ The Current Ready Window-icon line includes platform packaging evidence:
 - the normal Offline Compiler carries Current Ready v1.10 plus a separate v1.8 compatibility underlay;
 - Windows, Linux, macOS Apple Silicon and macOS Intel promotion smokes are green.
 
-## Current product milestone: RAD R0 hardening + R2/R3 follow-through
+## Current product milestone: RAD R0 hardening + R2/R4 follow-through
 
 The native R1 promotion gate is complete. Near-term work is now split between:
 
 1. completing the remaining R0 Studio architecture/reliability work;
 2. extending the now-shipped R2 Designer workflow contracts and Panel Stage 2 foundation without weakening the promoted native boundary;
-3. starting Offline Studio Stage 2 local-native-build integration;
-4. moving into broader R3+ component parity through explicit, testable contracts.
+3. extending Offline Studio Stage 2 local-native-build integration;
+4. moving through R4 component parity with explicit Studio/Web contracts and fail-closed native boundaries until a later native contract is promoted.
 
 ### RAD R0 architecture hardening (#282)
 
@@ -144,6 +144,7 @@ Implemented:
 - [x] Panel Stage 2 source-backed child coordinates relative to the Panel content area
 - [x] mixed legacy-flow and positioned Panel children in Studio and Standalone Web DOM rendering
 - [x] Current Ready native fails closed for positioned Panel children instead of flattening them silently
+- [x] presentation metadata participates in the same source-backed lifecycle for Layout, TabOrder, Locked, delete, clipboard and duplicate
 
 Still open:
 
@@ -153,12 +154,20 @@ Still open:
 - [ ] visual move/reparent into and out of Panels
 - [ ] true native Panel parent-child containment and clipping parity through a new explicit native contract
 
-## RAD R3-R6: component and project expansion
+## RAD R4-R6: component and project expansion
 
-Near-term component/project priorities after R2:
+Implemented R4 Stage 1 surfaces:
+
+- [x] Memo/TextArea source-backed Studio/Web control with `changed(value)` and explicit native fail-closed boundary
+- [x] PasswordEdit as `# @input-mode password` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
+- [x] MaskedEdit as `# @input-mask "..."` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
+- [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
+- [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.10 Studio/Web surface and is explicitly loadable in hosted and Offline Studio
+
+Next component/project priorities:
 
 - [ ] GroupBox, ScrollBox and SplitContainer
-- [ ] Memo/TextArea, PasswordEdit, ProgressBar, SpinEdit/NumberEdit, Date/Time controls
+- [ ] ProgressBar, SpinEdit/NumberEdit, Date/Time controls
 - [ ] richer TreeView/ListView/Table metadata and image bindings
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands
@@ -197,13 +206,23 @@ Longer-term work includes:
 
 Production Authenticode / Developer ID signing and macOS notarization remain external credential gates.
 
-### Stage 2: fully local native IDE
+### Stage 2: local native-build integration
 
-- [ ] embed/install the offline compiler and host-native sealed runtimes beside Offline Studio
-- [ ] authenticated narrow localhost build bridge rather than a general shell API
-- [ ] host-native local Windows/macOS/Linux builds without GitHub or network access
-- [ ] artifact pane integration for outputs, diagnostics and checksums
+Implemented repository-controlled Stage 2 foundation:
+
+- [x] authenticated narrow localhost build bridge rather than a general shell API
+- [x] project-v4 workspace snapshots with resource integrity validation
+- [x] installed host build path for supported desktop hosts
+- [x] structured compiler diagnostics returned to the browser client
+- [x] Windows x64, Linux x64 and macOS Apple Silicon self-smoke installed-build paths
+- [x] Intel macOS runtime kit, Windows ARM64/Linux ARM64 bounded fallbacks and FreeBSD portable compatibility evidence
+- [x] deterministic cross-platform Offline Studio release-bundle verification
+
+Still open:
+
+- [ ] complete user-facing artifact-pane integration for outputs, diagnostics and checksums
 - [ ] explicit local-vs-remote build selector, with local as the offline path
+- [ ] broaden host-native local build coverage only where a real supported host compiler/runtime exists
 
 ### Stage 3: installed-IDE integration
 
@@ -233,7 +252,7 @@ External or future distribution work:
 - [ ] installer/package formats with explicit uninstall path
 - [ ] release-integrity verification across future installer/update channels
 - [ ] fresh remote native build service without a user-supplied GitHub token
-- [ ] fully local Offline Studio native build bridge
+- [ ] broader fully local Offline Studio host-native build coverage
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where deployment evidence justifies them
 - [ ] manual assistive-technology validation before any accessibility-conformance claim
@@ -269,4 +288,4 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
 - **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
-- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, circular Studio/PWA brand hardening, Offline Studio Stage 2, broader R2/R3 Designer/component expansion, and future native work only through new explicit contracts
+- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, Offline Studio Stage 2 host-build integration, Registry 0.10, hosted/offline Project-v4 Showcase loading, and R4 Memo/PasswordEdit/MaskedEdit/CheckedListBox Stage 1 with explicit native fail-closed boundaries
