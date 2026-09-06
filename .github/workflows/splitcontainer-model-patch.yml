@@ -26,23 +26,15 @@ jobs:
           p = Path('src/panel-split.js')
           s = p.read_text()
           anchor = "const COMMENT_RE = /^\\s*#/;"
-          replacement = anchor + nl + "const PANEL_SCROLL_PREFIX_RE = /^\\s*#\\s*@panel-scroll\\b/i;"
           if s.count(anchor) != 1 or 'PANEL_SCROLL_PREFIX_RE' in s:
               raise SystemExit('panel split scroll anchor invalid')
-          s = s.replace(anchor, replacement, 1)
+          s = s.replace(anchor, anchor + nl + "const PANEL_SCROLL_PREFIX_RE = /^\\s*#\\s*@panel-scroll\\b/i;", 1)
+          if not s.startswith("import { parse } from './parser.js';"):
+              s = "import { parse } from './parser.js';" + nl + s
 
           marker = "export function setWindowPanelSplit(source, sourceLine, value) {"
           if s.count(marker) != 1 or 'export function convertWindowPanelToSplit' in s:
               raise SystemExit('split converter insertion marker invalid')
-          converter = nl.join([
-              "export function convertWindowPanelToSplit(source, sourceLine, options = {}) {",
-              "  const original = String(source ?? '').replace(/\\r\\n/g, '\\n');",
-              "  const ast = (awaitlessParse => awaitlessParse)(null);",
-              "}",
-              ""
-          ])
-          # Build converter without introducing async/import tricks: add parser import first.
-          s = "import { parse } from './parser.js';" + nl + s
           converter = nl.join([
               "export function convertWindowPanelToSplit(source, sourceLine, options = {}) {",
               "  const original = String(source ?? '').replace(/\\r\\n/g, '\\n');",
@@ -54,7 +46,7 @@ jobs:
               "  if (!panel) throw new Error('Selected Panel no longer matches Patch source.');",
               "  if ((panel.body ?? []).length < 2) throw new Error('SplitContainer conversion needs at least two Panel children so both panes stay explicit.');",
               "  if ((panel.body ?? []).some(child => child?.layout)) throw new Error('SplitContainer Stage 1 supports flow-layout children only. Remove positioned Panel child layout before conversion.');",
-              "  if (panelHeaderHasScroll(rows, lineIndex)) throw new Error('SplitContainer Stage 1 cannot also use # @panel-scroll auto on the same Panel. Use scrolling inside pane content in a later nested-container stage.');",
+              "  if (panelHeaderHasScroll(rows, lineIndex)) throw new Error('SplitContainer Stage 1 cannot also use # @panel-scroll auto on the same Panel.');",
               "  const split = normalizePatchPanelSplit({ orientation: options.orientation ?? 'vertical', ratio: options.ratio ?? 50 });",
               "  const secondChild = panel.body[1];",
               "  if (!Number.isInteger(secondChild?.line)) throw new Error('SplitContainer conversion cannot locate the second Panel child safely.');",
@@ -70,25 +62,32 @@ jobs:
           s = s.replace(marker, converter + marker, 1)
 
           anchor = "  if (!header.split && breakLine !== null) throw new Error(`# @panel-split-break requires # @panel-split in the same Panel header (source line ${breakLine}).`);"
-          replacement = "  if (header.split && panelHeaderHasScroll(rows, (node.line ?? 1) - 1)) throw new Error(`SplitContainer Stage 1 Panel '${node.id ?? '?'}' cannot also use # @panel-scroll auto on the same Panel.`);" + nl + anchor
           if s.count(anchor) != 1:
-              raise SystemExit('split/scroll validation anchor invalid')
-          s = s.replace(anchor, replacement, 1)
+              raise SystemExit('split scroll validation anchor invalid')
+          guard = "  if (header.split && panelHeaderHasScroll(rows, (node.line ?? 1) - 1)) throw new Error(`SplitContainer Stage 1 Panel '${node.id ?? '?'}' cannot also use # @panel-scroll auto on the same Panel.`);"
+          s = s.replace(anchor, guard + nl + anchor, 1)
 
-          old = """    if (current.directiveLine !== null) rows.splice(current.directiveLine - 1, 1);
-    const baseIndent = indentOf(rows[lineIndex]).length;
-    const breakIndex = rows.findIndex((line, index) => index > lineIndex && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));
-    if (breakIndex >= 0) rows.splice(breakIndex, 1);"""
-          new = """    if (current.directiveLine !== null) rows.splice(current.directiveLine - 1, 1);
-    const baseIndent = indentOf(rows[lineIndex]).length;
-    const end = panelBlockEnd(rows, lineIndex, baseIndent);
-    const breakIndex = rows.findIndex((line, index) => index > lineIndex && index < end && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));
-    if (breakIndex >= 0) rows.splice(breakIndex, 1);"""
+          old_lines = [
+              "    if (current.directiveLine !== null) rows.splice(current.directiveLine - 1, 1);",
+              "    const baseIndent = indentOf(rows[lineIndex]).length;",
+              "    const breakIndex = rows.findIndex((line, index) => index > lineIndex && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));",
+              "    if (breakIndex >= 0) rows.splice(breakIndex, 1);"
+          ]
+          new_lines = [
+              "    if (current.directiveLine !== null) rows.splice(current.directiveLine - 1, 1);",
+              "    const baseIndent = indentOf(rows[lineIndex]).length;",
+              "    const end = panelBlockEnd(rows, lineIndex, baseIndent);",
+              "    const breakIndex = rows.findIndex((line, index) => index > lineIndex && index < end && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));",
+              "    if (breakIndex >= 0) rows.splice(breakIndex, 1);"
+          ]
+          old = nl.join(old_lines)
           if s.count(old) != 1:
               raise SystemExit('split removal scope anchor invalid')
-          s = s.replace(old, new, 1)
+          s = s.replace(old, nl.join(new_lines), 1)
 
           marker = "function panelBlockEnd(rows, lineIndex, baseIndent) {"
+          if s.count(marker) != 1:
+              raise SystemExit('split helper marker invalid')
           helpers = nl.join([
               "function panelHeaderHasScroll(rows, lineIndex) {",
               "  const baseIndent = indentOf(rows[lineIndex]).length;",
@@ -112,58 +111,46 @@ jobs:
               "}",
               ""
           ])
-          if s.count(marker) != 1:
-              raise SystemExit('split helper insertion marker invalid')
           p.write_text(s.replace(marker, helpers + marker, 1))
 
           p = Path('src/designer-panel.js')
           s = p.read_text()
           import_anchor = "import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';"
-          replacement = import_anchor + nl + "import { buildWindowPanelSplitManifest } from './panel-split.js';"
           if s.count(import_anchor) != 1 or 'buildWindowPanelSplitManifest' in s:
               raise SystemExit('designer panel split import invalid')
-          s = s.replace(import_anchor, replacement, 1)
+          s = s.replace(import_anchor, import_anchor + nl + "import { buildWindowPanelSplitManifest } from './panel-split.js';", 1)
           anchor = "  const ast = parse(source);" + nl + "  const panels = [];"
           replacement = "  const ast = parse(source);" + nl + "  const splitManifest = buildWindowPanelSplitManifest(source, ast);" + nl + "  const splitByLine = new Map(splitManifest.controls.map(control => [control.line, control]));" + nl + "  const panels = [];"
           if s.count(anchor) != 1:
               raise SystemExit('designer panel manifest anchor invalid')
           s = s.replace(anchor, replacement, 1)
-          old = """      panels.push({
-        windowIndex: formIndex,
-        panelIndex,
-        line: child.line,
-        id: child.id,"""
-          new = """      const splitRecord = splitByLine.get(child.line) ?? null;
-      const paneByLine = new Map((splitRecord?.children ?? []).map(item => [item.line, item.pane]));
-      panels.push({
-        windowIndex: formIndex,
-        panelIndex,
-        line: child.line,
-        id: child.id,
-        panelSplit: splitRecord?.split ?? null,"""
-          if s.count(old) != 1:
+          anchor = "      panels.push({"
+          if s.count(anchor) != 1:
               raise SystemExit('designer panel record anchor invalid')
-          s = s.replace(old, new, 1)
+          pre = "      const splitRecord = splitByLine.get(child.line) ?? null;" + nl + "      const paneByLine = new Map((splitRecord?.children ?? []).map(item => [item.line, item.pane]));" + nl
+          s = s.replace(anchor, pre + anchor, 1)
+          anchor = "        id: child.id,"
+          if s.count(anchor) != 1:
+              raise SystemExit('designer panel id anchor invalid')
+          s = s.replace(anchor, anchor + nl + "        panelSplit: splitRecord?.split ?? null,", 1)
           anchor = "children: (child.body ?? []).map((nested, childIndex) => panelChild(nested, formIndex, panelIndex, childIndex))"
           replacement = "children: (child.body ?? []).map((nested, childIndex) => panelChild(nested, formIndex, panelIndex, childIndex, paneByLine.get(nested.line) ?? null))"
           if s.count(anchor) != 1:
-              raise SystemExit('designer panel child map anchor invalid')
+              raise SystemExit('designer panel child map invalid')
           s = s.replace(anchor, replacement, 1)
           anchor = "function panelChild(node, windowIndex, panelIndex, childIndex) {"
-          replacement = "function panelChild(node, windowIndex, panelIndex, childIndex, splitPane = null) {"
           if s.count(anchor) != 1:
-              raise SystemExit('panelChild signature anchor invalid')
-          s = s.replace(anchor, replacement, 1)
+              raise SystemExit('panel child signature invalid')
+          s = s.replace(anchor, "function panelChild(node, windowIndex, panelIndex, childIndex, splitPane = null) {", 1)
           anchor = "    positioned: Boolean(node.layout)"
-          replacement = anchor + "," + nl + "    splitPane"
           if s.count(anchor) != 1:
-              raise SystemExit('panelChild splitPane anchor invalid')
-          s = s.replace(anchor, replacement, 1)
+              raise SystemExit('panel child pane field invalid')
+          s = s.replace(anchor, anchor + "," + nl + "    splitPane", 1)
           anchor = "  parse(next);" + nl + "  return next;" + nl + "}" + nl + nl + "export function duplicateDesignerPanelChild"
-          replacement = "  parse(next);" + nl + "  listDesignerPanels(next);" + nl + "  return next;" + nl + "}" + nl + nl + "export function duplicateDesignerPanelChild"
           if s.count(anchor) != 1:
-              raise SystemExit('remove child validation anchor invalid')
-          p.write_text(s.replace(anchor, replacement, 1))
+              raise SystemExit('remove validation anchor invalid')
+          s = s.replace(anchor, "  parse(next);" + nl + "  listDesignerPanels(next);" + nl + "  return next;" + nl + "}" + nl + nl + "export function duplicateDesignerPanelChild", 1)
+          p.write_text(s)
           PY
           rm .github/workflows/splitcontainer-model-patch.yml
           git config user.name github-actions[bot]
