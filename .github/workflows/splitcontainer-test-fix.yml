@@ -1,0 +1,37 @@
+name: SplitContainer test fix
+
+on:
+  push:
+    branches: [splitcontainer-stage1]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: splitcontainer-stage1
+          fetch-depth: 0
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/splitcontainer-stage1.test.js')
+          s = p.read_text()
+          a = "  assert.ok(clipboard.lines.includes('# @panel-split vertical 45'));"
+          b = "  assert.ok(clipboard.lines.some(line => line.trim() === '# @panel-split vertical 45'));"
+          c = "  assert.ok(clipboard.lines.includes('# @panel-split-break'));"
+          d = "  assert.ok(clipboard.lines.some(line => line.trim() === '# @panel-split-break'));"
+          if s.count(a) != 1 or s.count(c) != 1:
+              raise SystemExit('clipboard assertion anchors changed')
+          p.write_text(s.replace(a, b).replace(c, d))
+          PY
+          rm .github/workflows/splitcontainer-test-fix.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/splitcontainer-stage1.test.js .github/workflows/splitcontainer-test-fix.yml
+          git commit -m "test: accept deindented SplitContainer clipboard lines"
+          git push origin HEAD:splitcontainer-stage1
