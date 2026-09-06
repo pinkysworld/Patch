@@ -135,8 +135,8 @@ test('Panel duplicate delete and clipboard preserve SplitContainer as one source
   assert.equal(duplicateCompiled.windowPanelSplit.controls.filter(control => control.split).length, 2);
 
   const clipboard = copyDesignerControlClipboard(SOURCE, { windowIndex: 0, controlIndex: 0 });
-  assert.ok(clipboard.lines.includes('# @panel-split vertical 45'));
-  assert.ok(clipboard.lines.includes('# @panel-split-break'));
+  assert.ok(clipboard.lines.some(line => line.trim() === '# @panel-split vertical 45'));
+  assert.ok(clipboard.lines.some(line => line.trim() === '# @panel-split-break'));
   const target = `window "Target" as target size 640, 420:\n  text "Target" at 24, 24 size 120, 28\n`;
   const pasted = pasteDesignerControlClipboard(target, clipboard, { windowIndex: 0, offset: false });
   assert.match(pasted.source, /# @panel-split vertical 45/);
