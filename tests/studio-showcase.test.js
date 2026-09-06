@@ -68,6 +68,32 @@ test('Patch Studio Showcase is a canonical current project-v4 multi-file fixture
   }
 });
 
+test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy instead of a control dump', () => {
+  const main = fs.readFileSync(path.join(SOURCE_DIR, 'main.patch'), 'utf8');
+  const forms = fs.readFileSync(path.join(SOURCE_DIR, 'forms.patch'), 'utf8');
+
+  assert.match(main, /window "Patch Studio Showcase" as main size 1180, 820/);
+  for (const card of ['hero_card', 'account_card', 'preference_card', 'details_card']) {
+    assert.match(main, new RegExp(`shape rounded as ${card}`));
+  }
+  assert.match(main, /panel as actions_panel at 780, 436 size 376, 318/);
+  assert.match(main, /text "Account & input"/);
+  assert.match(main, /text "Preferences & state"/);
+  assert.match(main, /text "Details & semantics"/);
+  assert.match(main, /text "Quick actions"/);
+  assert.doesNotMatch(main, /text "Input presentations"/);
+  assert.doesNotMatch(main, /text "Choices and state"/);
+
+  assert.match(forms, /window "Component Gallery" as components size 1080, 760/);
+  for (const card of ['gallery_header', 'data_card', 'graphics_card', 'resources_card']) {
+    assert.match(forms, new RegExp(`shape rounded as ${card}`));
+  }
+  assert.match(forms, /window "Dialog Lab" as dialogs size 820, 560/);
+  for (const card of ['dialog_header', 'dialog_actions_card', 'dialog_path_card']) {
+    assert.match(forms, new RegExp(`shape rounded as ${card}`));
+  }
+});
+
 test('Patch Studio Showcase intentionally tracks the complete current Component Registry', () => {
   assert.match(composition.source, new RegExp(`Component Registry ${PATCH_COMPONENT_REGISTRY_VERSION.replace('.', '\\.')}`));
   const compiled = compile(composition.source, { name: bundle.project.name, kind: 'window', entry: bundle.project.entry });
