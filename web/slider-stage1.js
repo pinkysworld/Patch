@@ -4,7 +4,7 @@ import {
   buildWindowSliderPresentationManifest,
   readWindowSliderPresentation,
   setWindowSliderPresentation
-} from '../src/slider-presentation.js';
+} from '../src/window-layout-policy.js';
 import {
   clearDesignerInspectorError,
   showDesignerInspectorError
