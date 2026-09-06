@@ -68,7 +68,7 @@ test('Standalone Window Web renders GroupBox semantics and presentation', () => 
   assert.equal(built.metadata.groupBoxStage, 1);
   assert.equal(built.metadata.groupBoxMode, 'source-backed-panel-presentation');
   assert.match(built.html, /panelPresentation=node\.panelPresentation\|\|'plain'/);
-  assert.match(built.html, /patch-panel patch-groupbox/);
+  assert.match(built.html, /patch-groupbox/);
   assert.match(built.html, /patchHumanizeId/);
 });
 
