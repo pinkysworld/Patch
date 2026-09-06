@@ -8,8 +8,10 @@ import { validateFormalGuardExtraction } from './guard-validation.js';
 import { validateCallSites } from './call-site-validation.js';
 import {
   attachWindowLayoutPolicies,
+  attachWindowPanelPresentations,
   attachWindowSliderPresentations,
   buildWindowLayoutPolicyManifest,
+  buildWindowPanelPresentationManifest,
   buildWindowSliderPresentationManifest
 } from './window-layout-policy.js';
 import {
@@ -45,6 +47,7 @@ export function compile(source, options = {}) {
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
   const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
+  const windowPanelPresentation = buildWindowPanelPresentationManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -67,11 +70,12 @@ export function compile(source, options = {}) {
   attachWindowInputMasks(ast, windowInputMask);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
   attachWindowSliderPresentations(ast, windowSliderPresentation);
+  attachWindowPanelPresentations(ast, windowPanelPresentation);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
     windowInputPresentation, windowInputMask, windowListboxPresentation,
-    windowSliderPresentation
+    windowSliderPresentation, windowPanelPresentation
   };
 }
 

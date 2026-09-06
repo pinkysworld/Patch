@@ -235,7 +235,10 @@ export class PatchInterpreter {
             height:node.layout.height??null
           };
         }
-        if(node.control==='panel') item.controls=this.buildUIItems(node.body, lists, true);
+        if(node.control==='panel'){
+          item.panelPresentation=node.panelPresentation??'plain';
+          item.controls=this.buildUIItems(node.body, lists, true);
+        }
         if(node.control==='slider'){
           item.min=node.min;
           item.max=node.max;

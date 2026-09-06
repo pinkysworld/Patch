@@ -66,6 +66,7 @@ export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeInputPresentation(compiled?.ast);
   assertCurrentNativeListboxPresentation(compiled?.ast);
   assertCurrentNativeSliderPresentation(compiled?.ast);
+  assertCurrentNativePanelPresentation(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -169,6 +170,21 @@ function assertCurrentNativeSliderPresentation(nodes) {
     }
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativeSliderPresentation(page.body);
+    }
+  }
+}
+
+function assertCurrentNativePanelPresentation(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel' && node.panelPresentation === 'group') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`GroupBox Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no GroupBox presentation contract; validation fails closed rather than lowering it as a plain Panel.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativePanelPresentation(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativePanelPresentation(page.body);
     }
   }
 }

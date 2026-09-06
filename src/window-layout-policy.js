@@ -7,6 +7,10 @@ export const PATCH_SLIDER_PRESENTATION_VERSION = '0.1';
 export const PATCH_SLIDER_PRESENTATION_DIRECTIVE = 'slider-mode';
 export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.1';
 export const PATCH_WINDOW_SLIDER_PRESENTATION_FORMAT = 'patch-window-slider-presentation';
+export const PATCH_PANEL_PRESENTATION_VERSION = '0.1';
+export const PATCH_PANEL_PRESENTATION_DIRECTIVE = 'panel-mode';
+export const PATCH_WINDOW_PANEL_PRESENTATION_VERSION = '0.1';
+export const PATCH_WINDOW_PANEL_PRESENTATION_FORMAT = 'patch-window-panel-presentation';
 
 const DIRECTIVE_RE = /^\s*#\s*@layout\s+(anchor\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))*|dock\s+(?:left|right|top|bottom|fill))\s*$/i;
 const TAB_ORDER_RE = /^\s*#\s*@taborder\s+(\d+)\s*$/i;
@@ -14,12 +18,17 @@ const TAB_ORDER_PREFIX_RE = /^\s*#\s*@taborder\b/i;
 const LOCKED_RE = /^\s*#\s*@locked\s*$/i;
 const LOCKED_PREFIX_RE = /^\s*#\s*@locked\b/i;
 const SLIDER_MODE_PREFIX_RE = /^\s*#\s*@slider-mode\b/i;
-const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i;
+const PANEL_MODE_PREFIX_RE = /^\s*#\s*@panel-mode\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode|panel-mode)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
 const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress']);
 const SLIDER_PRESENTATION_MODE_SET = new Set(SLIDER_PRESENTATION_MODES);
 const PLAIN_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
 const PROGRESS_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });
+const PANEL_PRESENTATION_MODES = Object.freeze(['plain', 'group']);
+const PANEL_PRESENTATION_MODE_SET = new Set(PANEL_PRESENTATION_MODES);
+const PLAIN_PANEL_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
+const GROUP_PANEL_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });
 
 export function buildWindowLayoutPolicyManifest(source, ast) {
   const rows = sourceRows(source);
@@ -352,6 +361,103 @@ export function collectWindowProgressBarIds(ast) {
   return ids;
 }
 
+export function patchPanelPresentationModes() { return [...PANEL_PRESENTATION_MODES]; }
+
+export function normalizePatchPanelPresentation(mode) {
+  const normalized = String(mode ?? 'plain').trim().toLowerCase() || 'plain';
+  if (!PANEL_PRESENTATION_MODE_SET.has(normalized)) throw new Error(`Unsupported Panel presentation '${mode}'. Use plain or group.`);
+  return normalized;
+}
+
+export function parsePatchPanelPresentationDirective(line) {
+  const text = String(line ?? '');
+  if (!PANEL_MODE_PREFIX_RE.test(text)) return null;
+  const match = text.match(/^\s*#\s*@panel-mode\s+(plain|group)\s*$/i);
+  if (!match) throw new Error(`Invalid # @panel-mode directive '${text.trim()}'. Use '# @panel-mode group'.`);
+  return normalizePatchPanelPresentation(match[1]);
+}
+
+export function formatPatchPanelPresentationDirective(mode) {
+  const normalized = normalizePatchPanelPresentation(mode);
+  return normalized === 'plain' ? null : `# @panel-mode ${normalized}`;
+}
+
+export function patchPanelPresentationTargetSupport(mode) { return normalizePatchPanelPresentation(mode) === 'group' ? GROUP_PANEL_TARGETS : PLAIN_PANEL_TARGETS; }
+
+export function assertPatchPanelPresentationTarget(mode, target) {
+  const normalizedMode = normalizePatchPanelPresentation(mode);
+  const normalizedTarget = String(target ?? '').trim().toLowerCase();
+  if (patchPanelPresentationTargetSupport(normalizedMode)[normalizedTarget] !== 'supported') {
+    throw new Error(`Panel presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` + (normalizedMode === 'group' ? 'GroupBox Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.' : 'Select a supported Patch target.'));
+  }
+  return true;
+}
+
+export function buildWindowPanelPresentationManifest(source, ast) {
+  const rows = sourceRows(source);
+  const controls = [];
+  walkWindowControls(ast, node => {
+    const mode = readWindowPanelPresentationFromRows(rows, node.line);
+    if (mode !== null && node.control !== 'panel') throw new Error(`# @panel-mode belongs only to Panel controls, not '${node.control}' on source line ${node.line ?? '?'}.`);
+    if (node.control !== 'panel') return;
+    controls.push({ line: node.line ?? null, id: node.id ?? null, mode: mode ?? 'plain' });
+  });
+  return validateWindowPanelPresentationManifest({ format: PATCH_WINDOW_PANEL_PRESENTATION_FORMAT, version: PATCH_WINDOW_PANEL_PRESENTATION_VERSION, controls });
+}
+
+export function attachWindowPanelPresentations(ast, manifest) {
+  validateWindowPanelPresentationManifest(manifest);
+  const byLine = new Map(manifest.controls.map(control => [control.line, control.mode]));
+  let attached = 0;
+  walkWindowControls(ast, node => {
+    if (node.control !== 'panel') return;
+    Object.defineProperty(node, 'panelPresentation', { value: normalizePatchPanelPresentation(byLine.get(node.line) ?? 'plain'), enumerable: true, configurable: true, writable: false });
+    attached += 1;
+  });
+  if (attached !== manifest.controls.length) throw new Error('Window Panel presentation manifest does not match the compiled Panel controls.');
+  return ast;
+}
+
+export function validateWindowPanelPresentationManifest(manifest) {
+  if (!manifest || manifest.format !== PATCH_WINDOW_PANEL_PRESENTATION_FORMAT || manifest.version !== PATCH_WINDOW_PANEL_PRESENTATION_VERSION || !Array.isArray(manifest.controls)) throw new Error('Window Panel presentation manifest format/version is unsupported.');
+  const lines = new Set();
+  for (const control of manifest.controls) {
+    if (!Number.isInteger(control?.line) || control.line < 1) throw new Error('Window Panel presentation control line is invalid.');
+    if (lines.has(control.line)) throw new Error(`Window Panel presentation source line ${control.line} appears more than once.`);
+    lines.add(control.line);
+    control.mode = normalizePatchPanelPresentation(control.mode);
+    if (control.id !== null && control.id !== undefined && !/^[A-Za-z_]\w*$/.test(String(control.id))) throw new Error(`Window Panel presentation control id '${control.id}' is invalid.`);
+  }
+  return manifest;
+}
+
+export function readWindowPanelPresentation(source, sourceLine) { return readWindowPanelPresentationFromRows(sourceRows(source), sourceLine) ?? 'plain'; }
+
+export function setWindowPanelPresentation(source, sourceLine, mode) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const normalized = normalizePatchPanelPresentation(mode);
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 0) throw new Error('Selected Panel line is outside the Patch source.');
+  if (!/^\s*panel\b/i.test(rows[lineIndex])) throw new Error('Panel presentation can only be changed on a Panel control.');
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (!PANEL_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (existingIndex >= 0) throw new Error(`Panel presentation is declared more than once before source line ${sourceLine}.`);
+    parsePatchPanelPresentationDirective(rows[index]);
+    existingIndex = index;
+  }
+  const directive = formatPatchPanelPresentationDirective(normalized);
+  if (!directive) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
+  }
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  const rendered = `${indent}${directive}`;
+  if (existingIndex >= 0) rows[existingIndex] = rendered; else rows.splice(lineIndex, 0, rendered);
+  return preserveTrailingNewline(original, rows.join('\n'));
+}
+
 function readWindowLayoutPolicyFromRows(rows, sourceLine) {
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
   if (lineIndex < 1) return fixedPolicy();
@@ -382,6 +488,18 @@ function readWindowSliderPresentationFromRows(rows, sourceLine) {
     if (!SLIDER_MODE_PREFIX_RE.test(rows[index])) continue;
     if (found !== null) throw new Error(`Slider presentation is declared more than once before source line ${sourceLine}.`);
     found = parsePatchSliderPresentationDirective(rows[index]);
+  }
+  return found;
+}
+
+function readWindowPanelPresentationFromRows(rows, sourceLine) {
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 1) return null;
+  let found = null;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (!PANEL_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (found !== null) throw new Error(`Panel presentation is declared more than once before source line ${sourceLine}.`);
+    found = parsePatchPanelPresentationDirective(rows[index]);
   }
   return found;
 }

@@ -13,7 +13,7 @@ import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 export const DESIGNER_CONTROL_CLIPBOARD_FORMAT = 'patch-designer-control-clipboard';
 export const DESIGNER_CONTROL_CLIPBOARD_VERSION = 2;
 
-const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode|panel-mode)\b/i;
 const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
 const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
 const PROGRESSBAR_RE = /^\s*#\s*@slider-mode\s+progress\s*$/i;
