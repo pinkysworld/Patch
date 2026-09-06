@@ -30,11 +30,14 @@ The standard-control Stage-1 presentation layer additionally provides:
 - PasswordEdit as ordinary Input plus `# @input-mode password`;
 - MaskedEdit as ordinary Input plus `# @input-mask "..."`;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
-- ProgressBar as number-backed Slider plus `# @slider-mode progress`.
+- ProgressBar as number-backed Slider plus `# @slider-mode progress`;
+- GroupBox as ordinary Panel plus `# @panel-mode group`.
 
-These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
+These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and GroupBox are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
 
 ProgressBar Stage 1 is passive. It reads the same-id explicit `create number` state and has no control event. Application code changes that number only through ordinary explicit `change`; Studio/Web then re-renders the passive progress presentation.
+
+GroupBox Stage 1 does not introduce hidden state or a second containment type. It is the existing Panel containment contract with source-backed grouped presentation; its caption is derived from the Panel id in this stage. Plain Panel and GroupBox therefore share the same child structure and explicit application-state semantics.
 
 For supported top-level visual controls, Studio provides:
 
@@ -66,7 +69,7 @@ Timer and ImageList are nonvisual and live in the nonvisual tray. StatusBar owns
 
 The Designer clipboard uses a closed versioned source-backed contract. Clipboard v2 preserves the selected control block, relevant handlers, metadata and explicit backing-state records needed by CheckedListBox and ProgressBar. Version-1 clipboard payloads remain readable.
 
-Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar metadata move with their control through delete, copy, cut, paste and duplicate. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
+Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and GroupBox metadata move with their control through delete, copy, cut, paste and duplicate. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
 
 ## Table
 
@@ -124,7 +127,7 @@ Nested page-control workflows:
 
 Tabs-inside-Tabs remains intentionally outside the current stage and fails closed.
 
-Panel Stage 2 supports source-backed child coordinates relative to the Panel content area in Studio and Standalone Web, including mixed legacy-flow and positioned children. Current Ready native fails closed for positioned Panel children because Native GUI IR 1.9 does not yet define true parent-child Panel containment/clipping semantics.
+Panel Stage 2 supports source-backed child coordinates relative to the Panel content area in Studio and Standalone Web, including mixed legacy-flow and positioned children. GroupBox Stage 1 reuses this Panel child contract and adds `# @panel-mode group` presentation plus a dedicated Studio palette/Inspector path. Current Ready native fails closed for GroupBox presentation and for positioned Panel children because Native GUI IR 1.9 does not yet define those presentation/true parent-child containment and clipping semantics.
 
 ## Graphics and resources
 
@@ -164,7 +167,7 @@ The Current Ready desktop consumer contract is Native GUI IR **1.9**, sealed pay
 
 Payload v17/runtime v1.8 remains an explicit compatibility path in the Offline Compiler. Earlier versioned contracts, including the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, remain compatibility/reproducibility evidence rather than current targets.
 
-Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
+Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
 
 The current Ready/offline Windows, macOS and Linux path uses the stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
@@ -183,7 +186,7 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 Remaining product work includes:
 
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
-- Number/SpinEdit, date/time controls, GroupBox/ScrollBox/SplitContainer and richer shell controls from the RAD master backlog;
+- Number/SpinEdit, date/time controls, ScrollBox/SplitContainer and richer shell controls from the RAD master backlog;
 - Panel child Anchors/Dock, nested Panels, visual reparenting and later explicit native containment;
 - remaining resource/non-source Undo/Redo transaction coverage, further large-project virtualization and professional code-editor/debugger features;
 - broader ImageList consumers such as ToolBar/ToolButton/Menu/Tree only after those component contracts exist;
