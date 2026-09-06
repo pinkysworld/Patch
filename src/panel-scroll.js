@@ -5,7 +5,7 @@ export const PATCH_WINDOW_PANEL_SCROLL_FORMAT = 'patch-window-panel-scroll';
 
 const PANEL_SCROLL_PREFIX_RE = /^\s*#\s*@panel-scroll\b/i;
 const PANEL_SCROLL_RE = /^\s*#\s*@panel-scroll\s+(auto)\s*$/i;
-const DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode|panel-mode|panel-scroll)\b/i;
+const COMMENT_RE = /^\s*#/;
 const MODES = Object.freeze(['none', 'auto']);
 const MODE_SET = new Set(MODES);
 const NONE_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
@@ -48,16 +48,27 @@ export function assertPatchPanelScrollTarget(mode, target) {
 export function buildWindowPanelScrollManifest(source, ast) {
   const rows = sourceRows(source);
   const controls = [];
+  const claimedDirectiveLines = new Set();
   walkWindowControls(ast, node => {
-    const mode = readWindowPanelScrollFromRows(rows, node.line);
-    if (mode !== null && !(node.kind === 'uiControl' && node.control === 'panel')) {
-      const type = node.kind === 'tabs' ? 'tabs' : node.control ?? node.kind ?? 'control';
-      throw new Error(`# @panel-scroll belongs only to Panel controls, not '${type}' on source line ${node.line ?? '?'}.`);
-    }
     if (!(node.kind === 'uiControl' && node.control === 'panel')) return;
-    controls.push({ line: node.line ?? null, id: node.id ?? null, mode: mode ?? 'none' });
+    const record = readPanelLocalScrollFromRows(rows, node.line);
+    if (record.directiveLine !== null) claimedDirectiveLines.add(record.directiveLine);
+    controls.push({ line: node.line ?? null, id: node.id ?? null, mode: record.mode ?? 'none' });
   });
-  return validateWindowPanelScrollManifest({ format: PATCH_WINDOW_PANEL_SCROLL_FORMAT, version: PATCH_WINDOW_PANEL_SCROLL_VERSION, controls });
+
+  for (let index = 0; index < rows.length; index += 1) {
+    if (!PANEL_SCROLL_PREFIX_RE.test(rows[index])) continue;
+    parsePatchPanelScrollDirective(rows[index]);
+    if (!claimedDirectiveLines.has(index + 1)) {
+      throw new Error(`# @panel-scroll belongs inside a Panel block header, directly after the Panel declaration (source line ${index + 1}).`);
+    }
+  }
+
+  return validateWindowPanelScrollManifest({
+    format: PATCH_WINDOW_PANEL_SCROLL_FORMAT,
+    version: PATCH_WINDOW_PANEL_SCROLL_VERSION,
+    controls
+  });
 }
 
 export function attachWindowPanelScroll(ast, manifest) {
@@ -94,7 +105,7 @@ export function validateWindowPanelScrollManifest(manifest) {
 }
 
 export function readWindowPanelScroll(source, sourceLine) {
-  return readWindowPanelScrollFromRows(sourceRows(source), sourceLine) ?? 'none';
+  return readPanelLocalScrollFromRows(sourceRows(source), sourceLine).mode ?? 'none';
 }
 
 export function setWindowPanelScroll(source, sourceLine, mode) {
@@ -102,35 +113,41 @@ export function setWindowPanelScroll(source, sourceLine, mode) {
   const rows = original.split('\n');
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
   if (lineIndex < 0) throw new Error('Selected Panel line is outside the Patch source.');
+  if (!/^\s*panel\b/i.test(rows[lineIndex])) throw new Error('Panel scroll metadata can only be attached to a Panel declaration.');
+
   const normalized = normalizePatchPanelScroll(mode);
-  let existingIndex = -1;
-  for (let index = lineIndex - 1; index >= 0 && DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
-    if (!PANEL_SCROLL_PREFIX_RE.test(rows[index])) continue;
-    if (existingIndex >= 0) throw new Error(`Panel scroll metadata appears more than once before source line ${lineIndex + 1}.`);
-    parsePatchPanelScrollDirective(rows[index]);
-    existingIndex = index;
-  }
+  const record = readPanelLocalScrollFromRows(rows, sourceLine);
   if (normalized === 'none') {
-    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    if (record.directiveLine !== null) rows.splice(record.directiveLine - 1, 1);
     return preserveTrailingNewline(original, rows.join('\n'));
   }
-  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+
+  const indent = `${/^\s*/.exec(rows[lineIndex])?.[0] ?? ''}  `;
   const directive = `${indent}${formatPatchPanelScrollDirective(normalized)}`;
-  if (existingIndex >= 0) rows[existingIndex] = directive;
-  else rows.splice(lineIndex, 0, directive);
+  if (record.directiveLine !== null) rows[record.directiveLine - 1] = directive;
+  else rows.splice(lineIndex + 1, 0, directive);
   return preserveTrailingNewline(original, rows.join('\n'));
 }
 
-function readWindowPanelScrollFromRows(rows, sourceLine) {
+function readPanelLocalScrollFromRows(rows, sourceLine) {
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
-  if (lineIndex < 1) return null;
-  let found = null;
-  for (let index = lineIndex - 1; index >= 0 && DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
-    if (!PANEL_SCROLL_PREFIX_RE.test(rows[index])) continue;
-    if (found !== null) throw new Error(`Panel scroll metadata appears more than once before source line ${lineIndex + 1}.`);
-    found = parsePatchPanelScrollDirective(rows[index]);
+  if (lineIndex < 0) return { mode: null, directiveLine: null };
+  const baseIndent = indentOf(rows[lineIndex]).length;
+  let mode = null;
+  let directiveLine = null;
+
+  for (let index = lineIndex + 1; index < rows.length; index += 1) {
+    const line = rows[index];
+    if (!line.trim()) continue;
+    const indent = indentOf(line).length;
+    if (indent <= baseIndent) break;
+    if (!COMMENT_RE.test(line)) break;
+    if (!PANEL_SCROLL_PREFIX_RE.test(line)) continue;
+    if (mode !== null) throw new Error(`Panel scroll metadata appears more than once inside Panel on source line ${lineIndex + 1}.`);
+    mode = parsePatchPanelScrollDirective(line);
+    directiveLine = index + 1;
   }
-  return found;
+  return { mode, directiveLine };
 }
 
 function walkWindowControls(nodes, visit) {
@@ -152,6 +169,7 @@ function walkWindowControls(nodes, visit) {
 }
 
 function sourceRows(source) { return String(source ?? '').replace(/\r\n/g, '\n').split('\n'); }
+function indentOf(line) { return /^\s*/.exec(String(line ?? ''))?.[0] ?? ''; }
 
 function resolveSourceLineIndex(rows, sourceLine) {
   const line = Number(sourceLine);
