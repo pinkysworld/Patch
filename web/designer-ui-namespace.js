@@ -5,6 +5,10 @@ import {
   setWindowPanelPresentation
 } from '../src/window-layout-policy.js';
 import {
+  readWindowPanelScroll,
+  setWindowPanelScroll
+} from '../src/panel-scroll.js';
+import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
   designerSelectionForControl,
@@ -13,10 +17,12 @@ import {
 
 export const PATCH_DESIGNER_UI_NAMESPACE_VERSION = '0.1';
 export const PATCH_DESIGNER_GROUPBOX_VERSION = '0.1';
+export const PATCH_DESIGNER_SCROLLBOX_VERSION = '0.1';
 
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
+const panelScrollPositions = new Map();
 
 if (doc && code && canvas) queueMicrotask(install);
 
@@ -161,9 +167,13 @@ function clearNamespaceError() {
 function installGroupBoxStage1() {
   if (doc.documentElement.dataset.patchGroupBoxStage1 === 'true') return;
   doc.documentElement.dataset.patchGroupBoxStage1 = 'true';
+  doc.documentElement.dataset.patchScrollBoxStage1 = 'true';
   installGroupBoxStyles();
   installGroupBoxButton();
   installGroupBoxInspector();
+  installScrollBoxStyles();
+  installScrollBoxButton();
+  installScrollBoxInspector();
 
   let queued = false;
   const schedule = () => {
@@ -172,6 +182,7 @@ function installGroupBoxStage1() {
     queueMicrotask(() => {
       queued = false;
       syncGroupBoxPresentation();
+      syncScrollBoxPresentation();
     });
   };
   code.addEventListener('input', schedule);
@@ -190,6 +201,20 @@ function installGroupBoxStyles() {
 .patch-panel.patch-groupbox>.patch-panel-legend,.patch-panel.patch-groupbox>.patch-panel-title{display:inline-flex;align-items:center;width:auto;max-width:calc(100% - 24px);min-height:22px;margin:-10px 0 0 12px;padding:2px 7px;border:0;background:var(--surface);color:var(--text);font-size:12px;font-weight:750;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .patch-panel.patch-groupbox>.patch-panel-surface{height:calc(100% - 18px);margin-top:2px}
 .designer-groupbox-mode{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:0 0 12px}.designer-groupbox-mode label{display:grid;gap:5px;font-size:12px}.designer-groupbox-mode select{min-width:0}
+`;
+  doc.head.appendChild(style);
+}
+
+function installScrollBoxStyles() {
+  if (doc.querySelector('style[data-patch-scrollbox-stage1]')) return;
+  const style = doc.createElement('style');
+  style.dataset.patchScrollboxStage1 = PATCH_DESIGNER_SCROLLBOX_VERSION;
+  style.textContent = `
+.patch-panel.patch-scrollbox>.patch-panel-surface{overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
+.patch-panel.patch-scrollbox>.patch-panel-surface>.patch-panel-flow{position:relative!important;inset:auto!important;height:auto!important;min-height:100%;overflow:visible!important}
+.patch-panel.patch-scrollbox>.patch-panel-surface>.patch-panel-positioned{right:auto!important;bottom:auto!important;min-width:100%;min-height:100%;overflow:visible!important}
+.patch-panel.patch-scrollbox{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent)}
+.designer-scrollbox-mode{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:0 0 12px}.designer-scrollbox-mode label{display:grid;gap:5px;font-size:12px}.designer-scrollbox-mode select{min-width:0}
 `;
   doc.head.appendChild(style);
 }
@@ -216,8 +241,38 @@ function installGroupBoxButton() {
         .at(-1);
       if (!panel) throw new Error('Designer did not create the GroupBox Panel.');
       const next = setWindowPanelPresentation(withPanel, panel.line, 'group');
-      setGroupBoxSource(next);
+      setPanelSource(next);
       rememberDesignerSelection(canvas, designerSelectionForControl(panel, 'core'), { reason: 'add-groupbox' });
+    } catch (error) {
+      showNamespaceError(error?.message ?? String(error));
+    }
+  }, { capture: true });
+}
+
+function installScrollBoxButton() {
+  const toolbar = doc.querySelector('#designer .designer-toolbar');
+  if (!toolbar || toolbar.querySelector('#addScrollBox')) return;
+  const button = doc.createElement('button');
+  button.id = 'addScrollBox';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ ScrollBox';
+  button.setAttribute('aria-label', 'Add ScrollBox');
+  button.title = 'Add a source-backed auto-scrolling Panel to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    try {
+      const windowIndex = Number(doc.querySelector('#patchFormSelect')?.value) || 0;
+      const withPanel = addDesignerControl(code.value, 'panel', { windowIndex });
+      const panel = listDesignerControls(withPanel)
+        .filter(control => control.windowIndex === windowIndex && control.type === 'panel')
+        .at(-1);
+      if (!panel) throw new Error('Designer did not create the ScrollBox Panel.');
+      const next = setWindowPanelScroll(withPanel, panel.line, 'auto');
+      setPanelSource(next);
+      rememberDesignerSelection(canvas, designerSelectionForControl(panel, 'core'), { reason: 'add-scrollbox' });
     } catch (error) {
       showNamespaceError(error?.message ?? String(error));
     }
@@ -242,7 +297,33 @@ function installGroupBoxInspector() {
     const control = selectedPanelControl();
     if (!control) return;
     try {
-      setGroupBoxSource(setWindowPanelPresentation(code.value, control.line, event.target.value));
+      setPanelSource(setWindowPanelPresentation(code.value, control.line, event.target.value));
+    } catch (error) {
+      showNamespaceError(error?.message ?? String(error));
+    }
+  });
+}
+
+function installScrollBoxInspector() {
+  const panelEditor = doc.querySelector('#designerPanelEditor');
+  if (!panelEditor || panelEditor.querySelector('#designerPanelScroll')) return;
+  const row = doc.createElement('div');
+  row.className = 'designer-scrollbox-mode';
+  row.innerHTML = `
+    <label>Panel scrolling
+      <select id="designerPanelScroll">
+        <option value="none">Clipped Panel</option>
+        <option value="auto">ScrollBox (auto)</option>
+      </select>
+    </label>
+    <span class="inspector-hint">transient scroll offset</span>`;
+  const presentation = panelEditor.querySelector('.designer-groupbox-mode');
+  panelEditor.insertBefore(row, presentation?.nextSibling ?? panelEditor.children[1] ?? null);
+  row.querySelector('#designerPanelScroll')?.addEventListener('change', event => {
+    const control = selectedPanelControl();
+    if (!control) return;
+    try {
+      setPanelSource(setWindowPanelScroll(code.value, control.line, event.target.value));
     } catch (error) {
       showNamespaceError(error?.message ?? String(error));
     }
@@ -296,6 +377,39 @@ function syncGroupBoxPresentation() {
   }
 }
 
+function syncScrollBoxPresentation() {
+  let controls = [];
+  try { controls = listDesignerControls(code.value).filter(control => control.type === 'panel'); }
+  catch { return; }
+  const modes = new Map();
+  for (const control of controls) {
+    let mode = 'none';
+    try { mode = readWindowPanelScroll(code.value, control.line); } catch { continue; }
+    modes.set(`${control.windowIndex}:${control.controlIndex}`, { mode, id: control.id ?? '' });
+  }
+
+  for (const element of canvas.querySelectorAll('.patch-panel[data-patch-panel-adapter="true"]')) {
+    const key = `${element.dataset.windowIndex}:${element.dataset.controlIndex}`;
+    const record = modes.get(key);
+    decorateScrollBoxElement(element, record?.mode === 'auto', record?.id || element.dataset.panelId || '', 'designer');
+  }
+
+  const scrollIds = new Set([...modes.values()].filter(record => record.mode === 'auto').map(record => record.id).filter(Boolean));
+  for (const element of doc.querySelectorAll('.patch-panel-runtime[data-patch-panel-runtime="true"]')) {
+    const aria = String(element.getAttribute('aria-label') ?? '');
+    const id = element.dataset.patchPanelId || (aria.startsWith('Panel ') ? aria.slice(6) : '');
+    if (id) element.dataset.patchPanelId = id;
+    decorateScrollBoxElement(element, scrollIds.has(id), id, 'runtime');
+  }
+
+  const select = doc.querySelector('#designerPanelScroll');
+  const selected = selectedPanelControl();
+  if (select && selected) {
+    try { select.value = readWindowPanelScroll(code.value, selected.line); }
+    catch { select.value = 'none'; }
+  }
+}
+
 function decorateGroupBoxElement(element, group, id) {
   element.classList.toggle('patch-groupbox', Boolean(group));
   element.dataset.patchPanelPresentation = group ? 'group' : 'plain';
@@ -315,13 +429,65 @@ function decorateGroupBoxElement(element, group, id) {
   if (caption) element.setAttribute('aria-label', `GroupBox ${caption}`);
 }
 
+function decorateScrollBoxElement(element, scrolling, id, surfaceKind) {
+  element.classList.toggle('patch-scrollbox', Boolean(scrolling));
+  element.dataset.patchPanelScroll = scrolling ? 'auto' : 'none';
+  const surface = element.querySelector(':scope > .patch-panel-surface');
+  const positioned = surface?.querySelector(':scope > .patch-panel-positioned') ?? null;
+  if (!surface) return;
+  const key = `${surfaceKind}:${id || element.dataset.controlIndex || 'panel'}`;
+
+  if (!scrolling) {
+    surface.style.removeProperty('overflow');
+    surface.style.removeProperty('overscroll-behavior');
+    surface.style.removeProperty('scrollbar-gutter');
+    positioned?.style.removeProperty('width');
+    positioned?.style.removeProperty('height');
+    return;
+  }
+
+  surface.style.overflow = 'auto';
+  surface.style.overscrollBehavior = 'contain';
+  surface.style.scrollbarGutter = 'stable';
+  expandPositionedScrollExtent(surface, positioned);
+  if (surface.dataset.patchScrollboxListener !== 'true') {
+    surface.dataset.patchScrollboxListener = 'true';
+    surface.addEventListener('scroll', () => {
+      panelScrollPositions.set(key, { left: surface.scrollLeft, top: surface.scrollTop });
+    }, { passive: true });
+  }
+  const remembered = panelScrollPositions.get(key);
+  if (remembered) queueMicrotask(() => {
+    surface.scrollLeft = remembered.left;
+    surface.scrollTop = remembered.top;
+  });
+}
+
+function expandPositionedScrollExtent(surface, positioned) {
+  if (!positioned) return;
+  let right = 0;
+  let bottom = 0;
+  for (const child of positioned.children) {
+    const left = Number.parseFloat(child.style.left) || 0;
+    const top = Number.parseFloat(child.style.top) || 0;
+    const width = Number.parseFloat(child.style.width) || Math.max(child.scrollWidth || 0, child.offsetWidth || 0, 120);
+    const height = Number.parseFloat(child.style.height) || Math.max(child.scrollHeight || 0, child.offsetHeight || 0, 36);
+    right = Math.max(right, left + width + 12);
+    bottom = Math.max(bottom, top + height + 12);
+  }
+  const width = Math.max(surface.clientWidth || 0, right);
+  const height = Math.max(surface.clientHeight || 0, bottom);
+  if (width > 0) positioned.style.width = `${Math.ceil(width)}px`;
+  if (height > 0) positioned.style.height = `${Math.ceil(height)}px`;
+}
+
 function groupBoxCaption(id) {
   const raw = String(id ?? '').trim();
   if (!raw) return 'Group';
   return raw.replace(/[_-]+/g, ' ').replace(/\b[a-z]/g, letter => letter.toUpperCase());
 }
 
-function setGroupBoxSource(next) {
+function setPanelSource(next) {
   if (typeof next !== 'string' || next === code.value) return;
   code.value = next;
   code.dispatchEvent(new Event('input', { bubbles: true }));

@@ -237,6 +237,7 @@ export class PatchInterpreter {
         }
         if(node.control==='panel'){
           item.panelPresentation=node.panelPresentation??'plain';
+          item.panelScroll=node.panelScroll??'none';
           item.controls=this.buildUIItems(node.body, lists, true);
         }
         if(node.control==='slider'){

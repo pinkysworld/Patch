@@ -4,16 +4,17 @@ import fs from 'node:fs';
 import { parseStudioProjectBundle } from '../src/studio-project.js';
 
 const restore = fs.readFileSync('web/project-config-restore.js', 'utf8');
+const payloadModule = fs.readFileSync('web/studio-showcase-project.js', 'utf8');
 const canonical = fs.readFileSync('examples/patch-studio-showcase.patchproject', 'utf8');
 
 function embeddedShowcaseProject() {
-  const marker = 'const PATCH_STUDIO_SHOWCASE_PROJECT = String.raw`';
-  const start = restore.indexOf(marker);
-  assert.ok(start >= 0, 'Project config must embed the offline Showcase project');
+  const marker = 'export const PATCH_STUDIO_SHOWCASE_PROJECT = String.raw`';
+  const start = payloadModule.indexOf(marker);
+  assert.ok(start >= 0, 'Showcase payload module must embed the offline Showcase project');
   const contentStart = start + marker.length;
-  const end = restore.indexOf('`;\n\ninstallDesignerObserverCoordinator()', contentStart);
+  const end = payloadModule.indexOf('`;', contentStart);
   assert.ok(end > contentStart, 'Embedded Showcase project terminator is missing');
-  return restore.slice(contentStart, end);
+  return payloadModule.slice(contentStart, end);
 }
 
 test('built-in Patch Studio Showcase stays byte-for-byte synchronized with the canonical project-v4 fixture', () => {
@@ -24,6 +25,8 @@ test('built-in Patch Studio Showcase stays byte-for-byte synchronized with the c
   assert.equal(bundle.version, 4);
   assert.deepEqual(bundle.files.map(file => file.path), ['main.patch', 'forms.patch', 'logic.patch']);
   assert.deepEqual(bundle.resources.map(resource => resource.id), ['showcase.logo']);
+  assert.match(restore, /import \{ PATCH_STUDIO_SHOWCASE_PROJECT \} from '\.\/studio-showcase-project\.js'/);
+  assert.doesNotMatch(restore, /const PATCH_STUDIO_SHOWCASE_PROJECT = String\.raw/);
 });
 
 test('Showcase appears as an explicit repeatable Example load without replacing startup restoration', () => {

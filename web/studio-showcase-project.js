@@ -1,4 +1,6 @@
-{
+// Generated canonical browser copy of examples/patch-studio-showcase.patchproject.
+// tests/studio-showcase-loader.test.js keeps the String.raw payload byte-for-byte synchronized.
+export const PATCH_STUDIO_SHOWCASE_PROJECT = String.raw`{
   "format": "patch-studio-project",
   "version": 4,
   "project": {
@@ -35,3 +37,4 @@
     }
   ]
 }
+`;
