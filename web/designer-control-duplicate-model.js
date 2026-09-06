@@ -10,9 +10,10 @@ import {
 } from '../src/designer.js';
 import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 
-const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i;
 const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
 const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
+const PROGRESSBAR_RE = /^\s*#\s*@slider-mode\s+progress\s*$/i;
 
 export function duplicateDesignerControl(source, selector, options = {}) {
   const controls = listDesignerControls(source);
@@ -33,7 +34,7 @@ export function duplicateDesignerControl(source, selector, options = {}) {
     : blockEnd(lines, window.line - 1);
   const copied = lines.slice(start, end);
   remapTopLevelTabOrder(copied, source, ast, control.windowIndex);
-  const checkedListboxState = checkedListboxBackingState(ast, control, copied);
+  const backingState = presentationBackingState(ast, control, copied);
   // One effective UI/event namespace is shared by Controls, nested controls,
   // MenuItems and result-dialog targets. Duplication must reserve all of it,
   // not just ids returned by the flat Designer control list.
@@ -52,10 +53,10 @@ export function duplicateDesignerControl(source, selector, options = {}) {
   }
 
   lines.splice(end, 0, ...copied);
-  if (checkedListboxState) {
+  if (backingState) {
     const nextId = idMap.get(control.id);
-    if (!nextId) throw new Error('CheckedListBox duplicate could not allocate a new control/state id.');
-    insertDuplicatedListState(lines, checkedListboxState, control.id, nextId);
+    if (!nextId) throw new Error(`${backingState.label} duplicate could not allocate a new control/state id.`);
+    insertDuplicatedState(lines, backingState, control.id, nextId);
   }
   if (duplicatedHandlers.length) appendEventBlocks(lines, duplicatedHandlers);
   let next = validateAndPreserve(source, lines);
@@ -130,24 +131,34 @@ function collectControlIdRecords(node, out = []) {
   return out;
 }
 
-function checkedListboxBackingState(ast, control, copied) {
-  if (control.type !== 'listbox' || !control.id) return null;
-  if (!copied.some(line => CHECKED_LISTBOX_RE.test(line))) return null;
+function presentationBackingState(ast, control, copied) {
+  if (!control.id) return null;
+  let valueType = null;
+  let label = null;
+  if (control.type === 'listbox' && copied.some(line => CHECKED_LISTBOX_RE.test(line))) {
+    valueType = 'list';
+    label = 'CheckedListBox';
+  } else if (control.type === 'slider' && copied.some(line => PROGRESSBAR_RE.test(line))) {
+    valueType = 'number';
+    label = 'ProgressBar';
+  } else {
+    return null;
+  }
   const state = (ast ?? []).find(node =>
-    node.kind === 'create' && node.valueType === 'list' && node.name === control.id
+    node.kind === 'create' && node.valueType === valueType && node.name === control.id
   );
   if (!state || !Number.isInteger(state.line)) {
-    throw new Error(`CheckedListBox '${control.id}' cannot be duplicated without its source-backed create list state.`);
+    throw new Error(`${label} '${control.id}' cannot be duplicated without its source-backed create ${valueType} state.`);
   }
-  return state;
+  return { ...state, label, valueType };
 }
 
-function insertDuplicatedListState(lines, state, oldId, newId) {
+function insertDuplicatedState(lines, state, oldId, newId) {
   const lineIndex = state.line - 1;
   const line = lines[lineIndex];
-  if (typeof line !== 'string') throw new Error('CheckedListBox backing list state line could not be located safely.');
-  const pattern = new RegExp(`^(\\s*create\\s+list\\s+)${escapeRegExp(oldId)}(\\s*=.*)$`, 'i');
-  if (!pattern.test(line)) throw new Error(`CheckedListBox backing list state '${oldId}' could not be duplicated safely.`);
+  if (typeof line !== 'string') throw new Error(`${state.label} backing ${state.valueType} state line could not be located safely.`);
+  const pattern = new RegExp(`^(\\s*create\\s+${state.valueType}\\s+)${escapeRegExp(oldId)}(\\s*=.*)$`, 'i');
+  if (!pattern.test(line)) throw new Error(`${state.label} backing ${state.valueType} state '${oldId}' could not be duplicated safely.`);
   lines.splice(lineIndex + 1, 0, line.replace(pattern, `$1${newId}$2`));
 }
 
