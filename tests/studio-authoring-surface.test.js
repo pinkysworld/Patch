@@ -25,16 +25,28 @@ test('current Studio authoring surface records the complete Form lifecycle', () 
 });
 
 test('current Studio authoring surface records shared top-level control workflows', () => {
-  assert.match(surface, /Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs/);
+  assert.match(surface, /Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox and StatusBar/);
   assert.match(surface, /shared primary selection and common Properties actions/);
   assert.match(surface, /duplicate as a real Patch source block/);
   assert.match(surface, /Center H \/ Center V/);
   assert.match(surface, /collision-aware Auto place/);
   assert.match(surface, /transient multi-select/);
-  assert.match(surface, /Panel, Picture, Shape, PaintBox and StatusBar/);
   assert.match(surface, /Timer and ImageList/);
+  assert.match(surface, /independent source-backed TabOrder/);
+  assert.match(surface, /Layers\/Object Tree/);
   assert.match(workspace, /designer-control-duplicate\.js/);
   assert.match(workspace, /designer-layout-actions\.js/);
+});
+
+test('current Studio authoring surface records source-backed R4 presentations and boundaries', () => {
+  assert.match(surface, /PasswordEdit as ordinary Input plus `# @input-mode password`/);
+  assert.match(surface, /MaskedEdit as ordinary Input plus `# @input-mask "\.\.\."`/);
+  assert.match(surface, /CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`/);
+  assert.match(surface, /ProgressBar as number-backed Slider plus `# @slider-mode progress`/);
+  assert.match(surface, /ProgressBar Stage 1 is passive/);
+  assert.match(surface, /has no control event/);
+  assert.match(surface, /Clipboard v2 preserves/);
+  assert.match(surface, /Current Ready Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10 deliberately fails closed/);
 });
 
 test('current Studio authoring surface records Table TreeView and Tabs structural workflows', () => {
@@ -55,18 +67,19 @@ test('current Studio authoring surface preserves source and assurance boundaries
   assert.match(surface, /Handler bodies are preserved verbatim/);
   assert.match(surface, /Patch \*\*0\.2\.0-beta\.36\*\*/);
   assert.match(surface, /Studio project bundle \*\*v4\*\*/);
+  assert.match(surface, /Component Registry \*\*0\.10\*\*/);
   assert.match(surface, /Change IR \*\*0\.10\*\*/);
-  assert.match(surface, /Native GUI IR \*\*1\.4\*\*/);
-  assert.match(surface, /payload \*\*v14\*\*/);
-  assert.match(surface, /runtime \*\*v1\.5\*\*/);
-  assert.match(surface, /formal runtime-correspondence milestone remaining \*\*beta\.32\*\*/);
+  assert.match(surface, /Native GUI IR \*\*1\.9\*\*/);
+  assert.match(surface, /sealed payload \*\*v19\*\*/);
+  assert.match(surface, /runtime \*\*v1\.10\*\*/);
+  assert.match(surface, /formal runtime-correspondence milestone remains \*\*beta\.32\*\*/);
 });
 
 test('current Studio authoring surface explicitly separates future work from current implementation', () => {
   assert.match(surface, /complete current authoring surface for the \*\*existing Patch UI\/control vocabulary\*\*/);
   assert.match(surface, /new\/richer data controls beyond the current Table, ListBox and TreeView vocabulary/);
-  assert.match(surface, /Memo\/TextArea, ProgressBar, Number\/SpinEdit/);
-  assert.match(surface, /Undo\/Redo (?:history|transactions)/);
+  assert.match(surface, /Number\/SpinEdit, date\/time controls, GroupBox\/ScrollBox\/SplitContainer/);
+  assert.match(surface, /Undo\/Redo transaction coverage/);
   assert.match(surface, /manual assistive-technology verification with Narrator, VoiceOver, Orca/);
   assert.match(surface, /makes no WCAG conformance claim/);
   assert.match(surface, /distribution work such as installer\/uninstaller formats/);
