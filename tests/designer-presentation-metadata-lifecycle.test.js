@@ -69,12 +69,16 @@ test('CheckedListBox cut-style clipboard round-trip preserves presentation metad
   assert.doesNotThrow(() => compile(pasted.source));
 });
 
-test('Designer duplicate keeps CheckedListBox metadata and creates an explicit backing list state for the fresh id', () => {
+test('Designer duplicate keeps CheckedListBox metadata, allocates TabOrder and creates explicit backing list state', () => {
   const duplicated = duplicateDesignerControl(checkedSource, control(checkedSource, 'listbox', 'features'), { offset: false });
   assert.deepEqual(duplicated.idMap, { features: 'listbox_1' });
   assert.match(duplicated.source, /create list features = \["Designer", "Web"\]\ncreate list listbox_1 = \["Designer", "Web"\]/);
   assert.match(duplicated.source, /# @listbox-mode checked\n  listbox .* as listbox_1/);
   assert.match(duplicated.source, /when listbox_1 changed:/);
+  const original = control(duplicated.source, 'listbox', 'features');
+  const copy = control(duplicated.source, 'listbox', 'listbox_1');
+  assert.equal(readWindowTabOrder(duplicated.source, original.line), 4);
+  assert.equal(readWindowTabOrder(duplicated.source, copy.line), 0);
   assert.doesNotThrow(() => compile(duplicated.source));
 });
 
