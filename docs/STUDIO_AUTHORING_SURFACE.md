@@ -23,7 +23,18 @@ Duplicate/Delete activation always returns through the existing Form selector. T
 
 ## Visual and nonvisual components
 
-The shared top-level workflow covers Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs. beta.36 additionally exposes Panel, Picture, Shape, PaintBox and StatusBar plus nonvisual Timer and ImageList authoring through the same project/Designer architecture.
+The shared current Component Registry **0.10** workflow covers Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox and StatusBar plus nonvisual Timer and ImageList authoring.
+
+The standard-control Stage-1 presentation layer additionally provides:
+
+- PasswordEdit as ordinary Input plus `# @input-mode password`;
+- MaskedEdit as ordinary Input plus `# @input-mask "..."`;
+- CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
+- ProgressBar as number-backed Slider plus `# @slider-mode progress`.
+
+These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
+
+ProgressBar Stage 1 is passive. It reads the same-id explicit `create number` state and has no control event. Application code changes that number only through ordinary explicit `change`; Studio/Web then re-renders the passive progress presentation.
 
 For supported top-level visual controls, Studio provides:
 
@@ -33,7 +44,8 @@ For supported top-level visual controls, Studio provides:
 - delete;
 - duplicate as a real Patch source block;
 - globally unique id remapping for copied named controls;
-- matching handler duplication for copied ids;
+- matching handler duplication for copied ids where the control has handlers;
+- source-backed backing-state duplication for CheckedListBox and ProgressBar presets;
 - pointer and keyboard positioning where the control owns geometry;
 - pointer resizing where supported;
 - Center H / Center V;
@@ -43,9 +55,18 @@ For supported top-level visual controls, Studio provides:
 - 8 px design grid with optional snap while dragging;
 - live X,Y and W×H in the Designer selection summary;
 - transient multi-select with shared movement and primary-relative alignment;
-- source-backed Anchors and Docking where the component contract permits them.
+- source-backed Anchors and Docking where the component contract permits them;
+- independent source-backed TabOrder;
+- source-backed Lock Controls through `# @locked`;
+- Layers/Object Tree inspection for z-order and Panel/Tabs containment.
 
 Timer and ImageList are nonvisual and live in the nonvisual tray. StatusBar owns its bottom-docked layout. None of these IDE projections create hidden application state.
+
+## Clipboard, duplicate and presentation metadata
+
+The Designer clipboard uses a closed versioned source-backed contract. Clipboard v2 preserves the selected control block, relevant handlers, metadata and explicit backing-state records needed by CheckedListBox and ProgressBar. Version-1 clipboard payloads remain readable.
+
+Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar metadata move with their control through delete, copy, cut, paste and duplicate. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
 
 ## Table
 
@@ -76,9 +97,9 @@ Top-level and nested TreeViews support:
 
 Subtree duplication is a deep copy; copied descendants do not share a hidden mutable model with the original.
 
-## Tabs
+## Tabs and Panel
 
-Tabs authoring covers both pages and controls inside pages.
+Tabs authoring covers pages and supported controls inside pages.
 
 Page workflows:
 
@@ -103,25 +124,27 @@ Nested page-control workflows:
 
 Tabs-inside-Tabs remains intentionally outside the current stage and fails closed.
 
+Panel Stage 2 supports source-backed child coordinates relative to the Panel content area in Studio and Standalone Web, including mixed legacy-flow and positioned children. Current Ready native fails closed for positioned Panel children because Native GUI IR 1.9 does not yet define true parent-child Panel containment/clipping semantics.
+
 ## Graphics and resources
 
-Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview and project persistence.
+Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview, project persistence and drag/Place-on-Form Picture authoring.
 
-Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. The inherited PictureBox display contract keeps default contain/centered/opaque native rendering and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred.
+Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Unsupported native format/property combinations fail closed; native WebP/SVG remain deferred.
 
-Shape has Studio, Standalone Web and current native Ready support. PaintBox Stage 1 now has Studio, Standalone Web and current native Ready support for `clear`, `line`, `rectangle`, `ellipse` and `text` through Native GUI IR 1.6 / payload v16 / runtime v1.7. Native PaintBox expressions intentionally use a smaller deterministic subset than general Patch: literals, `count` inside repeat and simple number/text/boolean state names. Unknown/non-scalar state references fail closed. `draw image` remains deferred.
+Shape has Studio, Standalone Web and current native Ready support. PaintBox has Studio, Standalone Web and current native Ready support for `clear`, `line`, `rectangle`, `ellipse`, `text` and bounded PNG/JPEG project-resource `draw image`, preserved in Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10.
 
-ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; current Native GUI IR 1.6 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while current Native GUI IR 1.6 fail-closes Form icons.
+ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web and Current Ready Windows/macOS/Linux. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and application favicon, while Current Ready Windows/macOS/Linux carries the icon through Native GUI IR 1.9 / payload v19 / runtime v1.10 and the platform-specific package contracts.
 
 ## Selection, Properties and keyboard boundary
 
-`web/designer-selection.js` is the authoritative primary-selection store. `web/designer-core-selection.js` owns common Apply/Delete/Source behavior for the shared top-level surface. The old `playground.js` selection mirror and Table/TreeView Inspector fallbacks are gone.
+`web/designer-selection.js` is the authoritative primary-selection store. `web/designer-core-selection.js` owns common Apply/Delete/Source behavior for the shared top-level surface. There is no private `playground.js` control-selection mirror.
 
 The Properties workspace is resizable/collapsible, exposes source-backed dirty/current status, has structural summaries and filters, and maintains keyboard focus after supported structural rewrites. Filters and focus state are transient IDE state only.
 
 The current structural/nested keyboard refinement is documented in `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md`: Tree/Tabs roving selection, structural shortcuts, `Ctrl/Cmd+Enter` commits, Escape close/focus restoration and explicit focus-visible treatment are implemented. Manual screen-reader/assistive-technology verification remains a separate validation activity rather than an unimplemented keyboard feature.
 
-Studio source edits and Designer source rewrites participate in a bounded source-backed Undo/Redo history. Trusted typing coalesces; Designer rewrites remain atomic. Project/resource replacement boundaries reset history so stale source is never replayed into a different project. Resource/non-source transactions are still a later extension of the same model.
+Studio source edits and Designer source rewrites participate in a bounded source-backed Undo/Redo history. Trusted typing coalesces; Designer rewrites remain atomic. Project/resource replacement boundaries reset history so stale source is never replayed into a different project. Remaining resource/non-source transaction coverage is an extension of the same model rather than a separate hidden history.
 
 ## Source and semantic boundary
 
@@ -131,23 +154,27 @@ Handler duplication changes only the `when <id> ...:` target when an id is copie
 
 Application persistence still occurs only through ordinary Patch semantic `change` operations. Designer selection, filters, active nested editors and other authoring state do not become Patch application state or Change History entries.
 
-Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state.
+Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state. ProgressBar exposes no event at all.
 
-PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; state-dependent native drawing is refreshed after relevant UI, Slider, Timer/Picture and resize activity on the current runtime.
+PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; state-dependent native drawing is refreshed from ordinary application state.
 
 ## Native delivery boundary
 
-The current desktop consumer contract is Native GUI IR **1.7**, sealed payload **v17** and runtime **v1.8**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 semantics and adds PaintBox `draw image` transport.
+The Current Ready desktop consumer contract is Native GUI IR **1.9**, sealed payload **v19** and runtime **v1.10** on Windows, macOS and Linux. It preserves the prior Table, text-list/ListBox, Menu, TreeView, Slider, Chrome, Shape and PaintBox lines and adds the promoted Button/ImageList and Window-icon transport/consumer stack.
 
-The prior PaintBox Stage 1 compatibility line is Native GUI IR **1.6** / payload **v16** / runtime **v1.7**. The prior Shape compatibility line is Native GUI IR **1.5** / payload **v15** / runtime **v1.6**. The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
+Payload v17/runtime v1.8 remains an explicit compatibility path in the Offline Compiler. Earlier versioned contracts, including the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, remain compatibility/reproducibility evidence rather than current targets.
 
-The current Ready/offline Windows, macOS and Linux path uses the same stable `native-current-contract.js` facade. FreeBSD remains Console-only.
+Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
+
+The current Ready/offline Windows, macOS and Linux path uses the stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
 ## Public/offline delivery
 
-The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. The generated site validates both the transitive relative ES-module import closure and the local HTML JS/CSS/manifest/icon asset closure, so a browser dependency cannot be omitted silently. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
+The current authoring modules are part of the deterministic content-addressed public Patch Studio build and Offline Studio package. The generated site validates both the transitive relative ES-module import closure and the local HTML JS/CSS/manifest/icon asset closure, so a browser dependency cannot be omitted silently.
 
-Large-project work now includes a deterministic 10-Form / 200-control benchmark, parsed-model reuse, observer reconciliation batching and active-Form full-cost rendering. Further virtualization and profiling remain ongoing rather than being represented as a completed performance guarantee.
+The canonical multi-file Project-v4 **Patch Studio Showcase** is explicitly selectable in hosted and Offline Studio and covers the complete current Registry 0.10 Studio/Web acceptance surface. Workshop Desk remains the compact Current Ready native acceptance/stress application.
+
+Large-project work includes a deterministic 10-Form / 200-control benchmark, parsed-model reuse, observer reconciliation batching, active-Form full-cost rendering, Chrome startup/Workshop stress and event-to-paint performance gates. Further virtualization remains measurement-driven work rather than a completed guarantee.
 
 ## What “complete” means here
 
@@ -156,12 +183,12 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 Remaining product work includes:
 
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
-- Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
-- true independent TabOrder and richer container/layout semantics;
-- Undo/Redo transactions for resource/non-source coverage, further large-project virtualization and professional code-editor/debugger features;
-- native ImageList/Button-image transport and native application/window icon packaging;
+- Number/SpinEdit, date/time controls, GroupBox/ScrollBox/SplitContainer and richer shell controls from the RAD master backlog;
+- Panel child Anchors/Dock, nested Panels, visual reparenting and later explicit native containment;
+- remaining resource/non-source Undo/Redo transaction coverage, further large-project virtualization and professional code-editor/debugger features;
+- broader ImageList consumers such as ToolBar/ToolButton/Menu/Tree only after those component contracts exist;
 - application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 
-Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.7**, sealed payload **v17**, token-free Ready/offline runtime **v1.8**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
+Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.10**, Change IR **0.10**, Native GUI IR **1.9**, sealed payload **v19**, token-free Ready/offline runtime **v1.10**, with payload v17/runtime v1.8 retained as explicit compatibility and Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as the frozen TreeView compatibility line. The formal runtime-correspondence milestone remains **beta.32**.
