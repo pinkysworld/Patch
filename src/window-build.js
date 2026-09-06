@@ -52,6 +52,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuCheckedBindings = 0;
   let treeViews = 0;
   let sliders = 0;
+  let progressBars = 0;
   let memos = 0;
   let paintboxes = 0;
   let imageLists = 0;
@@ -94,10 +95,16 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (child.control === 'button' && child.imageListId && child.imageItem) buttonImages += 1;
     if (child.control === 'slider') {
       sliders += 1;
+      if (child.sliderPresentation === 'progress') progressBars += 1;
       const stateType = stateTypes.get(child.id);
       if (stateType && stateType !== 'number') {
         throw new WindowBuildError(
           `line ${child.line ?? '?'}: Slider '${child.id}' can bind only to number state; found ${stateType} state with the same name.`
+        );
+      }
+      if (child.sliderPresentation === 'progress' && stateType !== 'number') {
+        throw new WindowBuildError(
+          `line ${child.line ?? '?'}: ProgressBar '${child.id}' needs matching number state with the same name.`
         );
       }
     }
@@ -273,6 +280,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: TreeView '${event.control}' exposes only 'changed' for transient node-path selection, not '${event.event}'.`
       );
     }
+    if (controlType === 'slider' && control.node?.sliderPresentation === 'progress') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: ProgressBar '${event.control}' is passive and exposes no Patch events in ProgressBar Stage 1. Change its matching number state explicitly instead.`
+      );
+    }
     if (controlType === 'slider' && event.event !== 'changed') {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: Slider '${event.control}' exposes only 'changed' for transient numeric values, not '${event.event}'.`
@@ -332,6 +344,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (progressBars && !options.allowProgressBar) {
+    throw new WindowBuildError(
+      'ProgressBar Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no passive ProgressBar presentation contract; validation fails closed rather than lowering it as an interactive Slider.'
+    );
+  }
+
   if (memos && !options.allowMemo) {
     throw new WindowBuildError(
       'Memo Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no Memo contract; validation fails closed rather than lowering Memo as a single-line Input.'
@@ -367,6 +385,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls: controls.size,
     treeViews,
     sliders,
+    progressBars,
     memos,
     paintboxes,
     imageLists,
