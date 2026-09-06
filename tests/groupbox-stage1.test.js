@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
+import { removeDesignerControl } from '../src/designer.js';
 import {
   PATCH_PANEL_PRESENTATION_VERSION,
   PATCH_WINDOW_PANEL_PRESENTATION_VERSION,
@@ -12,6 +13,10 @@ import {
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { duplicateDesignerControl } from '../web/designer-control-duplicate-model.js';
+import {
+  copyDesignerControlClipboard,
+  pasteDesignerControlClipboard
+} from '../web/designer-control-clipboard-model.js';
 
 const SOURCE = `window "Groups" as main size 640, 420:
   # @panel-mode group
@@ -75,6 +80,23 @@ test('Designer duplicate keeps GroupBox metadata with the duplicated Panel', () 
   assert.deepEqual(compiled.windowPanelPresentation.controls.map(control => control.mode), ['group', 'group']);
 });
 
+test('Designer delete removes GroupBox presentation metadata with its Panel', () => {
+  const removed = removeDesignerControl(SOURCE, { windowIndex: 0, controlIndex: 0 });
+  assert.doesNotMatch(removed, /@panel-mode/);
+  assert.doesNotMatch(removed, /account_settings/);
+  assert.doesNotThrow(() => compile(removed, { kind: 'window' }));
+});
+
+test('Designer clipboard preserves GroupBox presentation across paste', () => {
+  const clipboard = copyDesignerControlClipboard(SOURCE, { windowIndex: 0, controlIndex: 0 });
+  assert.ok(clipboard.lines.includes('# @panel-mode group'));
+  const target = `window "Target" as target size 640, 420:\n  text "Target" at 24, 24 size 120, 28\n`;
+  const pasted = pasteDesignerControlClipboard(target, clipboard, { windowIndex: 0, offset: false });
+  assert.match(pasted.source, /# @panel-mode group\n  panel as account_settings/);
+  const compiled = compile(pasted.source, { kind: 'window' });
+  assert.equal(compiled.windowPanelPresentation.controls.find(control => control.id === 'account_settings')?.mode, 'group');
+});
+
 test('Patch Studio exposes GroupBox in the palette and Panel Inspector', () => {
   const studio = fs.readFileSync('web/designer-ui-namespace.js', 'utf8');
   assert.match(studio, /PATCH_DESIGNER_GROUPBOX_VERSION = '0\.1'/);
@@ -83,4 +105,5 @@ test('Patch Studio exposes GroupBox in the palette and Panel Inspector', () => {
   assert.match(studio, /designerPanelPresentation/);
   assert.match(studio, /setWindowPanelPresentation/);
   assert.match(studio, /patch-groupbox/);
+  assert.match(studio, /dataset\.patchPanelId/);
 });
