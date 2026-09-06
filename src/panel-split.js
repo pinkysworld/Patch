@@ -1,3 +1,4 @@
+import { parse } from './parser.js';
 export const PATCH_PANEL_SPLIT_VERSION = '0.1';
 export const PATCH_PANEL_SPLIT_DIRECTIVE = 'panel-split';
 export const PATCH_PANEL_SPLIT_BREAK_DIRECTIVE = 'panel-split-break';
@@ -10,6 +11,7 @@ const PANEL_SPLIT_PREFIX_RE = /^\s*#\s*@panel-split\b/i;
 const PANEL_SPLIT_RE = /^\s*#\s*@panel-split\s+(vertical|horizontal)\s+(\d{1,3})\s*$/i;
 const PANEL_SPLIT_BREAK_RE = /^\s*#\s*@panel-split-break\s*$/i;
 const COMMENT_RE = /^\s*#/;
+const PANEL_SCROLL_PREFIX_RE = /^\s*#\s*@panel-scroll\b/i;
 const ORIENTATIONS = Object.freeze(['vertical', 'horizontal']);
 const ORIENTATION_SET = new Set(ORIENTATIONS);
 const PLAIN_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
@@ -157,6 +159,27 @@ export function readWindowPanelSplit(source, sourceLine) {
   return readPanelSplitHeader(rows, fakeNode).split;
 }
 
+export function convertWindowPanelToSplit(source, sourceLine, options = {}) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 0 || !/^\s*panel\b/i.test(rows[lineIndex])) throw new Error('SplitContainer conversion needs a Panel declaration.');
+  const ast = parse(original);
+  const panel = findPanelNodeByLine(ast, Number(sourceLine));
+  if (!panel) throw new Error('Selected Panel no longer matches Patch source.');
+  if ((panel.body ?? []).length < 2) throw new Error('SplitContainer conversion needs at least two Panel children so both panes stay explicit.');
+  if ((panel.body ?? []).some(child => child?.layout)) throw new Error('SplitContainer Stage 1 supports flow-layout children only. Remove positioned Panel child layout before conversion.');
+  if (panelHeaderHasScroll(rows, lineIndex)) throw new Error('SplitContainer Stage 1 cannot also use # @panel-scroll auto on the same Panel.');
+  const split = normalizePatchPanelSplit({ orientation: options.orientation ?? 'vertical', ratio: options.ratio ?? 50 });
+  const secondChild = panel.body[1];
+  if (!Number.isInteger(secondChild?.line)) throw new Error('SplitContainer conversion cannot locate the second Panel child safely.');
+  const childIndent = `${indentOf(rows[lineIndex])}  `;
+  rows.splice(lineIndex + 1, 0, `${childIndent}${formatPatchPanelSplitDirective(split)}`);
+  rows.splice(secondChild.line, 0, `${childIndent}# @panel-split-break`);
+  const next = preserveTrailingNewline(original, rows.join('\n'));
+  buildWindowPanelSplitManifest(next, parse(next));
+  return next;
+}
 export function setWindowPanelSplit(source, sourceLine, value) {
   const original = String(source ?? '').replace(/\r\n/g, '\n');
   const rows = original.split('\n');
@@ -168,7 +191,8 @@ export function setWindowPanelSplit(source, sourceLine, value) {
   if (!split) {
     if (current.directiveLine !== null) rows.splice(current.directiveLine - 1, 1);
     const baseIndent = indentOf(rows[lineIndex]).length;
-    const breakIndex = rows.findIndex((line, index) => index > lineIndex && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));
+    const end = panelBlockEnd(rows, lineIndex, baseIndent);
+    const breakIndex = rows.findIndex((line, index) => index > lineIndex && index < end && indentOf(line).length === baseIndent + 2 && PANEL_SPLIT_BREAK_RE.test(line));
     if (breakIndex >= 0) rows.splice(breakIndex, 1);
     return preserveTrailingNewline(original, rows.join('\n'));
   }
@@ -188,6 +212,7 @@ function readPanelSplitFromRows(rows, node) {
     if (breakLine !== null) throw new Error(`SplitContainer Panel on source line ${node.line} has more than one # @panel-split-break marker.`);
     breakLine = index + 1;
   }
+  if (header.split && panelHeaderHasScroll(rows, (node.line ?? 1) - 1)) throw new Error(`SplitContainer Stage 1 Panel '${node.id ?? '?'}' cannot also use # @panel-scroll auto on the same Panel.`);
   if (!header.split && breakLine !== null) throw new Error(`# @panel-split-break requires # @panel-split in the same Panel header (source line ${breakLine}).`);
   if (header.split && breakLine === null) throw new Error(`SplitContainer Panel '${node.id ?? '?'}' needs one # @panel-split-break marker between its two panes.`);
 
@@ -226,6 +251,26 @@ function readPanelSplitHeader(rows, node) {
   return { split, directiveLine };
 }
 
+function panelHeaderHasScroll(rows, lineIndex) {
+  const baseIndent = indentOf(rows[lineIndex]).length;
+  for (let index = lineIndex + 1; index < rows.length; index += 1) {
+    const line = rows[index];
+    if (!line.trim()) continue;
+    if (indentOf(line).length <= baseIndent || !COMMENT_RE.test(line)) break;
+    if (PANEL_SCROLL_PREFIX_RE.test(line)) return true;
+  }
+  return false;
+}
+
+function findPanelNodeByLine(nodes, line) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel' && node.line === line) return node;
+    if (node?.kind === 'window') { const found = findPanelNodeByLine(node.body, line); if (found) return found; }
+    if (node?.kind === 'uiControl' && node.control === 'panel') { const found = findPanelNodeByLine(node.body, line); if (found) return found; }
+    if (node?.kind === 'tabs') for (const page of node.body ?? []) { const found = findPanelNodeByLine(page.body, line); if (found) return found; }
+  }
+  return null;
+}
 function panelBlockEnd(rows, lineIndex, baseIndent) {
   let index = lineIndex + 1;
   while (index < rows.length) {
