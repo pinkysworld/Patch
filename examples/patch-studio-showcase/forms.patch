@@ -14,6 +14,7 @@ window "Component Gallery" as components size 1080, 760:
     row "MaskedEdit", "Input mask", "Studio/Web"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
+    row "GroupBox", "Panel presentation", "Studio/Web"
     row "TreeView", "changed(value)", "Ready"
 
   tree as gallery_tree at 476, 178 size 188, 222:
@@ -35,6 +36,7 @@ window "Component Gallery" as components size 1080, 760:
       node "Containers"
         node "Tabs"
         node "Panel"
+        node "GroupBox"
       node "Graphics"
         node "Picture"
         node "Shape"
@@ -64,9 +66,10 @@ window "Component Gallery" as components size 1080, 760:
   button "Resource button" as gallery_resource_button image gallery_images.mark at 172, 508 size 190, 42
   text "One project-v4 PNG is reused for the Window icon, Picture, ImageList/Button and PaintBox draw image." at 172, 564 size 472, 54
 
+  # @panel-mode group
   panel as gallery_panel at 708, 446 size 348, 220:
-    text "Panel Stage 2" at 18, 18 size 250, 26
-    text "Positioned children keep their coordinates relative to this source-backed container." at 18, 52 size 312, 52
+    text "GroupBox presentation" at 18, 18 size 250, 26
+    text "The same Panel Stage 2 containment stays source-backed beneath this grouped presentation." at 18, 52 size 312, 52
     button "Update gallery" as gallery_update at 18, 124 size 150, 40
     button "Dialog Lab" as gallery_dialogs at 182, 124 size 148, 40
 
