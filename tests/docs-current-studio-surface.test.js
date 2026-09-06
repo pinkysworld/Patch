@@ -126,5 +126,9 @@ test('roadmap records beta36 current Studio/native line and truthful RAD backlog
   assert.match(roadmap, /ImageList Stage 1/);
   assert.match(roadmap, /Shape native lowering\/runtime parity/);
   assert.match(roadmap, /PaintBox `draw image`/);
-  assert.match(roadmap, /Memo\/TextArea, PasswordEdit, ProgressBar, SpinEdit\/NumberEdit, Date\/Time controls/);
+  assert.match(roadmap, /Memo\/TextArea source-backed Studio\/Web control/);
+  assert.match(roadmap, /PasswordEdit as `# @input-mode password`/);
+  assert.match(roadmap, /MaskedEdit as `# @input-mask "\.\.\."`/);
+  assert.match(roadmap, /CheckedListBox as `# @listbox-mode checked`/);
+  assert.match(roadmap, /ProgressBar, SpinEdit\/NumberEdit, Date\/Time controls/);
 });
