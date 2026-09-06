@@ -11,15 +11,18 @@ import {
 import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 
 export const DESIGNER_CONTROL_CLIPBOARD_FORMAT = 'patch-designer-control-clipboard';
-export const DESIGNER_CONTROL_CLIPBOARD_VERSION = 1;
+export const DESIGNER_CONTROL_CLIPBOARD_VERSION = 2;
 
-const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i;
 const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
+const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
+const PROGRESSBAR_RE = /^\s*#\s*@slider-mode\s+progress\s*$/i;
 const ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const MAX_LINES = 4096;
 const MAX_LINE_LENGTH = 16384;
 const MAX_IDS = 512;
 const MAX_HANDLERS = 512;
+const MAX_BACKING_STATES = 512;
 
 export function copyDesignerControlClipboard(source, selector, options = {}) {
   const text = String(source ?? '');
@@ -42,11 +45,13 @@ export function copyDesignerControlClipboard(source, selector, options = {}) {
   const copied = deindentBlock(trimTrailingBlankLines(rows.slice(start, end)));
   if (!copied.length) throw new Error('Designer control source could not be copied safely.');
 
-  const ids = collectControlIdRecords(astControl).map(record => Object.freeze({
+  const absoluteIdRecords = collectControlIdRecords(astControl);
+  const ids = absoluteIdRecords.map(record => Object.freeze({
     id: record.id,
     type: record.type,
     line: record.line - 1 - start
   }));
+  const backingStates = collectPresentationBackingStates(ast, absoluteIdRecords, rows);
   const handlers = [];
   if (options.includeHandlers !== false) {
     for (const record of ids) {
@@ -66,6 +71,7 @@ export function copyDesignerControlClipboard(source, selector, options = {}) {
     controlType: control.type,
     lines: copied,
     ids,
+    backingStates,
     handlers
   });
 }
@@ -86,11 +92,15 @@ export function parseDesignerControlClipboard(text) {
 
 export function normalizeDesignerControlClipboard(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Designer clipboard must be an object.');
-  const allowed = new Set(['format', 'version', 'kind', 'controlType', 'lines', 'ids', 'handlers']);
+  const allowed = new Set(['format', 'version', 'kind', 'controlType', 'lines', 'ids', 'backingStates', 'handlers']);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) throw new Error(`Designer clipboard field '${key}' is not supported.`);
   }
-  if (value.format !== DESIGNER_CONTROL_CLIPBOARD_FORMAT || value.version !== DESIGNER_CONTROL_CLIPBOARD_VERSION || value.kind !== 'control') {
+  if (
+    value.format !== DESIGNER_CONTROL_CLIPBOARD_FORMAT ||
+    ![1, DESIGNER_CONTROL_CLIPBOARD_VERSION].includes(value.version) ||
+    value.kind !== 'control'
+  ) {
     throw new Error('Designer clipboard format/version is unsupported.');
   }
   const controlType = String(value.controlType ?? '').trim();
@@ -114,6 +124,30 @@ export function normalizeDesignerControlClipboard(value) {
     return Object.freeze({ id, type, line });
   });
 
+  const rawBackingStates = value.version === 1 ? [] : (value.backingStates ?? []);
+  if (!Array.isArray(rawBackingStates) || rawBackingStates.length > MAX_BACKING_STATES) {
+    throw new Error('Designer clipboard backing-state records are invalid.');
+  }
+  const seenBackingIds = new Set();
+  const backingStates = rawBackingStates.map(record => {
+    if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('Designer clipboard backing-state record is invalid.');
+    if (Object.keys(record).some(key => !['id', 'valueType', 'source'].includes(key))) {
+      throw new Error('Designer clipboard backing-state record has unsupported fields.');
+    }
+    const id = String(record.id ?? '');
+    const valueType = String(record.valueType ?? '');
+    const source = String(record.source ?? '').replace(/\r$/, '');
+    if (!seenIds.has(id) || seenBackingIds.has(id)) throw new Error('Designer clipboard backing-state id is invalid or duplicated.');
+    if (!['number', 'list'].includes(valueType)) throw new Error('Designer clipboard backing-state type is unsupported.');
+    if (!source || source.length > MAX_LINE_LENGTH || source.includes('\0') || source.includes('\n')) {
+      throw new Error('Designer clipboard backing-state source is invalid.');
+    }
+    const pattern = new RegExp(`^\\s*create\\s+${valueType}\\s+${escapeRegExp(id)}\\s*=.+$`, 'i');
+    if (!pattern.test(source)) throw new Error(`Designer clipboard backing ${valueType} state '${id}' is not canonical Patch source.`);
+    seenBackingIds.add(id);
+    return Object.freeze({ id, valueType, source });
+  });
+
   if (!Array.isArray(value.handlers) || value.handlers.length > MAX_HANDLERS) throw new Error('Designer clipboard event handlers are invalid.');
   const handlers = value.handlers.map(record => {
     if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('Designer clipboard event handler is invalid.');
@@ -133,6 +167,7 @@ export function normalizeDesignerControlClipboard(value) {
     controlType,
     lines,
     ids,
+    backingStates,
     handlers
   });
 }
@@ -155,14 +190,18 @@ export function pasteDesignerControlClipboard(source, clipboard, options = {}) {
   remapTopLevelTabOrder(copied, text, ast, windowIndex);
 
   const usedIds = new Set(listDesignerUiNamespace(text).map(record => record.id));
+  const targetStates = collectTargetStateRecords(ast, rows);
+  const backingById = new Map(payload.backingStates.map(record => [record.id, record]));
   const idMap = new Map();
   for (const record of payload.ids) {
-    const nextId = allocatePastedId(record.id, record.type, usedIds);
+    const backingState = backingById.get(record.id) ?? null;
+    const nextId = allocatePastedId(record.id, record.type, usedIds, backingState, targetStates);
     idMap.set(record.id, nextId);
     rewriteControlIdAt(copied, record.line, record, nextId);
   }
 
   rows.splice(insertAt, 0, ...copied);
+  insertPastedBackingStates(rows, payload.backingStates, idMap, targetStates);
   if (payload.handlers.length) {
     const rewritten = payload.handlers.map(handler =>
       rewriteEventTarget(handler.lines, handler.targetId, idMap.get(handler.targetId) ?? handler.targetId)
@@ -242,6 +281,48 @@ function collectControlIdRecords(node, out = []) {
     for (const child of node.body ?? []) collectControlIdRecords(child, out);
   }
   return out;
+}
+
+function collectPresentationBackingStates(ast, records, rows) {
+  const creates = new Map((ast ?? [])
+    .filter(node => node.kind === 'create' && node.name)
+    .map(node => [node.name, node]));
+  const states = [];
+  for (const record of records) {
+    const requirement = presentationBackingRequirement(rows, record);
+    if (!requirement) continue;
+    const state = creates.get(record.id);
+    if (!state || state.valueType !== requirement.valueType || !Number.isInteger(state.line)) {
+      throw new Error(`${requirement.label} '${record.id}' cannot be copied without its source-backed create ${requirement.valueType} state.`);
+    }
+    const source = rows[state.line - 1];
+    if (typeof source !== 'string') throw new Error(`${requirement.label} backing state '${record.id}' could not be located safely.`);
+    states.push(Object.freeze({ id: record.id, valueType: requirement.valueType, source: source.trim() }));
+  }
+  return Object.freeze(states);
+}
+
+function presentationBackingRequirement(rows, record) {
+  if (!Number.isInteger(record.line)) return null;
+  const declarationIndex = record.line - 1;
+  for (let index = declarationIndex - 1; index >= 0 && METADATA_RE.test(rows[index] ?? ''); index -= 1) {
+    if (record.type === 'listbox' && CHECKED_LISTBOX_RE.test(rows[index])) return { valueType: 'list', label: 'CheckedListBox' };
+    if (record.type === 'slider' && PROGRESSBAR_RE.test(rows[index])) return { valueType: 'number', label: 'ProgressBar' };
+  }
+  return null;
+}
+
+function collectTargetStateRecords(ast, rows) {
+  const states = new Map();
+  for (const node of ast ?? []) {
+    if (node.kind !== 'create' || !node.name || !Number.isInteger(node.line)) continue;
+    states.set(node.name, Object.freeze({
+      id: node.name,
+      valueType: node.valueType,
+      source: String(rows[node.line - 1] ?? '').trim()
+    }));
+  }
+  return states;
 }
 
 function metadataStartBefore(rows, declarationIndex) {
@@ -341,22 +422,50 @@ function appendEventBlocks(lines, blocks) {
   }
 }
 
-function allocatePastedId(originalId, type, usedIds) {
-  if (originalId && !usedIds.has(originalId)) {
+function allocatePastedId(originalId, type, usedIds, backingState, targetStates) {
+  const targetState = backingState ? targetStates.get(originalId) : null;
+  const reusableBackingState = !backingState || !targetState || (
+    targetState.valueType === backingState.valueType && targetState.source === backingState.source
+  );
+  if (originalId && !usedIds.has(originalId) && reusableBackingState) {
     usedIds.add(originalId);
     return originalId;
   }
-  return uniqueId(controlPrefix(type), usedIds);
+  return uniqueId(controlPrefix(type), usedIds, backingState ? targetStates : null);
+}
+
+function insertPastedBackingStates(rows, backingStates, idMap, targetStates) {
+  const pending = [];
+  for (const state of backingStates ?? []) {
+    const nextId = idMap.get(state.id) ?? state.id;
+    const existing = targetStates.get(nextId);
+    if (existing) {
+      if (existing.valueType === state.valueType && existing.source === state.source && nextId === state.id) continue;
+      throw new Error(`Designer paste cannot safely replace existing state '${nextId}'.`);
+    }
+    const pattern = new RegExp(`^(\\s*create\\s+${state.valueType}\\s+)${escapeRegExp(state.id)}(\\s*=.*)$`, 'i');
+    if (!pattern.test(state.source)) throw new Error(`Designer clipboard backing state '${state.id}' could not be remapped safely.`);
+    pending.push(state.source.replace(pattern, `$1${nextId}$2`).trim());
+  }
+  if (!pending.length) return;
+  let insertAt = 0;
+  while (insertAt < rows.length) {
+    if (!rows[insertAt].trim()) { insertAt += 1; continue; }
+    if (!/^\s*create\b/i.test(rows[insertAt])) break;
+    insertAt += 1;
+  }
+  const prefix = insertAt > 0 && rows[insertAt - 1]?.trim() ? [''] : [];
+  rows.splice(insertAt, 0, ...prefix, ...pending, '');
 }
 
 function controlPrefix(type) {
   return type || 'control';
 }
 
-function uniqueId(prefix, usedIds) {
+function uniqueId(prefix, usedIds, targetStates = null) {
   let index = 1;
   let candidate = `${prefix}_${index}`;
-  while (usedIds.has(candidate)) {
+  while (usedIds.has(candidate) || targetStates?.has(candidate)) {
     index += 1;
     candidate = `${prefix}_${index}`;
   }
@@ -422,6 +531,7 @@ function freezeClipboard(value) {
     controlType: value.controlType,
     lines: Object.freeze([...value.lines]),
     ids: Object.freeze(value.ids.map(record => Object.freeze({ ...record }))),
+    backingStates: Object.freeze((value.backingStates ?? []).map(record => Object.freeze({ ...record }))),
     handlers: Object.freeze(value.handlers.map(record => Object.freeze({
       targetId: record.targetId,
       lines: Object.freeze([...record.lines])
