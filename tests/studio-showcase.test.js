@@ -88,6 +88,8 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
   for (const card of ['gallery_header', 'data_card', 'graphics_card', 'resources_card']) {
     assert.match(forms, new RegExp(`shape rounded as ${card}`));
   }
+  assert.match(forms, /# @panel-mode group\n  panel as gallery_panel at 708, 446 size 348, 220/);
+  assert.match(forms, /row "GroupBox", "Panel presentation", "Studio\/Web"/);
   assert.match(forms, /window "Dialog Lab" as dialogs size 820, 560/);
   for (const card of ['dialog_header', 'dialog_actions_card', 'dialog_path_card']) {
     assert.match(forms, new RegExp(`shape rounded as ${card}`));
@@ -106,6 +108,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @input-mask "AA-000"/);
   assert.match(composition.source, /# @listbox-mode checked/);
   assert.match(composition.source, /# @slider-mode progress/);
+  assert.match(composition.source, /# @panel-mode group/);
   assert.match(composition.source, /# @taborder 0/);
   assert.match(composition.source, /# @locked/);
   assert.match(composition.source, /# @layout anchor right bottom/);
@@ -113,6 +116,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.equal(compiled.windowInputMask.controls.length >= 2, true);
   assert.equal(compiled.windowListboxPresentation.controls.some(control => control.mode === 'checked'), true);
   assert.equal(compiled.windowSliderPresentation.controls.some(control => control.mode === 'progress' && control.id === 'completion'), true);
+  assert.equal(compiled.windowPanelPresentation.controls.some(control => control.mode === 'group' && control.id === 'gallery_panel'), true);
 });
 
 test('Patch Studio Showcase covers structural RAD, dialogs, resources and explicit event semantics', () => {
@@ -162,12 +166,15 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.checkedListBoxStage, 1);
   assert.equal(built.metadata.progressBarStage, 1);
   assert.equal(built.metadata.progressBarMode, 'passive-number-state-presentation');
+  assert.equal(built.metadata.groupBoxStage, 1);
+  assert.equal(built.metadata.groupBoxMode, 'source-backed-panel-presentation');
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /data-patch-window-maskededit/);
   assert.match(built.html, /data-patch-window-checkedlistbox/);
   assert.match(built.html, /data-patch-window-progressbar/);
   assert.match(built.html, /createElement\('progress'\)/);
+  assert.match(built.html, /patch-groupbox/);
   assert.match(built.html, /rel="icon"/);
   assert.match(built.html, /data:image\/png;base64/);
   assert.match(built.html, /PATCH_IMAGE_RESOURCES/);
