@@ -7,6 +7,7 @@ create text access = "User"
 create text theme = "Blue"
 create list features = ["Designer", "Web"]
 create number level = 60
+create number completion = 35
 create text status = "Patch Studio Showcase ready"
 create boolean can_save = true
 create boolean pinned = false
@@ -61,6 +62,9 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
   listbox "Designer", "Web", "Native", "Offline" as features at 686, 256 size 190, 100
   text "Level {level}" at 894, 256 size 150, 22
   slider 0..100 as level step 10 at 894, 284 size 176, 38
+  text "Progress {completion}%" at 894, 326 size 176, 20
+  # @slider-mode progress
+  slider 0..100 as completion step 1 at 894, 348 size 176, 26
 
   text "Containers and source-backed metadata" at 24, 382 size 340, 26
   tabs as showcase_tabs at 24, 416 size 620, 200:
@@ -74,7 +78,7 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit, MaskedEdit and CheckedListBox stays source-backed."
+      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar stays source-backed."
 
   # @layout anchor right bottom
   panel as actions_panel at 674, 408 size 396, 208:

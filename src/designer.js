@@ -527,7 +527,7 @@ function removeEventBlocks(lines, id) {
 
 function designerMetadataStartBefore(lines, lineIndex) {
   let start = lineIndex;
-  while (start > 0 && /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i.test(lines[start - 1])) start -= 1;
+  while (start > 0 && /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode)\b/i.test(lines[start - 1])) start -= 1;
   return start < lineIndex ? start : -1;
 }
 

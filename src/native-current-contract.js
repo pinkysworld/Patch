@@ -65,6 +65,7 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
 export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeInputPresentation(compiled?.ast);
   assertCurrentNativeListboxPresentation(compiled?.ast);
+  assertCurrentNativeSliderPresentation(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -153,6 +154,21 @@ function assertCurrentNativeListboxPresentation(nodes) {
     }
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativeListboxPresentation(page.body);
+    }
+  }
+}
+
+function assertCurrentNativeSliderPresentation(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'slider' && node.sliderPresentation === 'progress') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativeSliderPresentation(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativeSliderPresentation(page.body);
     }
   }
 }

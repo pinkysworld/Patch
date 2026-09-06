@@ -6,7 +6,12 @@ import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 import { validateCallSites } from './call-site-validation.js';
-import { attachWindowLayoutPolicies, buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
+import {
+  attachWindowLayoutPolicies,
+  attachWindowSliderPresentations,
+  buildWindowLayoutPolicyManifest,
+  buildWindowSliderPresentationManifest
+} from './window-layout-policy.js';
 import {
   attachWindowInputMasks,
   attachWindowInputPresentations,
@@ -39,6 +44,7 @@ export function compile(source, options = {}) {
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
+  const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -60,10 +66,12 @@ export function compile(source, options = {}) {
   attachWindowInputPresentations(ast, windowInputPresentation);
   attachWindowInputMasks(ast, windowInputMask);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
+  attachWindowSliderPresentations(ast, windowSliderPresentation);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
-    windowInputPresentation, windowInputMask, windowListboxPresentation
+    windowInputPresentation, windowInputMask, windowListboxPresentation,
+    windowSliderPresentation
   };
 }
 

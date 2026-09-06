@@ -4,6 +4,7 @@ export const PATCH_WINDOW_WEB_PAINTBOX_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_MASKED_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_PROGRESSBAR_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
@@ -24,11 +25,13 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   const passwordInputIds = collectPasswordInputIds(ast);
   const maskedInputs = collectMaskedInputDescriptors(ast);
   const checkedListboxIds = collectCheckedListboxIds(ast);
+  const progressBarIds = collectProgressBarIds(ast);
   const hasPaintBoxes = Object.keys(descriptors).length > 0;
   const hasPasswordEdits = passwordInputIds.length > 0;
   const hasMaskedEdits = Object.keys(maskedInputs).length > 0;
   const hasCheckedListBoxes = checkedListboxIds.length > 0;
-  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes) return built;
+  const hasProgressBars = progressBarIds.length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes && !hasProgressBars) return built;
 
   let html = built.html;
   if (hasPaintBoxes) {
@@ -42,6 +45,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
     html = html
       .replace('</head>', `${checkedListboxStyle()}\n</head>`)
       .replace('</body>', `${checkedListboxRuntime(checkedListboxIds)}\n</body>`);
+  }
+  if (hasProgressBars) {
+    html = html
+      .replace('</head>', `${progressBarStyle()}\n</head>`)
+      .replace('</body>', `${progressBarRuntime(progressBarIds)}\n</body>`);
   }
 
   return {
@@ -70,6 +78,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
         checkedListBoxStage: 1,
         checkedListBoxVersion: PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION,
         checkedListBoxMode: 'source-backed-list-state-checkbox-group'
+      } : {}),
+      ...(hasProgressBars ? {
+        progressBarStage: 1,
+        progressBarVersion: PATCH_WINDOW_WEB_PROGRESSBAR_VERSION,
+        progressBarMode: 'passive-number-state-presentation'
       } : {})
     }
   };
@@ -144,6 +157,19 @@ export function collectCheckedListboxIds(ast) {
   return ids;
 }
 
+export function collectProgressBarIds(ast) {
+  const ids = [];
+  walk(ast, node => {
+    if (
+      node.kind === 'uiControl' &&
+      node.control === 'slider' &&
+      node.sliderPresentation === 'progress' &&
+      node.id
+    ) ids.push(node.id);
+  });
+  return ids;
+}
+
 function clonePaintNodes(nodes) {
   return (nodes ?? []).map(node => {
     if (node.kind === 'drawPaint') {
@@ -190,6 +216,13 @@ function checkedListboxStyle() {
 .patch-checked-listbox{display:flex;flex-direction:column;gap:4px;min-width:220px;min-height:72px;margin:0;padding:8px 10px;border:1px solid #d4d4d8;border-radius:9px;background:#fff;overflow:auto}.patch-checked-listbox legend{padding:0 4px;font-size:11px;font-weight:700;color:#52525b}.patch-checked-listbox-option{display:flex;align-items:center;gap:8px;min-height:28px;cursor:pointer}.patch-checked-listbox-option input{width:18px;height:18px;min-width:18px;margin:0;padding:0}.patch-checked-listbox-option input:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
 @media(prefers-color-scheme:dark){.patch-checked-listbox{border-color:#41444e;background:#1b1d22;color:#f4f4f5}.patch-checked-listbox legend{color:#d4d4d8}}
 @media(forced-colors:active){.patch-checked-listbox{border:1px solid CanvasText;background:Canvas;color:CanvasText}.patch-checked-listbox-option input:focus-visible{outline:3px solid Highlight}}
+</style>`;
+}
+
+function progressBarStyle() {
+  return `<style data-patch-window-progressbar>
+.patch-progressbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px;min-width:180px;color:inherit}.patch-progressbar progress{width:100%;min-width:0;height:18px;accent-color:currentColor}.patch-progressbar output{min-width:4.5em;text-align:right;font:600 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:inherit}
+@media(forced-colors:active){.patch-progressbar progress{forced-color-adjust:auto}}
 </style>`;
 }
 
@@ -439,6 +472,45 @@ function checkedListboxRuntime(ids) {
     const element=patchCheckedListOriginalRenderControl(control,windowId,controlIndex);
     if(control?.type!=='listbox'||!PATCH_CHECKED_LISTBOX_IDS.has(String(control?.id||''))||element?.tagName!=='SELECT')return element;
     return patchCheckedListElement(control,element,windowId,controlIndex);
+  };
+  render();
+})();
+</script>`;
+}
+
+function progressBarRuntime(ids) {
+  const idJson = JSON.stringify(ids).replace(/</g, '\\u003c');
+  return `<script data-patch-window-progressbar>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_PROGRESSBAR_IDS=new Set(${idJson});
+  const patchProgressOriginalRenderControl=renderControl;
+
+  function patchProgressElement(control,sliderElement){
+    const input=sliderElement?.querySelector?.('input[type="range"]');
+    if(!input)throw new PatchAppError("ProgressBar '"+String(control?.id||'?')+"' could not resolve its Slider underlay.");
+    const min=Number.isFinite(Number(input.min))?Number(input.min):0;
+    const max=Number.isFinite(Number(input.max))?Number(input.max):100;
+    const raw=Number.isFinite(Number(input.value))?Number(input.value):min;
+    const value=Math.min(max,Math.max(min,raw));
+    const wrap=document.createElement('div');
+    wrap.className='patch-progressbar';
+    wrap.dataset.patchSliderPresentation='progress';
+    wrap.dataset.controlId=String(control?.id||'');
+    const meter=document.createElement('progress');
+    meter.min=min;meter.max=max;meter.value=value;
+    meter.setAttribute('aria-label',String(control?.id||'ProgressBar')+' progress');
+    meter.setAttribute('aria-valuetext',String(value)+' of '+String(max));
+    const output=document.createElement('output');
+    output.value=String(value);output.textContent=String(value)+' / '+String(max);
+    wrap.append(meter,output);
+    return wrap;
+  }
+
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchProgressOriginalRenderControl(control,windowId,controlIndex);
+    if(control?.type!=='slider'||!PATCH_PROGRESSBAR_IDS.has(String(control?.id||'')))return element;
+    return patchProgressElement(control,element);
   };
   render();
 })();
