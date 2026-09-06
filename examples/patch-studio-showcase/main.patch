@@ -96,7 +96,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar metadata stays source-backed."
+      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and GroupBox metadata stays source-backed."
 
   # @layout anchor right bottom
   panel as actions_panel at 780, 436 size 376, 318:
