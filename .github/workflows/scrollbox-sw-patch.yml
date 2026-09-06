@@ -1,0 +1,39 @@
+name: ScrollBox offline precache patch
+
+on:
+  push:
+    branches: [scrollbox-stage1]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: scrollbox-stage1
+          fetch-depth: 0
+      - name: Patch offline precache
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('web/sw.js')
+          s = p.read_text()
+          a = "'./project-lifecycle.js', './project-config-restore.js', './recovery-manager.js'"
+          b = "'./project-lifecycle.js', './project-config-restore.js', './studio-showcase-project.js', './recovery-manager.js'"
+          c = "'../src/form-layout.js', '../src/window-layout-policy.js', '../src/studio-project.js'"
+          d = "'../src/form-layout.js', '../src/window-layout-policy.js', '../src/panel-scroll.js', '../src/studio-project.js'"
+          if s.count(a) != 1 or s.count(c) != 1:
+              raise SystemExit('expected service-worker anchors are not unique')
+          p.write_text(s.replace(a, b).replace(c, d))
+          PY
+          rm .github/workflows/scrollbox-sw-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add web/sw.js .github/workflows/scrollbox-sw-patch.yml
+          git commit -m "fix: precache ScrollBox Studio modules"
+          git push origin HEAD:scrollbox-stage1
