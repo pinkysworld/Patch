@@ -115,6 +115,8 @@ window "Tabs" as main size 520, 320:
     tab "One":
       # @listbox-mode checked
       listbox "A", "B", "C" as checks
+    tab "Two":
+      text "Second page keeps the Tabs contract valid."
 `;
   const tabsCompiled = compile(tabsSource);
   const nested = tabsCompiled.ast.find(node => node.kind === 'window').body.find(node => node.kind === 'tabs').body[0].body.find(node => node.control === 'listbox');
