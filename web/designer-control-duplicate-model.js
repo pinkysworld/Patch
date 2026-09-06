@@ -1,10 +1,18 @@
 import { parse } from '../src/parser.js';
 import {
+  PATCH_WINDOW_TAB_ORDER_MAX,
+  buildWindowTabOrderManifest
+} from '../src/window-layout-policy.js';
+import {
   listDesignerControls,
   listDesignerWindows,
   updateDesignerControl
 } from '../src/designer.js';
 import { listDesignerUiNamespace } from './designer-ui-namespace.js';
+
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
+const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
+const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
 
 export function duplicateDesignerControl(source, selector, options = {}) {
   const controls = listDesignerControls(source);
@@ -18,11 +26,14 @@ export function duplicateDesignerControl(source, selector, options = {}) {
   const lines = normalizeLines(source);
   const windowControls = controls.filter(item => item.windowIndex === control.windowIndex);
   const localIndex = windowControls.findIndex(item => item.controlIndex === control.controlIndex);
-  const start = control.line - 1;
-  const end = localIndex + 1 < windowControls.length
-    ? windowControls[localIndex + 1].line - 1
+  const start = metadataStartBefore(lines, control.line - 1);
+  const nextControl = windowControls[localIndex + 1] ?? null;
+  const end = nextControl
+    ? metadataStartBefore(lines, nextControl.line - 1)
     : blockEnd(lines, window.line - 1);
   const copied = lines.slice(start, end);
+  remapTopLevelTabOrder(copied, source, ast, control.windowIndex);
+  const checkedListboxState = checkedListboxBackingState(ast, control, copied);
   // One effective UI/event namespace is shared by Controls, nested controls,
   // MenuItems and result-dialog targets. Duplication must reserve all of it,
   // not just ids returned by the flat Designer control list.
@@ -41,6 +52,11 @@ export function duplicateDesignerControl(source, selector, options = {}) {
   }
 
   lines.splice(end, 0, ...copied);
+  if (checkedListboxState) {
+    const nextId = idMap.get(control.id);
+    if (!nextId) throw new Error('CheckedListBox duplicate could not allocate a new control/state id.');
+    insertDuplicatedListState(lines, checkedListboxState, control.id, nextId);
+  }
   if (duplicatedHandlers.length) appendEventBlocks(lines, duplicatedHandlers);
   let next = validateAndPreserve(source, lines);
   let duplicate = listDesignerControls(next).find(item =>
@@ -112,6 +128,61 @@ function collectControlIdRecords(node, out = []) {
     for (const child of node.body ?? []) collectControlIdRecords(child, out);
   }
   return out;
+}
+
+function checkedListboxBackingState(ast, control, copied) {
+  if (control.type !== 'listbox' || !control.id) return null;
+  if (!copied.some(line => CHECKED_LISTBOX_RE.test(line))) return null;
+  const state = (ast ?? []).find(node =>
+    node.kind === 'create' && node.valueType === 'list' && node.name === control.id
+  );
+  if (!state || !Number.isInteger(state.line)) {
+    throw new Error(`CheckedListBox '${control.id}' cannot be duplicated without its source-backed create list state.`);
+  }
+  return state;
+}
+
+function insertDuplicatedListState(lines, state, oldId, newId) {
+  const lineIndex = state.line - 1;
+  const line = lines[lineIndex];
+  if (typeof line !== 'string') throw new Error('CheckedListBox backing list state line could not be located safely.');
+  const pattern = new RegExp(`^(\\s*create\\s+list\\s+)${escapeRegExp(oldId)}(\\s*=.*)$`, 'i');
+  if (!pattern.test(line)) throw new Error(`CheckedListBox backing list state '${oldId}' could not be duplicated safely.`);
+  lines.splice(lineIndex + 1, 0, line.replace(pattern, `$1${newId}$2`));
+}
+
+function remapTopLevelTabOrder(copied, source, ast, windowIndex) {
+  let directiveIndex = -1;
+  let requested = null;
+  for (let index = 0; index < copied.length; index += 1) {
+    const line = copied[index];
+    if (!line.trim()) continue;
+    if (!METADATA_RE.test(line)) break;
+    const match = line.match(TAB_ORDER_RE);
+    if (match) {
+      directiveIndex = index;
+      requested = Number(match[2]);
+      break;
+    }
+  }
+  if (directiveIndex < 0 || !Number.isInteger(requested)) return;
+  const manifest = buildWindowTabOrderManifest(source, ast);
+  const used = new Set((manifest.windows[windowIndex]?.controls ?? [])
+    .map(item => item.tabOrder)
+    .filter(value => Number.isInteger(value)));
+  if (!used.has(requested)) return;
+  let replacement = 0;
+  while (used.has(replacement) && replacement <= PATCH_WINDOW_TAB_ORDER_MAX) replacement += 1;
+  if (replacement > PATCH_WINDOW_TAB_ORDER_MAX) {
+    throw new Error('Designer duplicate cannot allocate a free TabOrder in the target Form.');
+  }
+  copied[directiveIndex] = copied[directiveIndex].replace(TAB_ORDER_RE, `$1${replacement}$3`);
+}
+
+function metadataStartBefore(lines, declarationIndex) {
+  let start = declarationIndex;
+  while (start > 0 && METADATA_RE.test(lines[start - 1] ?? '')) start -= 1;
+  return start;
 }
 
 function rewriteControlIdAt(lines, index, record, newId) {

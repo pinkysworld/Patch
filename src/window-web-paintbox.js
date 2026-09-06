@@ -3,6 +3,7 @@ import { patchInputMaskInputMode, patchInputMaskPlaceholder } from './input-pres
 export const PATCH_WINDOW_WEB_PAINTBOX_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_MASKED_EDIT_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
@@ -22,10 +23,12 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   const descriptors = collectPaintBoxDescriptors(ast);
   const passwordInputIds = collectPasswordInputIds(ast);
   const maskedInputs = collectMaskedInputDescriptors(ast);
+  const checkedListboxIds = collectCheckedListboxIds(ast);
   const hasPaintBoxes = Object.keys(descriptors).length > 0;
   const hasPasswordEdits = passwordInputIds.length > 0;
   const hasMaskedEdits = Object.keys(maskedInputs).length > 0;
-  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits) return built;
+  const hasCheckedListBoxes = checkedListboxIds.length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes) return built;
 
   let html = built.html;
   if (hasPaintBoxes) {
@@ -35,6 +38,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   }
   if (hasPasswordEdits) html = html.replace('</body>', `${passwordEditRuntime(passwordInputIds)}\n</body>`);
   if (hasMaskedEdits) html = html.replace('</body>', `${maskedEditRuntime(maskedInputs)}\n</body>`);
+  if (hasCheckedListBoxes) {
+    html = html
+      .replace('</head>', `${checkedListboxStyle()}\n</head>`)
+      .replace('</body>', `${checkedListboxRuntime(checkedListboxIds)}\n</body>`);
+  }
 
   return {
     ...built,
@@ -57,6 +65,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
         maskedEditVersion: PATCH_WINDOW_WEB_MASKED_EDIT_VERSION,
         maskedEditMode: 'source-backed-token-mask',
         maskedEditTokens: '0=digit,A=letter,*=alphanumeric'
+      } : {}),
+      ...(hasCheckedListBoxes ? {
+        checkedListBoxStage: 1,
+        checkedListBoxVersion: PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION,
+        checkedListBoxMode: 'source-backed-list-state-checkbox-group'
       } : {})
     }
   };
@@ -118,6 +131,19 @@ export function collectMaskedInputDescriptors(ast) {
   return Object.freeze(descriptors);
 }
 
+export function collectCheckedListboxIds(ast) {
+  const ids = [];
+  walk(ast, node => {
+    if (
+      node.kind === 'uiControl' &&
+      node.control === 'listbox' &&
+      node.listboxPresentation === 'checked' &&
+      node.id
+    ) ids.push(node.id);
+  });
+  return ids;
+}
+
 function clonePaintNodes(nodes) {
   return (nodes ?? []).map(node => {
     if (node.kind === 'drawPaint') {
@@ -156,6 +182,14 @@ function paintBoxStyle() {
 .patch-paintbox{display:block;max-width:none;max-height:none;border:1px solid #d4d4d8;border-radius:6px;background:transparent}
 @media(prefers-color-scheme:dark){.patch-paintbox{border-color:#41444e}}
 @media(forced-colors:active){.patch-paintbox{border:1px solid CanvasText;forced-color-adjust:auto}}
+</style>`;
+}
+
+function checkedListboxStyle() {
+  return `<style data-patch-window-checkedlistbox>
+.patch-checked-listbox{display:flex;flex-direction:column;gap:4px;min-width:220px;min-height:72px;margin:0;padding:8px 10px;border:1px solid #d4d4d8;border-radius:9px;background:#fff;overflow:auto}.patch-checked-listbox legend{padding:0 4px;font-size:11px;font-weight:700;color:#52525b}.patch-checked-listbox-option{display:flex;align-items:center;gap:8px;min-height:28px;cursor:pointer}.patch-checked-listbox-option input{width:18px;height:18px;min-width:18px;margin:0;padding:0}.patch-checked-listbox-option input:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+@media(prefers-color-scheme:dark){.patch-checked-listbox{border-color:#41444e;background:#1b1d22;color:#f4f4f5}.patch-checked-listbox legend{color:#d4d4d8}}
+@media(forced-colors:active){.patch-checked-listbox{border:1px solid CanvasText;background:Canvas;color:CanvasText}.patch-checked-listbox-option input:focus-visible{outline:3px solid Highlight}}
 </style>`;
 }
 
@@ -357,6 +391,54 @@ function maskedEditRuntime(descriptors) {
       try{element.setSelectionRange(next.length,next.length);}catch{}
     },true);
     return element;
+  };
+  render();
+})();
+</script>`;
+}
+
+function checkedListboxRuntime(ids) {
+  const idJson = JSON.stringify(ids).replace(/</g, '\\u003c');
+  return `<script data-patch-window-checkedlistbox>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_CHECKED_LISTBOX_IDS=new Set(${idJson});
+  const patchCheckedListOriginalRenderControl=renderControl;
+
+  function patchCheckedListElement(control,select,windowId,controlIndex){
+    const group=document.createElement('fieldset');
+    group.className='patch-checked-listbox';
+    group.dataset.patchListboxPresentation='checked';
+    group.dataset.controlId=String(control?.id||'');
+    const legend=document.createElement('legend');
+    legend.textContent=String(control?.id||'CheckedListBox');
+    group.appendChild(legend);
+    const selected=new Set([...select.selectedOptions].map(option=>option.value));
+    for(const option of [...select.options]){
+      const label=document.createElement('label');
+      label.className='patch-checked-listbox-option';
+      const input=document.createElement('input');
+      input.type='checkbox';
+      input.value=option.value;
+      input.checked=selected.has(option.value);
+      const text=document.createElement('span');
+      text.textContent=option.textContent||option.value;
+      label.append(input,text);
+      input.addEventListener('change',function(){
+        const value=[...group.querySelectorAll('input[type="checkbox"]:checked')].map(item=>item.value);
+        const key=windowId+':'+(control.id||controlIndex);
+        if(typeof listboxSelections!=='undefined')listboxSelections.set(key,[...value]);
+        safeTrigger(control.id,'changed',{value});
+      });
+      group.appendChild(label);
+    }
+    return group;
+  }
+
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchCheckedListOriginalRenderControl(control,windowId,controlIndex);
+    if(control?.type!=='listbox'||!PATCH_CHECKED_LISTBOX_IDS.has(String(control?.id||''))||element?.tagName!=='SELECT')return element;
+    return patchCheckedListElement(control,element,windowId,controlIndex);
   };
   render();
 })();

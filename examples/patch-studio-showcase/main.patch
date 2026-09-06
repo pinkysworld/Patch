@@ -57,6 +57,7 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
   checkbox "Account active" as active at 24, 256 size 180, 36
   radio "User", "Admin", "Guest" as access at 220, 256 size 240, 84
   combo "Blue", "Green", "Amber", "System" as theme at 478, 256 size 190, 36
+  # @listbox-mode checked
   listbox "Designer", "Web", "Native", "Offline" as features at 686, 256 size 190, 100
   text "Level {level}" at 894, 256 size 150, 22
   slider 0..100 as level step 10 at 894, 284 size 176, 38
@@ -73,7 +74,7 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit and MaskedEdit stays source-backed."
+      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit, MaskedEdit and CheckedListBox stays source-backed."
 
   # @layout anchor right bottom
   panel as actions_panel at 674, 408 size 396, 208:
