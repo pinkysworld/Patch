@@ -69,6 +69,12 @@ when showcase_logo clicked:
 when showcase_clock ticked:
   change ticks:
     add 1
+  if completion >= 100:
+    change completion:
+      set = 0
+  else:
+    change completion:
+      add 5
 
 when open_gallery clicked:
   open components
