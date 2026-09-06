@@ -17,6 +17,10 @@ import {
   attachWindowListboxPresentations,
   buildWindowListboxPresentationManifest
 } from './input-presentation.js';
+import {
+  attachWindowSliderPresentations,
+  buildWindowSliderPresentationManifest
+} from './slider-presentation.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
@@ -39,6 +43,7 @@ export function compile(source, options = {}) {
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
+  const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -60,10 +65,12 @@ export function compile(source, options = {}) {
   attachWindowInputPresentations(ast, windowInputPresentation);
   attachWindowInputMasks(ast, windowInputMask);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
+  attachWindowSliderPresentations(ast, windowSliderPresentation);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
-    windowInputPresentation, windowInputMask, windowListboxPresentation
+    windowInputPresentation, windowInputMask, windowListboxPresentation,
+    windowSliderPresentation
   };
 }
 
