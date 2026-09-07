@@ -1,0 +1,175 @@
+name: Patch Pages runtime race fix
+
+on:
+  push:
+    branches: [ci-pages-runtime-race]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ci-pages-runtime-race
+          fetch-depth: 0
+      - name: Harden Pages runtime asset readiness
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow_path = Path('.github/workflows/pages.yml')
+          workflow = workflow_path.read_text()
+
+          workflow = workflow.replace(
+              '      - src/window-webapp.js\n      - src/window-build.js',
+              '      - src/window-webapp.js\n      - src/window-web-accessibility.js\n      - src/window-build.js'
+          )
+          workflow = workflow.replace(
+              '      - src/window-layout-policy.js\n      - src/input-presentation.js',
+              '      - src/window-layout-policy.js\n      - src/panel-scroll.js\n      - src/input-presentation.js'
+          )
+
+          start_marker = '      - name: Add and verify compiled native runtime templates\n'
+          end_marker = '      - name: Validate current Patch Studio site surface\n'
+          start = workflow.index(start_marker)
+          end = workflow.index(end_marker, start)
+
+          replacement = '''      - name: Add and verify compiled native runtime templates
+        id: runtime_assets
+        if: steps.native_runtime.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: studio-runtime-v0.6
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.10
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.10
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.10
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site/runtimes
+
+          manifest_args=(
+            --dir _site/runtimes
+            --out _site/runtimes/runtime-manifest.json
+          )
+
+          download_verified_asset() {
+            local tag="$1" file="$2" digest actual attempt
+            for attempt in 1 2 3 4 5; do
+              digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \\"$file\\") | .digest" 2>/dev/null || true)"
+              if [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                rm -f "_site/runtimes/$file"
+                if gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir _site/runtimes --clobber >/dev/null 2>&1; then
+                  actual="sha256:$(sha256sum "_site/runtimes/$file" | awk '{print $1}')"
+                  if [ "$actual" = "$digest" ]; then
+                    manifest_args+=(--entry "$file|$tag|$digest")
+                    echo "Verified $tag/$file on attempt $attempt"
+                    return 0
+                  fi
+                  echo "Runtime asset digest changed while publishing: $tag/$file ($actual != $digest)" >&2
+                else
+                  echo "Runtime asset is not downloadable yet: $tag/$file (attempt $attempt/5)" >&2
+                fi
+              else
+                echo "Runtime asset digest is not ready yet: $tag/$file (attempt $attempt/5)" >&2
+              fi
+              sleep $((attempt * 2))
+            done
+            return 1
+          }
+
+          WIN_FILE=patch-windows-native-gui-runtime.exe
+          LINUX_FILE=patch-linux-native-gui-runtime.bin
+          MACOS_FILE=patch-macos-native-gui-runtime.bin
+          missing=0
+
+          download_verified_asset "$WIN32_RUNTIME_TAG" "$WIN_FILE" || missing=1
+          download_verified_asset "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE" || missing=1
+          download_verified_asset "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE" || missing=1
+          for file in \\
+            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \\
+            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
+            download_verified_asset "$RUNTIME_TAG" "$file" || missing=1
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            rm -f _site/runtimes/*
+            if [ "$GITHUB_EVENT_NAME" = 'workflow_dispatch' ]; then
+              echo 'A manual Pages deployment requires every pinned runtime asset and SHA-256 digest to be available. Refusing to deploy.' >&2
+              exit 1
+            fi
+            echo 'Pinned runtime assets are still publishing. Deferring Pages without reporting an expected failure; a successful runtime workflow completion will retry the asset verification.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          node scripts/runtime-integrity-manifest.js "${manifest_args[@]}"
+          cat _site/runtimes/runtime-manifest.json
+          ls -lh _site/runtimes
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+'''
+
+          workflow = workflow[:start] + replacement + workflow[end:]
+          prefix, suffix = workflow.split(end_marker, 1)
+          suffix = suffix.replace(
+              "if: steps.native_runtime.outputs.ready == 'true'",
+              "if: steps.runtime_assets.outputs.ready == 'true'"
+          )
+          workflow = prefix + end_marker + suffix
+          workflow_path.write_text(workflow)
+
+          test_path = Path('tests/pages-runtime-release-gating.test.js')
+          test_path.write_text('''import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const workflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
+
+test('Pages defers automatic deployment while pinned runtime releases are still publishing', () => {
+  assert.match(workflow, /if \\[ "\\$GITHUB_EVENT_NAME" = 'workflow_dispatch' \\]; then/);
+  assert.match(workflow, /Pinned runtime releases are still publishing\\. Deferring Pages without reporting an expected failure/);
+  assert.match(workflow, /echo 'ready=false' >> "\\$GITHUB_OUTPUT"/);
+  assert.match(workflow, /if: steps\\.native_runtime\\.outputs\\.ready == 'true'/);
+});
+
+test('Pages retries and defers an automatic deployment when a release asset is temporarily unavailable', () => {
+  assert.match(workflow, /id: runtime_assets/);
+  assert.match(workflow, /download_verified_asset\\(\\)/);
+  assert.match(workflow, /for attempt in 1 2 3 4 5; do/);
+  assert.match(workflow, /gh release download "\\$tag"/);
+  assert.match(workflow, /Pinned runtime assets are still publishing\\. Deferring Pages without reporting an expected failure/);
+  assert.match(workflow, /if: steps\\.runtime_assets\\.outputs\\.ready == 'true'/);
+});
+
+test('manual Pages deployment remains fail-closed for missing releases or assets', () => {
+  assert.match(workflow, /A manual Pages deployment requires every pinned runtime release to exist\\. Refusing to deploy\\./);
+  assert.match(workflow, /A manual Pages deployment requires every pinned runtime asset and SHA-256 digest to be available\\. Refusing to deploy\\./);
+  assert.match(workflow, /exit 1/);
+});
+
+test('release-aware orchestration verifies downloaded bytes against the release digest before manifesting them', () => {
+  assert.match(workflow, /\\^sha256:\\[0-9a-f\\]\\{64\\}\\$/);
+  assert.match(workflow, /actual="sha256:\\$\\(sha256sum/);
+  assert.match(workflow, /if \\[ "\\$actual" = "\\$digest" \\]; then/);
+  assert.match(workflow, /manifest_args\\+=\\(--entry "\\$file\\|\\$tag\\|\\$digest"\\)/);
+  assert.match(workflow, /runtime-integrity-manifest\\.js/);
+});
+
+test('Pages deployment triggers include ScrollBox Standalone Web dependencies', () => {
+  assert.match(workflow, /- src\\/panel-scroll\\.js/);
+  assert.match(workflow, /- src\\/window-web-accessibility\\.js/);
+});
+''')
+          PY
+
+          rm .github/workflows/ci-pages-runtime-race-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/pages.yml tests/pages-runtime-release-gating.test.js .github/workflows/ci-pages-runtime-race-patch.yml
+          git commit -m "ci: harden Pages runtime asset publication race"
+          git push origin HEAD:ci-pages-runtime-race
