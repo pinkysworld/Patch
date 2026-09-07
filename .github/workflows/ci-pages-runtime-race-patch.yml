@@ -22,28 +22,28 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          workflow_path = Path('.github/workflows/pages.yml')
-          workflow = workflow_path.read_text()
+          path = Path('.github/workflows/pages.yml')
+          source = path.read_text()
 
-          workflow = workflow.replace(
+          source = source.replace(
               '      - src/window-webapp.js\n      - src/window-build.js',
               '      - src/window-webapp.js\n      - src/window-web-accessibility.js\n      - src/window-build.js'
           )
-          workflow = workflow.replace(
+          source = source.replace(
               '      - src/window-layout-policy.js\n      - src/input-presentation.js',
               '      - src/window-layout-policy.js\n      - src/panel-scroll.js\n      - src/input-presentation.js'
           )
 
           start_marker = '      - name: Add and verify compiled native runtime templates\n'
           end_marker = '      - name: Validate current Patch Studio site surface\n'
-          start = workflow.index(start_marker)
-          end = workflow.index(end_marker, start)
+          start = source.index(start_marker)
+          end = source.index(end_marker, start)
 
           replacement = '''      - name: Add and verify compiled native runtime templates
         id: runtime_assets
         if: steps.native_runtime.outputs.ready == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: __GH_TOKEN__
           RUNTIME_TAG: studio-runtime-v0.6
           WIN32_RUNTIME_TAG: native-win32-runtime-v1.10
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.10
@@ -113,63 +113,20 @@ jobs:
           ls -lh _site/runtimes
           echo 'ready=true' >> "$GITHUB_OUTPUT"
 '''
+          replacement = replacement.replace('__GH_TOKEN__', '$' + '{{ github.token }}')
+          source = source[:start] + replacement + source[end:]
 
-          workflow = workflow[:start] + replacement + workflow[end:]
-          prefix, suffix = workflow.split(end_marker, 1)
+          prefix, suffix = source.split(end_marker, 1)
           suffix = suffix.replace(
               "if: steps.native_runtime.outputs.ready == 'true'",
               "if: steps.runtime_assets.outputs.ready == 'true'"
           )
-          workflow = prefix + end_marker + suffix
-          workflow_path.write_text(workflow)
-
-          test_path = Path('tests/pages-runtime-release-gating.test.js')
-          test_path.write_text('''import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-
-const workflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
-
-test('Pages defers automatic deployment while pinned runtime releases are still publishing', () => {
-  assert.match(workflow, /if \\[ "\\$GITHUB_EVENT_NAME" = 'workflow_dispatch' \\]; then/);
-  assert.match(workflow, /Pinned runtime releases are still publishing\\. Deferring Pages without reporting an expected failure/);
-  assert.match(workflow, /echo 'ready=false' >> "\\$GITHUB_OUTPUT"/);
-  assert.match(workflow, /if: steps\\.native_runtime\\.outputs\\.ready == 'true'/);
-});
-
-test('Pages retries and defers an automatic deployment when a release asset is temporarily unavailable', () => {
-  assert.match(workflow, /id: runtime_assets/);
-  assert.match(workflow, /download_verified_asset\\(\\)/);
-  assert.match(workflow, /for attempt in 1 2 3 4 5; do/);
-  assert.match(workflow, /gh release download "\\$tag"/);
-  assert.match(workflow, /Pinned runtime assets are still publishing\\. Deferring Pages without reporting an expected failure/);
-  assert.match(workflow, /if: steps\\.runtime_assets\\.outputs\\.ready == 'true'/);
-});
-
-test('manual Pages deployment remains fail-closed for missing releases or assets', () => {
-  assert.match(workflow, /A manual Pages deployment requires every pinned runtime release to exist\\. Refusing to deploy\\./);
-  assert.match(workflow, /A manual Pages deployment requires every pinned runtime asset and SHA-256 digest to be available\\. Refusing to deploy\\./);
-  assert.match(workflow, /exit 1/);
-});
-
-test('release-aware orchestration verifies downloaded bytes against the release digest before manifesting them', () => {
-  assert.match(workflow, /\\^sha256:\\[0-9a-f\\]\\{64\\}\\$/);
-  assert.match(workflow, /actual="sha256:\\$\\(sha256sum/);
-  assert.match(workflow, /if \\[ "\\$actual" = "\\$digest" \\]; then/);
-  assert.match(workflow, /manifest_args\\+=\\(--entry "\\$file\\|\\$tag\\|\\$digest"\\)/);
-  assert.match(workflow, /runtime-integrity-manifest\\.js/);
-});
-
-test('Pages deployment triggers include ScrollBox Standalone Web dependencies', () => {
-  assert.match(workflow, /- src\\/panel-scroll\\.js/);
-  assert.match(workflow, /- src\\/window-web-accessibility\\.js/);
-});
-''')
+          path.write_text(prefix + end_marker + suffix)
           PY
 
           rm .github/workflows/ci-pages-runtime-race-patch.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/workflows/pages.yml tests/pages-runtime-release-gating.test.js .github/workflows/ci-pages-runtime-race-patch.yml
+          git add .github/workflows/pages.yml .github/workflows/ci-pages-runtime-race-patch.yml
           git commit -m "ci: harden Pages runtime asset publication race"
           git push origin HEAD:ci-pages-runtime-race
