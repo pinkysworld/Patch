@@ -37,9 +37,11 @@ on:
       - src/c99.js
       - src/webapp.js
       - src/window-webapp.js
+      - src/window-web-accessibility.js
       - src/window-build.js
       - src/window-events.js
       - src/window-layout-policy.js
+      - src/panel-scroll.js
       - src/input-presentation.js
       - src/window-input-presentation.js
       - src/designer.js
@@ -160,6 +162,7 @@ jobs:
           fi
           echo 'ready=true' >> "$GITHUB_OUTPUT"
       - name: Add and verify compiled native runtime templates
+        id: runtime_assets
         if: steps.native_runtime.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -172,63 +175,77 @@ jobs:
           set -euo pipefail
           mkdir -p _site/runtimes
 
-          for file in \
-            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
-            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
-            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir _site/runtimes --clobber
-          done
-
-          WIN_FILE=patch-windows-native-gui-runtime.exe
-          LINUX_FILE=patch-linux-native-gui-runtime.bin
-          MACOS_FILE=patch-macos-native-gui-runtime.bin
-          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$WIN_FILE" --dir _site/runtimes --clobber
-          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$LINUX_FILE" --dir _site/runtimes --clobber
-          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$MACOS_FILE" --dir _site/runtimes --clobber
-
-          release_digest() {
-            local tag="$1" asset="$2"
-            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest"
-          }
-
           manifest_args=(
             --dir _site/runtimes
             --out _site/runtimes/runtime-manifest.json
           )
-          add_verified_entry() {
-            local tag="$1" file="$2" digest
-            digest="$(release_digest "$tag" "$file")"
-            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-              echo "GitHub release asset $tag/$file is missing a valid SHA-256 digest: $digest" >&2
-              exit 1
-            fi
-            manifest_args+=(--entry "$file|$tag|$digest")
+
+          download_verified_asset() {
+            local tag="$1" file="$2" digest actual attempt
+            for attempt in 1 2 3 4 5; do
+              digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$file\") | .digest" 2>/dev/null || true)"
+              if [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                rm -f "_site/runtimes/$file"
+                if gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir _site/runtimes --clobber >/dev/null 2>&1; then
+                  actual="sha256:$(sha256sum "_site/runtimes/$file" | awk '{print $1}')"
+                  if [ "$actual" = "$digest" ]; then
+                    manifest_args+=(--entry "$file|$tag|$digest")
+                    echo "Verified $tag/$file on attempt $attempt"
+                    return 0
+                  fi
+                  echo "Runtime asset digest changed while publishing: $tag/$file ($actual != $digest)" >&2
+                else
+                  echo "Runtime asset is not downloadable yet: $tag/$file (attempt $attempt/5)" >&2
+                fi
+              else
+                echo "Runtime asset digest is not ready yet: $tag/$file (attempt $attempt/5)" >&2
+              fi
+              sleep $((attempt * 2))
+            done
+            return 1
           }
 
-          add_verified_entry "$WIN32_RUNTIME_TAG" "$WIN_FILE"
-          add_verified_entry "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE"
-          add_verified_entry "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE"
+          WIN_FILE=patch-windows-native-gui-runtime.exe
+          LINUX_FILE=patch-linux-native-gui-runtime.bin
+          MACOS_FILE=patch-macos-native-gui-runtime.bin
+          missing=0
+          download_verified_asset "$WIN32_RUNTIME_TAG" "$WIN_FILE" || missing=1
+          download_verified_asset "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE" || missing=1
+          download_verified_asset "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE" || missing=1
           for file in \
             patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
             patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
-            add_verified_entry "$RUNTIME_TAG" "$file"
+            download_verified_asset "$RUNTIME_TAG" "$file" || missing=1
           done
+
+          if [ "$missing" -ne 0 ]; then
+            rm -f _site/runtimes/*
+            if [ "$GITHUB_EVENT_NAME" = 'workflow_dispatch' ]; then
+              echo 'A manual Pages deployment requires every pinned runtime asset and SHA-256 digest to be available. Refusing to deploy.' >&2
+              exit 1
+            fi
+            echo 'Pinned runtime assets are still publishing. Deferring Pages without reporting an expected failure; a successful runtime workflow completion will retry the asset verification.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           node scripts/runtime-integrity-manifest.js "${manifest_args[@]}"
           cat _site/runtimes/runtime-manifest.json
           ls -lh _site/runtimes
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
       - name: Validate current Patch Studio site surface
-        if: steps.native_runtime.outputs.ready == 'true'
+        if: steps.runtime_assets.outputs.ready == 'true'
         run: npm run check:site
       - uses: actions/upload-pages-artifact@v5
-        if: steps.native_runtime.outputs.ready == 'true'
+        if: steps.runtime_assets.outputs.ready == 'true'
         with:
           path: _site
       - name: Deploy
-        if: steps.native_runtime.outputs.ready == 'true'
+        if: steps.runtime_assets.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
       - name: Verify deployed Patch Studio critical assets
-        if: steps.native_runtime.outputs.ready == 'true'
+        if: steps.runtime_assets.outputs.ready == 'true'
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
           PUBLIC_URL: https://minh.systems/Patch/
@@ -339,7 +356,7 @@ jobs:
             verify_base "$PUBLIC_URL" public
           fi
       - name: Verify deployed Patch Studio in Chrome
-        if: steps.native_runtime.outputs.ready == 'true'
+        if: steps.runtime_assets.outputs.ready == 'true'
         env:
           PATCH_STUDIO_SMOKE_URL: https://minh.systems/Patch/?startup-diagnostic-smoke=1
         run: node --test tests/studio-browser-startup.test.js
