@@ -3,6 +3,7 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { buildStandaloneWindowWebApp } from './window-webapp.js';
 import { enhanceStandaloneWindowWebApp } from './window-web-accessibility.js';
 import { enhanceStandaloneWindowPaintBoxes } from './window-web-paintbox.js';
+import { enhanceStandaloneWindowSplitContainers } from './window-web-splitcontainer.js';
 import { validateStudioResources } from './studio-resources.js';
 import { PATCH_FORM_LAYOUT_VERSION, buildFormLayoutManifest } from './form-layout.js';
 import { PATCH_WINDOW_LAYOUT_POLICY_VERSION, validateWindowLayoutPolicyManifest } from './window-layout-policy.js';
@@ -18,13 +19,13 @@ export function buildStandaloneWebApp(source, options = {}) {
 
   if (requestedKind === 'window') {
     const compiled = compile(source, { ...options, name, kind: 'window', entry });
-    return enhanceStandaloneWindowPaintBoxes(enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(compiled, name))), options.resources))));
+    return enhanceStandaloneWindowSplitContainers(enhanceStandaloneWindowPaintBoxes(enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(compiled, name))), options.resources)))));
   }
 
   if (!requestedKind) {
     const inferred = compile(source, { ...options, name, entry });
     if (inferred.project.kind === 'window') {
-      return enhanceStandaloneWindowPaintBoxes(enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(inferred, name))), options.resources))));
+      return enhanceStandaloneWindowSplitContainers(enhanceStandaloneWindowPaintBoxes(enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(inferred, name))), options.resources)))));
     }
   }
 
