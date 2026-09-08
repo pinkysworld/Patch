@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
+import { buildStandaloneWebApp } from '../src/webapp.js';
 import { PATCH_COMPONENT_REGISTRY_VERSION } from '../src/component-registry.js';
 import { removeDesignerControl } from '../src/designer.js';
 import {
@@ -146,6 +147,23 @@ test('Panel duplicate delete and clipboard preserve SplitContainer as one source
   const removed = removeDesignerControl(SOURCE, { windowIndex: 0, controlIndex: 0 });
   assert.doesNotMatch(removed, /@panel-split/);
   assert.doesNotThrow(() => compile(removed, { kind: 'window' }));
+});
+
+test('Standalone Web collects SplitContainer descriptors after earlier plain Panels without freezing shared traversal state', () => {
+  const source = `window "Multi Panel" as main size 760, 520:
+  panel as plain_panel at 20, 20 size 220, 160:
+    text "Plain first"
+  panel as split_panel at 260, 20 size 420, 260:
+    # @panel-split vertical 50
+    text "One"
+    # @panel-split-break
+    text "Two"
+`;
+  const built = buildStandaloneWebApp(source, { name: 'SplitMultiPanel', kind: 'window' });
+  assert.equal(built.metadata.splitContainerStage, 1);
+  assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');
+  assert.match(built.html, /patch-splitcontainer/);
+  assert.match(built.html, /patch-split-divider/);
 });
 
 test('public and offline Studio packaging includes complete SplitContainer delivery graph', () => {
