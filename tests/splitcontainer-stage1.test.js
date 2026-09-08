@@ -148,9 +148,15 @@ test('Panel duplicate delete and clipboard preserve SplitContainer as one source
   assert.doesNotThrow(() => compile(removed, { kind: 'window' }));
 });
 
-test('public and offline Studio packaging includes SplitContainer source contract', () => {
+test('public and offline Studio packaging includes complete SplitContainer delivery graph', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
+  const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   assert.match(buildSite, /'panel-split\.js'/);
+  assert.match(buildSite, /'window-web-splitcontainer\.js'/);
+  assert.match(buildSite, /'designer-splitcontainer\.js'/);
   assert.match(serviceWorker, /'\.\.\/src\/panel-split\.js'/);
+  assert.match(serviceWorker, /'\.\.\/src\/window-web-splitcontainer\.js'/);
+  assert.match(serviceWorker, /'\.\/designer-splitcontainer\.js'/);
+  assert.match(workspace, /import '\.\/designer-splitcontainer\.js';/);
 });
