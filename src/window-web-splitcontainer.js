@@ -26,7 +26,13 @@ export function enhanceStandaloneWindowSplitContainers(built) {
   };
 }
 
-export function collectSplitContainerDescriptors(nodes, out = {}) {
+export function collectSplitContainerDescriptors(nodes) {
+  const out = {};
+  collectSplitContainerDescriptorsInto(nodes, out);
+  return Object.freeze(out);
+}
+
+function collectSplitContainerDescriptorsInto(nodes, out) {
   for (const node of nodes ?? []) {
     if (node?.kind === 'uiControl' && node.control === 'panel') {
       if (node.panelSplit) {
@@ -37,18 +43,17 @@ export function collectSplitContainerDescriptors(nodes, out = {}) {
           panes: Object.freeze((node.body ?? []).map(child => Number(child.splitPane)))
         });
       }
-      collectSplitContainerDescriptors(node.body, out);
+      collectSplitContainerDescriptorsInto(node.body, out);
       continue;
     }
     if (node?.kind === 'window') {
-      collectSplitContainerDescriptors(node.body, out);
+      collectSplitContainerDescriptorsInto(node.body, out);
       continue;
     }
     if (node?.kind === 'tabs') {
-      for (const page of node.body ?? []) collectSplitContainerDescriptors(page.body, out);
+      for (const page of node.body ?? []) collectSplitContainerDescriptorsInto(page.body, out);
     }
   }
-  return Object.freeze(out);
 }
 
 function splitContainerStyle() {
