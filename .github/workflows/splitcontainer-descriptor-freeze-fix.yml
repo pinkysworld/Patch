@@ -1,0 +1,127 @@
+name: SplitContainer descriptor freeze fix
+
+on:
+  push:
+    branches: [splitcontainer-stage1]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: splitcontainer-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fix recursive descriptor accumulation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/window-web-splitcontainer.js')
+          s = p.read_text()
+          old = '''export function collectSplitContainerDescriptors(nodes, out = {}) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel') {
+      if (node.panelSplit) {
+        if (!node.id) throw new Error('SplitContainer Stage 1 needs a named Panel so transient divider state has a stable UI identity.');
+        out[node.id] = Object.freeze({
+          orientation: node.panelSplit.orientation,
+          ratio: Number(node.panelSplit.ratio),
+          panes: Object.freeze((node.body ?? []).map(child => Number(child.splitPane)))
+        });
+      }
+      collectSplitContainerDescriptors(node.body, out);
+      continue;
+    }
+    if (node?.kind === 'window') {
+      collectSplitContainerDescriptors(node.body, out);
+      continue;
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) collectSplitContainerDescriptors(page.body, out);
+    }
+  }
+  return Object.freeze(out);
+}'''
+          new = '''export function collectSplitContainerDescriptors(nodes) {
+  const out = {};
+  collectSplitContainerDescriptorsInto(nodes, out);
+  return Object.freeze(out);
+}
+
+function collectSplitContainerDescriptorsInto(nodes, out) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'panel') {
+      if (node.panelSplit) {
+        if (!node.id) throw new Error('SplitContainer Stage 1 needs a named Panel so transient divider state has a stable UI identity.');
+        out[node.id] = Object.freeze({
+          orientation: node.panelSplit.orientation,
+          ratio: Number(node.panelSplit.ratio),
+          panes: Object.freeze((node.body ?? []).map(child => Number(child.splitPane)))
+        });
+      }
+      collectSplitContainerDescriptorsInto(node.body, out);
+      continue;
+    }
+    if (node?.kind === 'window') {
+      collectSplitContainerDescriptorsInto(node.body, out);
+      continue;
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) collectSplitContainerDescriptorsInto(page.body, out);
+    }
+  }
+}'''
+          if s.count(old) != 1:
+              raise SystemExit('descriptor collector anchor not found exactly once')
+          p.write_text(s.replace(old, new))
+
+          t = Path('tests/splitcontainer-stage1.test.js')
+          s = t.read_text()
+          old_import = "import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';"
+          new_import = old_import + "\nimport { buildStandaloneWebApp } from '../src/webapp.js';"
+          if s.count(old_import) != 1:
+              raise SystemExit('webapp import anchor not found exactly once')
+          s = s.replace(old_import, new_import)
+          anchor = "test('public and offline Studio packaging includes complete SplitContainer delivery graph', () => {"
+          regression = '''test('Standalone Web collects SplitContainer descriptors after earlier plain Panels without freezing shared traversal state', () => {
+  const source = `window "Multi Panel" as main size 760, 520:
+  panel as plain_panel at 20, 20 size 220, 160:
+    text "Plain first"
+  panel as split_panel at 260, 20 size 420, 260:
+    # @panel-split vertical 50
+    text "One"
+    # @panel-split-break
+    text "Two"
+`;
+  const built = buildStandaloneWebApp(source, { name: 'SplitMultiPanel', kind: 'window' });
+  assert.equal(built.metadata.splitContainerStage, 1);
+  assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');
+  assert.match(built.html, /patch-splitcontainer/);
+  assert.match(built.html, /patch-split-divider/);
+});
+
+'''
+          if s.count(anchor) != 1:
+              raise SystemExit('packaging test anchor not found exactly once')
+          t.write_text(s.replace(anchor, regression + anchor))
+          PY
+      - name: Run SplitContainer regression suite
+        run: node --test tests/splitcontainer-stage1.test.js
+      - name: Commit fix
+        shell: bash
+        run: |
+          rm .github/workflows/splitcontainer-descriptor-freeze-fix.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/window-web-splitcontainer.js tests/splitcontainer-stage1.test.js .github/workflows/splitcontainer-descriptor-freeze-fix.yml
+          git commit -m "fix: keep SplitContainer descriptor traversal mutable until complete"
+          git push origin HEAD:splitcontainer-stage1
