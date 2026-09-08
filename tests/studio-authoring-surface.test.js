@@ -45,6 +45,9 @@ test('current Studio authoring surface records source-backed R4 presentations an
   assert.match(surface, /ProgressBar as number-backed Slider plus `# @slider-mode progress`/);
   assert.match(surface, /GroupBox as ordinary Panel plus `# @panel-mode group`/);
   assert.match(surface, /ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto`/);
+  assert.match(surface, /SplitContainer as ordinary Panel plus block-local `# @panel-split/);
+  assert.match(surface, /SplitContainer Stage 1 is a two-pane Panel behavior/);
+  assert.match(surface, /Standalone Web divider movement is transient runtime UI state only/);
   assert.match(surface, /ProgressBar Stage 1 is passive/);
   assert.match(surface, /GroupBox Stage 1 does not introduce hidden state or a second containment type/);
   assert.match(surface, /ScrollBox Stage 1 is an orthogonal Panel behavior/);
@@ -84,8 +87,8 @@ test('current Studio authoring surface preserves source and assurance boundaries
 test('current Studio authoring surface explicitly separates future work from current implementation', () => {
   assert.match(surface, /complete current authoring surface for the \*\*existing Patch UI\/control vocabulary\*\*/);
   assert.match(surface, /new\/richer data controls beyond the current Table, ListBox and TreeView vocabulary/);
-  assert.match(surface, /Number\/SpinEdit, date\/time controls, SplitContainer/);
-  assert.doesNotMatch(surface, /Number\/SpinEdit, date\/time controls, ScrollBox\/SplitContainer/);
+  assert.match(surface, /Number\/SpinEdit, date\/time controls and richer shell controls/);
+  assert.doesNotMatch(surface, /Number\/SpinEdit, date\/time controls, SplitContainer/);
   assert.match(surface, /Undo\/Redo transaction coverage/);
   assert.match(surface, /manual assistive-technology verification with Narrator, VoiceOver, Orca/);
   assert.match(surface, /makes no WCAG conformance claim/);

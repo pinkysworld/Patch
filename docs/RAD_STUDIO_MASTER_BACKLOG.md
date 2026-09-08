@@ -351,24 +351,29 @@ Still open:
 
 ## P1.13 GroupBox
 
-- [ ] captioned container;
-- [ ] child coordinates/layout;
-- [ ] accessibility group semantics.
+- [x] captioned source-backed Panel presentation via `# @panel-mode group`;
+- [x] reuses Panel Stage 2 child layout without a second container model;
+- [x] Studio/Web accessibility group semantics;
+- [x] Current Ready native fail-closed boundary.
 
 ## P1.14 ScrollBox / ScrollPanel
 
-- [ ] scrollable container and AutoScroll;
-- [ ] horizontal/vertical policies;
-- [ ] nested content;
-- [ ] wheel/touch parity.
+- [x] source-backed automatic scrolling via `# @panel-scroll auto`;
+- [x] positioned-child overflow extent in Studio/Web;
+- [x] wheel/trackpad/touch behavior through browser overflow with transient scroll position;
+- [ ] explicit horizontal/vertical policy selectors beyond automatic overflow;
+- [ ] nested Panel/ScrollBox composition after nested Panels are promoted.
 
 ## P1.15 Splitter / SplitContainer
 
-- [ ] orientation and resizable panes;
-- [ ] min sizes;
-- [ ] source-backed initial split;
-- [ ] runtime resize;
-- [ ] optional persisted UI state later.
+- [x] vertical/horizontal two-pane orientation over one ordinary Panel;
+- [x] source-backed 10-90% initial split and explicit `# @panel-split-break` pane boundary;
+- [x] pointer and keyboard runtime resize with transient-only runtime ratio;
+- [x] Studio divider edits rewrite the visible source-backed initial ratio;
+- [x] Current Ready native fails closed until an explicit native split-containment contract is promoted;
+- [ ] configurable per-pane minimum sizes beyond the current bounded percentage range;
+- [ ] positioned children and outer AutoScroll composition;
+- [ ] optional persisted runtime UI ratio only if a visible Patch state contract is later justified.
 
 ## P2.16 Flow/Grid layout containers
 

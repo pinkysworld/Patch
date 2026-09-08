@@ -242,3 +242,27 @@ when close_dialogs clicked:
   close dialogs
   change status:
     set = "Returned to Showcase dashboard"
+
+when gallery_split clicked:
+  open split_lab
+  change split_status:
+    set = "Split Lab opened from Component Gallery"
+
+when split_navigate clicked:
+  change split_status:
+    set = "Navigator pane action completed"
+
+when split_preview clicked:
+  change split_status:
+    set = "Editor pane preview completed"
+
+when split_gallery clicked:
+  open components
+  close split_lab
+  change gallery_status:
+    set = "Returned from Split Lab"
+
+when close_split_lab clicked:
+  close split_lab
+  change status:
+    set = "Returned from SplitContainer Lab"

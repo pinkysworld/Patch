@@ -16,6 +16,7 @@ window "Component Gallery" as components size 1080, 760:
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
     row "ScrollBox", "Panel auto-scroll", "Studio/Web"
+    row "SplitContainer", "Two-pane Panel", "Studio/Web"
     row "TreeView", "changed(value)", "Ready"
 
   tree as gallery_tree at 476, 178 size 188, 222:
@@ -39,6 +40,7 @@ window "Component Gallery" as components size 1080, 760:
         node "Panel"
         node "GroupBox"
         node "ScrollBox"
+        node "SplitContainer"
       node "Graphics"
         node "Picture"
         node "Shape"
@@ -76,6 +78,7 @@ window "Component Gallery" as components size 1080, 760:
     button "Update gallery" as gallery_update at 18, 124 size 150, 40
     text "Scroll for the second action" at 18, 174 size 250, 22
     button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40
+    button "Split Lab" as gallery_split at 18, 264 size 150, 40
 
   button "Close Gallery" as close_gallery at 24, 690 size 180, 40
   statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28
@@ -104,3 +107,26 @@ window "Dialog Lab" as dialogs size 820, 560:
   button "Back to Gallery" as dialog_gallery at 44, 466 size 180, 40
   button "Close Dialog Lab" as close_dialogs at 240, 466 size 180, 40
   statusbar "{dialog_status}" as dialog_statusbar at 0, 532 size 820, 28
+
+
+window "Split Lab" as split_lab size 820, 560:
+  # @locked
+  shape rounded as split_header fill #f0fdf4 stroke #bbf7d0 stroke-width 1 radius 20 opacity 1 at 24, 18 size 772, 84
+  text "SplitContainer Lab" at 44, 36 size 320, 32
+  text "The initial pane ratio is source-backed; runtime divider movement stays transient." at 44, 68 size 560, 22
+  text "{split_status}" at 594, 42 size 180, 38
+
+  panel as split_demo at 24, 124 size 772, 300:
+    # @panel-split vertical 42
+    text "Navigator pane"
+    text "Pane 1 is an explicit source group before the split marker."
+    button "Navigate" as split_navigate
+    # @panel-split-break
+    text "Editor pane"
+    text "Pane 2 follows the visible marker. Drag or keyboard-resize the divider."
+    button "Preview" as split_preview
+
+  text "Arrow keys resize by 2%; Shift+Arrow by 10%. Home/End use the bounded 10-90% range." at 44, 446 size 712, 32
+  button "Back to Gallery" as split_gallery at 44, 490 size 180, 40
+  button "Close Split Lab" as close_split_lab at 240, 490 size 180, 40
+  statusbar "{split_status}" as split_statusbar at 0, 532 size 820, 28
