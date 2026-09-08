@@ -1,0 +1,238 @@
+name: SplitContainer product integration
+
+on:
+  push:
+    branches: [splitcontainer-stage1]
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: splitcontainer-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Update Showcase docs and acceptance gates
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one anchor, found {count}: {old[:80]!r}')
+              p.write_text(s.replace(old, new))
+
+          # Showcase readable sources.
+          replace_once(
+              'examples/patch-studio-showcase/main.patch',
+              'create text dialog_status = "Dialogs ready"\n',
+              'create text dialog_status = "Dialogs ready"\ncreate text split_status = "SplitContainer ready"\n'
+          )
+          replace_once(
+              'examples/patch-studio-showcase/main.patch',
+              'Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox and ScrollBox metadata stays source-backed.',
+              'Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer metadata stays source-backed.'
+          )
+
+          forms = Path('examples/patch-studio-showcase/forms.patch')
+          s = forms.read_text()
+          if 'window "Split Lab" as split_lab' in s:
+              raise SystemExit('Split Lab already exists')
+          s = s.replace(
+              '    row "ScrollBox", "Panel auto-scroll", "Studio/Web"\n    row "TreeView", "changed(value)", "Ready"',
+              '    row "ScrollBox", "Panel auto-scroll", "Studio/Web"\n    row "SplitContainer", "Two-pane Panel", "Studio/Web"\n    row "TreeView", "changed(value)", "Ready"'
+          )
+          s = s.replace(
+              '        node "GroupBox"\n        node "ScrollBox"',
+              '        node "GroupBox"\n        node "ScrollBox"\n        node "SplitContainer"'
+          )
+          s = s.replace(
+              '    button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40',
+              '    button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40\n    button "Split Lab" as gallery_split at 18, 264 size 150, 40'
+          )
+          split_form = '''\n\nwindow "Split Lab" as split_lab size 820, 560:\n  # @locked\n  shape rounded as split_header fill #f0fdf4 stroke #bbf7d0 stroke-width 1 radius 20 opacity 1 at 24, 18 size 772, 84\n  text "SplitContainer Lab" at 44, 36 size 320, 32\n  text "The initial pane ratio is source-backed; runtime divider movement stays transient." at 44, 68 size 560, 22\n  text "{split_status}" at 594, 42 size 180, 38\n\n  panel as split_demo at 24, 124 size 772, 300:\n    # @panel-split vertical 42\n    text "Navigator pane"\n    text "Pane 1 is an explicit source group before the split marker."\n    button "Navigate" as split_navigate\n    # @panel-split-break\n    text "Editor pane"\n    text "Pane 2 follows the visible marker. Drag or keyboard-resize the divider."\n    button "Preview" as split_preview\n\n  text "Arrow keys resize by 2%; Shift+Arrow by 10%. Home/End use the bounded 10-90% range." at 44, 446 size 712, 32\n  button "Back to Gallery" as split_gallery at 44, 490 size 180, 40\n  button "Close Split Lab" as close_split_lab at 240, 490 size 180, 40\n  statusbar "{split_status}" as split_statusbar at 0, 532 size 820, 28'''
+          forms.write_text(s + split_form + ('\n' if not split_form.endswith('\n') else ''))
+
+          logic = Path('examples/patch-studio-showcase/logic.patch')
+          ls = logic.read_text()
+          if 'when gallery_split clicked:' in ls:
+              raise SystemExit('Split Lab handlers already exist')
+          ls += '''\nwhen gallery_split clicked:\n  open split_lab\n  change split_status:\n    set = "Split Lab opened from Component Gallery"\n\nwhen split_navigate clicked:\n  change split_status:\n    set = "Navigator pane action completed"\n\nwhen split_preview clicked:\n  change split_status:\n    set = "Editor pane preview completed"\n\nwhen split_gallery clicked:\n  open components\n  close split_lab\n  change gallery_status:\n    set = "Returned from Split Lab"\n\nwhen close_split_lab clicked:\n  close split_lab\n  change status:\n    set = "Returned from SplitContainer Lab"\n'''
+          logic.write_text(ls)
+
+          # Showcase README.
+          replace_once(
+              'examples/patch-studio-showcase/README.md',
+              'The Showcase uses three focused Forms with a consistent card/dashboard layout:',
+              'The Showcase uses four focused Forms with a consistent card/dashboard layout:'
+          )
+          replace_once(
+              'examples/patch-studio-showcase/README.md',
+              '- **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.',
+              '- **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.\n- **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.'
+          )
+          replace_once(
+              'examples/patch-studio-showcase/README.md',
+              '- ScrollBox as block-local `# @panel-scroll auto` on that same Panel, with positioned overflow proving the scrolling path;',
+              '- ScrollBox as block-local `# @panel-scroll auto` on that same Panel, with positioned overflow proving the scrolling path;\n- SplitContainer as block-local `# @panel-split vertical 42` plus one explicit `# @panel-split-break`, with a dedicated Split Lab exercising both panes and the divider;'
+          )
+          replace_once(
+              'examples/patch-studio-showcase/README.md',
+              '- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox and ScrollBox are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/scroll contract exists.',
+              '- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.'
+          )
+          replace_once(
+              'examples/patch-studio-showcase/README.md',
+              '- ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.',
+              '- ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.\n- SplitContainer Stage 1 keeps orientation, pane boundary and initial ratio visible in source. Runtime divider movement is bounded transient UI state, emits no Patch event and does not mutate application state.'
+          )
+
+          # Current authoring surface.
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              '- ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header.',
+              '- ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header;\n- SplitContainer as ordinary Panel plus block-local `# @panel-split vertical|horizontal <ratio>` and one explicit `# @panel-split-break` between the two pane groups.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox and ScrollBox are supported in Studio and Standalone Web.',
+              'PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              '`# @panel-mode group` and `# @panel-scroll auto` may be combined on the same Panel.\n',
+              '`# @panel-mode group` and `# @panel-scroll auto` may be combined on the same Panel.\n\nSplitContainer Stage 1 is a two-pane Panel behavior with visible source ownership. Orientation, the 10-90% initial ratio and the single pane boundary are source-backed. Stage 1 accepts flow-layout Panel children only and requires at least one child in each pane. Studio divider edits rewrite the source-backed initial ratio; Standalone Web divider movement is transient runtime UI state only. The divider exposes pointer plus keyboard resizing, emits no Patch event and never enters Change IR or persistent application state. GroupBox presentation may compose with SplitContainer, while outer ScrollBox and positioned Panel children deliberately fail closed in this stage.\n'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'ScrollBox uses block-local Panel metadata, so its `# @panel-scroll auto` line moves atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar.',
+              'ScrollBox and SplitContainer use block-local Panel metadata, so their directives and explicit split marker move atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'ScrollBox Stage 1 reuses the same containment contract with block-local `# @panel-scroll auto`, a dedicated Studio palette/Inspector path, automatic overflow and a bounded transient scroll-position cache. Current Ready native fails closed for GroupBox presentation, ScrollBox behavior and positioned Panel children because Native GUI IR 1.9 does not yet define those presentation/scrolling/true parent-child containment and clipping semantics.',
+              'ScrollBox Stage 1 reuses the same containment contract with block-local `# @panel-scroll auto`, a dedicated Studio palette/Inspector path, automatic overflow and a bounded transient scroll-position cache. SplitContainer Stage 1 uses the same ordinary Panel with block-local `# @panel-split ...` plus `# @panel-split-break`, a dedicated palette/Inspector path and a real bounded pointer/keyboard divider over two explicit flow-child groups. Current Ready native fails closed for GroupBox presentation, ScrollBox behavior, SplitContainer behavior and positioned Panel children because Native GUI IR 1.9 does not yet define those presentation/scrolling/split/true parent-child containment and clipping semantics.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'Designer selection, filters, active nested editors, scroll offsets and other authoring/runtime view state do not become Patch application state or Change History entries.',
+              'Designer selection, filters, active nested editors, scroll offsets, transient runtime split ratios and other authoring/runtime view state do not become Patch application state or Change History entries.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'ProgressBar and ScrollBox expose no events at all.',
+              'ProgressBar, ScrollBox and SplitContainer expose no events at all.'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              'Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and positioned Panel-child Stage-2 semantics',
+              'Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics'
+          )
+          replace_once(
+              'docs/STUDIO_AUTHORING_SURFACE.md',
+              '- Number/SpinEdit, date/time controls, SplitContainer and richer shell controls from the RAD master backlog;',
+              '- Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;'
+          )
+
+          # Roadmap and detailed backlog.
+          replace_once(
+              'docs/ROADMAP.md',
+              '- [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed\n- [x] canonical Project-v4 Patch Studio Showcase',
+              '- [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed\n- [x] SplitContainer as block-local two-pane Panel behavior via `# @panel-split ...` plus `# @panel-split-break`, with source-backed initial ratio, transient runtime divider resizing and Current Ready native fail-closed\n- [x] canonical Project-v4 Patch Studio Showcase'
+          )
+          replace_once(
+              'docs/ROADMAP.md',
+              '- [ ] SplitContainer\n- [ ] SpinEdit/NumberEdit and Date/Time controls',
+              '- [ ] SpinEdit/NumberEdit and Date/Time controls'
+          )
+
+          replace_once(
+              'docs/RAD_STUDIO_MASTER_BACKLOG.md',
+              '''## P1.13 GroupBox\n\n- [ ] captioned container;\n- [ ] child coordinates/layout;\n- [ ] accessibility group semantics.\n\n## P1.14 ScrollBox / ScrollPanel\n\n- [ ] scrollable container and AutoScroll;\n- [ ] horizontal/vertical policies;\n- [ ] nested content;\n- [ ] wheel/touch parity.\n\n## P1.15 Splitter / SplitContainer\n\n- [ ] orientation and resizable panes;\n- [ ] min sizes;\n- [ ] source-backed initial split;\n- [ ] runtime resize;\n- [ ] optional persisted UI state later.''',
+              '''## P1.13 GroupBox\n\n- [x] captioned source-backed Panel presentation via `# @panel-mode group`;\n- [x] reuses Panel Stage 2 child layout without a second container model;\n- [x] Studio/Web accessibility group semantics;\n- [x] Current Ready native fail-closed boundary.\n\n## P1.14 ScrollBox / ScrollPanel\n\n- [x] source-backed automatic scrolling via `# @panel-scroll auto`;\n- [x] positioned-child overflow extent in Studio/Web;\n- [x] wheel/trackpad/touch behavior through browser overflow with transient scroll position;\n- [ ] explicit horizontal/vertical policy selectors beyond automatic overflow;\n- [ ] nested Panel/ScrollBox composition after nested Panels are promoted.\n\n## P1.15 Splitter / SplitContainer\n\n- [x] vertical/horizontal two-pane orientation over one ordinary Panel;\n- [x] source-backed 10-90% initial split and explicit `# @panel-split-break` pane boundary;\n- [x] pointer and keyboard runtime resize with transient-only runtime ratio;\n- [x] Studio divider edits rewrite the visible source-backed initial ratio;\n- [x] Current Ready native fails closed until an explicit native split-containment contract is promoted;\n- [ ] configurable per-pane minimum sizes beyond the current bounded percentage range;\n- [ ] positioned children and outer AutoScroll composition;\n- [ ] optional persisted runtime UI ratio only if a visible Patch state contract is later justified.'''
+          )
+
+          # Authoring-surface regression updates.
+          replace_once(
+              'tests/studio-authoring-surface.test.js',
+              "  assert.match(surface, /ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto`/);",
+              "  assert.match(surface, /ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto`/);\n  assert.match(surface, /SplitContainer as ordinary Panel plus block-local `# @panel-split/);\n  assert.match(surface, /SplitContainer Stage 1 is a two-pane Panel behavior/);\n  assert.match(surface, /Standalone Web divider movement is transient runtime UI state only/);"
+          )
+          replace_once(
+              'tests/studio-authoring-surface.test.js',
+              "  assert.match(surface, /Number\\/SpinEdit, date\\/time controls, SplitContainer/);\n  assert.doesNotMatch(surface, /Number\\/SpinEdit, date\\/time controls, ScrollBox\\/SplitContainer/);",
+              "  assert.match(surface, /Number\\/SpinEdit, date\\/time controls and richer shell controls/);\n  assert.doesNotMatch(surface, /Number\\/SpinEdit, date\\/time controls, SplitContainer/);"
+          )
+
+          # Showcase regression updates.
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.match(forms, /row \"ScrollBox\", \"Panel auto-scroll\", \"Studio\\/Web\"/);",
+              "  assert.match(forms, /row \"ScrollBox\", \"Panel auto-scroll\", \"Studio\\/Web\"/);\n  assert.match(forms, /row \"SplitContainer\", \"Two-pane Panel\", \"Studio\\/Web\"/);\n  assert.match(forms, /button \"Split Lab\" as gallery_split/);\n  assert.match(forms, /window \"Split Lab\" as split_lab size 820, 560/);\n  assert.match(forms, /panel as split_demo[^\\n]*:\\n    # @panel-split vertical 42[\\s\\S]*?# @panel-split-break/);"
+          )
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.match(composition.source, /# @panel-scroll auto/);",
+              "  assert.match(composition.source, /# @panel-scroll auto/);\n  assert.match(composition.source, /# @panel-split vertical 42/);\n  assert.match(composition.source, /# @panel-split-break/);"
+          )
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.equal(compiled.windowPanelScroll.controls.some(control => control.mode === 'auto' && control.id === 'gallery_panel'), true);",
+              "  assert.equal(compiled.windowPanelScroll.controls.some(control => control.mode === 'auto' && control.id === 'gallery_panel'), true);\n  assert.equal(compiled.windowPanelSplit.controls.some(control => control.id === 'split_demo' && control.split?.orientation === 'vertical' && control.split?.ratio === 42), true);"
+          )
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.doesNotMatch(composition.source, /when gallery_panel scrolled:/);",
+              "  assert.doesNotMatch(composition.source, /when gallery_panel scrolled:/);\n  assert.doesNotMatch(composition.source, /when split_demo (?:changed|resized|split):/);"
+          )
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.equal(built.metadata.scrollBoxMode, 'source-backed-panel-auto-scroll');",
+              "  assert.equal(built.metadata.scrollBoxMode, 'source-backed-panel-auto-scroll');\n  assert.equal(built.metadata.splitContainerStage, 1);\n  assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');\n  assert.equal(built.metadata.splitContainerResizeState, 'transient-runtime-only');"
+          )
+          replace_once(
+              'tests/studio-showcase.test.js',
+              "  assert.match(built.html, /patchPanelScrollExtent/);",
+              "  assert.match(built.html, /patchPanelScrollExtent/);\n  assert.match(built.html, /patch-splitcontainer/);\n  assert.match(built.html, /patch-split-divider/);\n  assert.match(built.html, /role','separator/);"
+          )
+
+          # Regenerate canonical project bundle from readable source and mirror it byte-for-byte into the browser module.
+          project_path = Path('examples/patch-studio-showcase.patchproject')
+          bundle = json.loads(project_path.read_text())
+          source_dir = Path('examples/patch-studio-showcase')
+          for entry in bundle['files']:
+              entry['content'] = (source_dir / entry['path']).read_text()
+          project_text = json.dumps(bundle, indent=2, ensure_ascii=False) + '\n'
+          project_path.write_text(project_text)
+          payload = Path('web/studio-showcase-project.js')
+          payload.write_text(
+              '// Generated canonical browser copy of examples/patch-studio-showcase.patchproject.\n'
+              '// tests/studio-showcase-loader.test.js keeps the String.raw payload byte-for-byte synchronized.\n'
+              'export const PATCH_STUDIO_SHOWCASE_PROJECT = String.raw`' + project_text + '`;\n'
+          )
+          PY
+      - name: Run SplitContainer and Showcase acceptance tests
+        run: node --test tests/splitcontainer-stage1.test.js tests/studio-authoring-surface.test.js tests/studio-showcase.test.js tests/studio-showcase-loader.test.js
+      - name: Build hosted Studio closure
+        run: node scripts/build-site.js
+      - name: Commit validated product integration
+        shell: bash
+        run: |
+          rm .github/workflows/splitcontainer-product-sync.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add examples/patch-studio-showcase.patchproject examples/patch-studio-showcase/main.patch examples/patch-studio-showcase/forms.patch examples/patch-studio-showcase/logic.patch examples/patch-studio-showcase/README.md web/studio-showcase-project.js docs/STUDIO_AUTHORING_SURFACE.md docs/ROADMAP.md docs/RAD_STUDIO_MASTER_BACKLOG.md tests/studio-authoring-surface.test.js tests/studio-showcase.test.js .github/workflows/splitcontainer-product-sync.yml
+          git commit -m "docs: integrate SplitContainer into current RAD product surface"
+          git push origin HEAD:splitcontainer-stage1
