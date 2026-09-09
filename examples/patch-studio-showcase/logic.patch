@@ -256,6 +256,12 @@ when split_preview clicked:
   change split_status:
     set = "Editor pane preview completed"
 
+when split_step changed:
+  change split_step:
+    set = value
+  change split_status:
+    set = "SpinEdit value persisted explicitly"
+
 when split_gallery clicked:
   open components
   close split_lab
