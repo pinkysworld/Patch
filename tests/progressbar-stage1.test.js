@@ -111,7 +111,7 @@ test('Patch Studio exposes ProgressBar as a Slider preset and Inspector mode', (
   const studio = fs.readFileSync('web/slider-stage1.js', 'utf8');
   assert.match(studio, /addProgressBar/);
   assert.match(studio, /# @slider-mode progress/);
-  assert.match(studio, /ProgressBar is a passive source-backed number-state presentation/);
+  assert.match(studio, /ProgressBar is passive; SpinEdit is interactive/);
   assert.match(studio, /buildWindowSliderPresentationManifest/);
   assert.match(studio, /progress\.patch-progressbar-meter/);
   assert.doesNotMatch(studio, /context\.dispatch\([^\n]*ProgressBar/i);
