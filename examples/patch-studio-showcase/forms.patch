@@ -14,6 +14,7 @@ window "Component Gallery" as components size 1080, 760:
     row "MaskedEdit", "Input mask", "Studio/Web"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
+    row "SpinEdit", "Interactive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
     row "ScrollBox", "Panel auto-scroll", "Studio/Web"
     row "SplitContainer", "Two-pane Panel", "Studio/Web"
@@ -32,6 +33,7 @@ window "Component Gallery" as components size 1080, 760:
         node "ComboBox"
         node "ListBox"
         node "Slider"
+        node "SpinEdit"
       node "Data"
         node "Table"
         node "TreeView"
@@ -126,7 +128,10 @@ window "Split Lab" as split_lab size 820, 560:
     text "Pane 2 follows the visible marker. Drag or keyboard-resize the divider."
     button "Preview" as split_preview
 
-  text "Arrow keys resize by 2%; Shift+Arrow by 10%. Home/End use the bounded 10-90% range." at 44, 446 size 712, 32
+  text "Arrow keys resize by 2%; Shift+Arrow by 10%." at 44, 446 size 380, 28
+  text "SpinEdit" at 500, 446 size 80, 24
+  # @slider-mode spin
+  slider 1..10 as split_step step 1 at 584, 442 size 180, 34
   button "Back to Gallery" as split_gallery at 44, 490 size 180, 40
   button "Close Split Lab" as close_split_lab at 240, 490 size 180, 40
   statusbar "{split_status}" as split_statusbar at 0, 532 size 820, 28
