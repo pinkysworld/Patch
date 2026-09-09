@@ -53,6 +53,8 @@ jobs:
         run: node --test tests/studio-sealed-table-v10.test.js
       - name: Site Designer bundle regression
         run: node --test tests/site-alignment-bundle.test.js
+      - name: Formal scope report
+        run: node scripts/report-formal-scope.js
       - name: Language, compiler, formal, source/runtime/call/concrete-call certificate, direct-Wasm, C99, app-build, validator, designer and bootstrap-Wasm tests
         run: node scripts/run-tests-ci.js
       - name: Studio Chrome startup smoke
@@ -111,6 +113,8 @@ jobs:
         run: npm run transitive-runtime-certify:example
       - name: Execute repeated direct Wasm calls and generate invocation-frame evidence
         run: npm run transitive-runtime-certify:repeated
+      - name: Post-generation formal scope report
+        run: node scripts/report-formal-scope.js
       - name: Portable application build
         run: npm run build:example
       - name: Bootstrap WebAssembly application build

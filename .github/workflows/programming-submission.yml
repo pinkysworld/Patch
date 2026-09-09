@@ -1,0 +1,47 @@
+name: Programming Journal submission PDF
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'paper/**'
+      - 'scripts/build-programming-submission-source.js'
+      - '.github/workflows/programming-submission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Generate venue-specific manuscript body
+        run: node scripts/build-programming-submission-source.js
+      - name: Fetch pinned Programming Journal class
+        run: |
+          curl --fail --location --silent --show-error \
+            https://raw.githubusercontent.com/programming-journal/programming/bd831b2b148bed4725038a309c0a63c66f805778/programming.cls \
+            --output paper/programming.cls
+          test -s paper/programming.cls
+          grep -q 'P@version{8.1}' paper/programming.cls
+      - name: Compile submission PDF
+        uses: xu-cheng/latex-action@6549dc21effb2730855a1281407ecfcececc6c1b
+        with:
+          root_file: programming-submission.tex
+          working_directory: paper
+          latexmk_use_lualatex: true
+          texlive_version: 2026
+      - name: Reject unresolved references and layout overflow
+        run: |
+          test -s paper/programming-submission.pdf
+          ! grep -E 'undefined references|Citation .* undefined|Reference .* undefined|Overfull \\hbox|Overfull \\vbox' paper/programming-submission.log
+      - name: Upload submission PDF
+        uses: actions/upload-artifact@v7
+        with:
+          name: patch-paper1-programming-submission
+          path: paper/programming-submission.pdf
+          retention-days: 14

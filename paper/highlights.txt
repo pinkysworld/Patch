@@ -1,0 +1,4 @@
+State-Change Factorization makes Change the persistent-mutation route.
+Contracts derive target, operation, and bounded magnitude authority.
+Lean links selected direct-Wasm executions to exact call effects.
+Public-code stress test separates mutation fit from commit ownership.
