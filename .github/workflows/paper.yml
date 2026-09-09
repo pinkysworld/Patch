@@ -1,0 +1,75 @@
+name: Paper CI
+
+on:
+  push:
+    branches:
+      - 'paper/**'
+    paths:
+      - 'paper/**'
+      - 'studies/real-code-mutations/**'
+      - 'scripts/evaluate-real-code-mutations.js'
+      - 'scripts/verify-real-code-sources.js'
+      - 'package.json'
+      - '.github/workflows/paper.yml'
+  pull_request:
+    paths:
+      - 'paper/**'
+      - 'studies/real-code-mutations/**'
+      - 'scripts/evaluate-real-code-mutations.js'
+      - 'scripts/verify-real-code-sources.js'
+      - 'package.json'
+      - '.github/workflows/paper.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: paper-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  latex:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify frozen real-code audit
+        run: |
+          node --check scripts/verify-real-code-sources.js
+          npm run evaluate:real-code:check
+
+      - name: Compile manuscript
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: journal.tex
+          working_directory: paper
+          latexmk_use_xelatex: false
+
+      - name: Reject unresolved references
+        shell: bash
+        run: |
+          if grep -E "(Citation .* undefined|Reference .* undefined|There were undefined references|There were undefined citations)" paper/journal.log; then
+            echo "Unresolved manuscript citation/reference detected."
+            exit 1
+          fi
+
+      - name: Reject layout overflow
+        shell: bash
+        run: |
+          if grep -F 'Overfull \hbox' paper/journal.log; then
+            echo "Overfull manuscript box detected. Fix the source before journal submission."
+            exit 1
+          fi
+
+      - name: Upload manuscript PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-scp-manuscript
+          path: paper/journal.pdf
+          if-no-files-found: error

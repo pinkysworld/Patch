@@ -131,15 +131,18 @@ structure Rule where
   amount : Option Interval
   deriving Repr
 
-/-- Relational semantic authority judgment. The executable checker is defined
-    separately in `PatchChecker.lean` and proved sound with respect to this
-    relation. -/
+/-- Relational semantic authority judgment. A bounded rule fails closed when
+    the effect's quantitative magnitude is unknown. An unbounded rule may admit
+    either known or unknown magnitude for the matching target/field/kind. The
+    executable checker is defined separately in `PatchChecker.lean` and proved
+    sound with respect to this relation. -/
 def Allows (r : Rule) (e : Effect) : Prop :=
   r.target = e.target ∧
   r.field = e.field ∧
   r.kind = e.kind ∧
   match e.amount, r.amount with
-  | none, _ => True
+  | none, none => True
+  | none, some _ => False
   | some _, none => True
   | some actual, some permitted => Within actual permitted
 
@@ -149,9 +152,9 @@ def SignatureCovers (runtime signature : List Effect) : Prop :=
 def PolicyAllows (signature : List Effect) (policy : List Rule) : Prop :=
   ∀ e, e ∈ signature → ∃ r, r ∈ policy ∧ Allows r e
 
-/-- Core Semantic Change Contract theorem. If inferred signatures cover all
-    runtime changes, and every inferred signature effect is admitted by the
-    capability policy, every runtime change is admitted by the policy. -/
+/-- Core Semantic Change Contract composition. If normalized signature effects
+    cover all normalized runtime effects and every signature effect is admitted
+    by policy, every runtime effect is admitted by policy. -/
 theorem capabilitySoundness
     {runtime signature : List Effect} {policy : List Rule}
     (hSignature : SignatureCovers runtime signature)
@@ -160,8 +163,7 @@ theorem capabilitySoundness
   intro e hRuntime
   exact hPolicy e (hSignature e hRuntime)
 
-/-- A direct corollary phrased as set inclusion, matching the paper notation
-    RuntimeChanges(f) ⊆ Sig(f) ⊆ Cap(f). -/
+/-- Set-inclusion-shaped convenience corollary used by generated certificates. -/
 theorem semanticChangeContractComposition
     {runtime signature : List Effect} {policy : List Rule}
     (hSignature : SignatureCovers runtime signature)

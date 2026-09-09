@@ -1,278 +1,99 @@
-# Paper
+# Patch journal manuscript
 
-Working manuscript:
+The current Science of Computer Programming manuscript is built from `paper/journal.tex`, which intentionally contains only `\input{main.tex}`. The complete submission manuscript, including the public real-code mutation audit, now lives in the canonical `paper/main.tex`. It uses Elsevier `elsarticle` formatting and is developed as a **journal submission only; no conference submission is planned**.
 
-**Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs**
+## Current scientific framing
 
-## Current manuscript status
+The paper is centered on a deliberately narrow architectural claim:
 
-The manuscript is synchronized to the current research/product split:
+> Patch makes structured semantic Change the mandatory modeled route for post-creation application-state mutation and connects that semantic mutation lineage to operation- and magnitude-aware contracts, provenance, history, and scoped assurance.
 
-- product artifact: **Patch 0.2.0-beta.35**;
-- semantic IR: **Change IR 0.10**;
-- formal runtime-correspondence milestone: **beta.32**;
-- current native product contract: **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**;
-- frozen TreeView compatibility contract: **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3**;
-- beta.33-beta.35+ product engineering does not widen the beta.32 Lean claim.
+`Application state` means Patch state retained across statements/events during execution; it does not imply durable storage across process restarts. `Same substrate` / `same lineage` means a shared mandatory semantic mutation route/vocabulary with distinct compile-time/runtime representations derived from it, not one literal object shared unchanged by every phase.
 
-`main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, repeated-identical and mixed-guard repeated-call evidence, semantic-authority evaluation, the checkout/loyalty and usage/quota application cases, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
+## Core research questions
 
-The artifact also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
+The integrated manuscript now uses four explicit research questions:
 
-Beta.35+ product work now includes the canonical multi-file Studio project bundle v3, list-backed multi-select ListBox parity, hierarchical TreeView and Slider across browser and supported Windows/macOS/Linux direct-native and token-free Ready/offline paths. Current token-free desktop Window packaging uses Native GUI IR 1.3, sealed payload v13 and runtime v1.4. The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains frozen compatibility evidence. Unversioned Native GUI IR 0.7 / payload v6 files are historical include-chain bases, not the Ready runtime. These GUI/runtime additions remain outside the beta.32 formal runtime-correspondence claim. Thing records are prototype-free own-field product values in the interpreter and Window Web runtime; they are outside the beta.32 Lean fragment, and direct Wasm/C99 fail closed on them.
+1. **RQ1, Contract linkage:** can a supported committed numeric Change be connected formally to a contract-level operation/magnitude effect and the actual state delta?
+2. **RQ2, Assurance and implementation correspondence:** which contract, range, finite-call, and runtime-correspondence properties are machine checked, and where does the proof-free implementation boundary remain?
+3. **RQ3, Mechanism isolation:** which authority distinctions disappear when operation and magnitude are erased while reachable write targets are retained?
+4. **RQ4, External mutation stress test:** across a small commit-pinned purposive audit of existing JavaScript/TypeScript systems, which retained-state mutation observations fit the current Patch surface directly, which require adapters or restructuring, and which have the shape of the narrow Lean Change-to-contract bridge?
 
-`main.tex` names that current/frozen native split and the prototype-free Thing boundary in the product-artifact section. It no longer describes current native Window paths as Native GUI IR 0.7 list-state fail-closed. Later Studio diagnostics (`file:line` over composed v3 sources), `patch doctor` host-C99 execution on Unix, Change-Signature semantic cloning and Command Palette recipe-parameter symbols are product engineering; they do not appear as new Lean theorems.
+RQ4 is descriptive rather than representative. It does not estimate ecosystem prevalence, migration effort, developer productivity, or comparative superiority.
 
-The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
+## Evidence currently in the manuscript
 
-## Candidate contribution
+- State-Change Factorization as a by-construction machine-checked design invariant;
+- Mutation Transparency;
+- a direct Lean Change-to-contract bridge for supported singleton numeric Changes;
+- proof that a bounded allowed Change effect constrains the actual committed before/after magnitude;
+- fail-closed bounded unknown magnitude in the relational semantics;
+- executable/relational policy equivalence (`allowsBool_iff`, `policyAllowsBool_iff`) for the modeled Effect/Rule fragment;
+- normalized signature/capability and integer-range results for explicit fragments;
+- finite ranked and transitive exact call-tree reasoning tied to semantic-authority propagation;
+- accepted-evidence runtime-frame correspondence for selected direct-WebAssembly executions;
+- repeated-identical and mixed-guard invocation-frame evidence;
+- an explicitly defined eight-case target-only mechanism-isolation ablation;
+- checkout/loyalty and usage/quota multi-state application cases;
+- a purposive public real-code mutation audit with 18 retained-state observations from six commit-pinned independently authored projects;
+- artifact-level semantic-lineage reuse across compiler analysis and interpreter history/undo/provenance paths;
+- commit-bound reproducibility tooling.
 
-The current contribution hypothesis is intentionally narrow:
+The public audit intentionally reports mixed evidence: 5 observations are direct local current-surface fits, 11 require adapters, 2 require source restructuring, and only 3 have the same narrow singleton numeric directional shape as the present Lean bridge. Context coding records 7 standalone observations, 4 coupled multi-target observations, 2 external-persistence cases, 2 sequential-same-target cases, 2 dynamic-target cases, and 1 batched-dynamic-target case. These counts describe the purposive corpus only.
 
-> Patch factors ordinary post-creation persistent mutation through a structured semantic Change, and derives operation- and magnitude-aware summaries and authority from that same mandatory mutation substrate.
+The manuscript does **not** claim end-to-end compiler verification, complete sandboxing, production source-to-effect verification, representative ecosystem validation, a controlled performance result, a usability result, atomic multi-target Change, or superiority over modern effect/capability systems.
 
-This is not a unique-expressibility or firstness claim. Related systems provide first-class state change, rich and value-dependent effects, capabilities, quantitative grades, permissions, typestate mechanisms and more general state specifications. See `docs/RELATED_WORK.md`, `docs/NOVELTY.md` and `related-work.tex`.
+## Research frontier from the current backlog
 
-## Assurance stack represented in the manuscript
+The external audit now gives the next research work a concrete empirical motivation:
 
-1. State-Change Factorization and Mutation Transparency;
-2. Change Signature and Change Capability soundness for explicit semantic fragments;
-3. integer `RangeExpr` soundness;
-4. independent source/range, guard and raw static call-site translation/source-identity validation;
-5. finite ranked abstract call composition;
-6. exact safe-integer call binding and quantitative effect refinement;
-7. beta.28/29 structured and guard-selected exact callee traces;
-8. beta.30 finite transitive exact call-tree refinement;
-9. beta.31 production direct-Wasm execution connected to independently validated semantic observations;
-10. beta.32 independently reconstructed invocation frames, including repeated identical calls and mixed concrete guard paths between repeated identities;
-11. generated Lean evidence checking runtime-frame bindings against beta.30 exact bindings and re-evaluating frame-selected observed effects;
-12. semantic-authority micro-case ablation plus checkout/loyalty and usage/quota engineering cases;
-13. process-isolated controlled-measurement protocol;
-14. commit-bound reproducibility bundle.
+- coupled multi-target observations motivate **Relational Atomic ChangeSets**;
+- representation and host-state boundaries motivate **Certified Change Adapters**;
+- current capability declarations motivate **least-authority inference** from inferred signatures.
 
-## Static call-site source binding
+Relational ChangeSets and least-authority inference currently exist only as isolated Stage-0 research prototypes on `research/relational-changesets`. They are not wired into the stable parser/interpreter/Change IR and do not have the required Lean atomicity, invariant-preservation, or minimality theorems. They are therefore presented only as follow-on hypotheses, not as contributions of the current paper.
 
-Concrete call certificates do not accept the production AST as the sole source of truth for the identity of supported static `do recipe(args)` sites. `src/call-site-validation.js` independently scans raw source and reconstructs caller recipe context, callee name, source line and exact trimmed argument texts. The complete ordered raw-source list must agree with a separately collected production-AST list.
+## Review status
 
-The validation artifact is attached to `formalCalls`, so concrete-call, structured-call, transitive-call and beta.32 runtime witness paths inherit the same fail-closed precondition. The Concrete Call Witness schema remains **0.1** because the call-site validation version and successful-source-binding flag are additive provenance metadata.
+Four earlier internal reviewer-perspective rounds are documented in `INTERNAL_REVIEW.md`. Round 5 is documented in `INTERNAL_REVIEW_ROUND5.md` and `INTERNAL_REVIEW_ROUND5_RESPONSE.md`. Round 6 is documented in `INTERNAL_REVIEW_ROUND6.md` and focuses on empirical-transfer validity, source provenance, strict direct-fit coding, and claim discipline. An author-supplied Claude Opus referee-style AI review and its disposition are documented in `EXTERNAL_REVIEW_RESPONSE.md`; none of these internal/AI reviews is described as journal peer review.
 
-This check is syntactic, not semantic. After source identity is established, Lean still re-evaluates supported argument expressions and checks exact values, positional binding, declared ranges, call structure and later effect obligations. The independent scanner remains proof-free JavaScript and is not a verified parser. See `docs/CALL_SITE_VALIDATION.md`.
+The strongest formal issues identified across the reviews have been addressed by the direct Change-to-Effect/Rule bridge, consistent fail-closed magnitude semantics, and formal equivalence between relational and executable policy checks. The former all-internal external-validity gap is now partially addressed by the public mutation-shape audit; broader and independently coded evidence remains future work.
 
-## Beta.32 runtime boundary
+## Submission metadata currently known
 
-The production direct-Wasm backend does not emit trusted call-entry/exit markers. The independent validator reconstructs concrete invocation frames from validated execution structure. Each frame carries caller/callee identity, dynamic ordinal, parent/depth information, exact arguments/bindings and transition boundaries.
+- Author: Michél Nguyen
+- Affiliation: University of the People
+- Funding: none
+- Competing interests: none declared
+- Intended venue: Science of Computer Programming, Research Papers track
+- Submission route: journal only
 
-For a selected beta.30 exact call-tree witness, generated evidence checks:
+The exact originality/concurrent-submission declaration and any remaining Editorial Manager fields should be confirmed at actual submission time rather than inferred.
 
-```text
-runtimeFrameBindings = beta30ExactBindings
-```
+## Supporting submission files
 
-and then lets Lean re-evaluate the frame-selected observed effects through the exact call-tree semantics before applying:
+- `journal.tex`, thin journal root for the canonical manuscript;
+- `main.tex`, complete integrated manuscript;
+- `real-code-study.tex`, retained Round-6 source module for audit history/reference but no longer separately injected by `journal.tex`;
+- `related-work.tex`;
+- `references.bib` and `related-extra.bib`;
+- `highlights.txt`;
+- `cover-letter.md`;
+- `SCP_SUBMISSION.md`;
+- internal review/disposition files including `INTERNAL_REVIEW_ROUND6.md`.
 
-```text
-checkedObservedTransitiveRuntimeRefinesCallerSignature
-```
+The audit artifact lives under `studies/real-code-mutations/` with `corpus.json`, `results.json`, and its protocol material. `scripts/evaluate-real-code-mutations.js` deterministically validates/regenerates the counts; `scripts/verify-real-code-sources.js` optionally checks source anchors at the exact public commit pins.
 
-The repeated-identical-call regression source is:
+## CI
 
-```text
-examples/formal-transitive-calls-repeated.patch
-```
+`.github/workflows/paper.yml` checks the frozen real-code corpus/result consistency, compiles `journal.tex`, rejects unresolved citations/references and `Overfull \hbox`, and uploads the generated PDF artifact. The network source-anchor check is intentionally optional so temporary GitHub availability cannot break manuscript compilation. Formal CI separately regenerates and verifies the Lean/certificate assurance stack when formal or implementation paths change.
 
-The stronger mixed-guard regression source is:
+The formal-policy/bridge state is pinned to commit `2518a1522461319454449eb6ad85d1ffeeaab53b`, whose complete formal workflow passed with the checker-equivalence theorems and generated certificates.
 
-```text
-examples/formal-transitive-calls-mixed-guards.patch
-```
+## Remaining high-value strengthening work
 
-It executes `caller(1)`, `caller(4)`, `caller(1)` through `caller -> outer -> middle -> leaf`. The first and third calls are identical, while the middle call takes the opposite guard branch. The verified artifact reconstructs 12 dynamic frames, supports six transitive runtime correspondences with maximum certified nested depth 2, and preserves the three `caller -> outer` effect traces as `coins +4`, `score +5`, `coins +4`.
-
-Generated runtime certificates include:
-
-```text
-GeneratedTransitiveRuntimeCertificate.lean
-GeneratedRepeatedTransitiveRuntimeCertificate.lean
-GeneratedMixedGuardTransitiveRuntimeCertificate.lean
-```
-
-This is **not** an end-to-end compiler/runtime refinement theorem. Explicit proof-free/trust boundaries remain runtime capture, JavaScript validator/frame-reconstruction correctness, parser/extractor correctness outside independently cross-checked supported source/range, guard and static-call-site fragments, JavaScript-to-Wasm lowering and the Wasm engine. The independent validators themselves remain unverified JavaScript.
-
-## Product boundary relative to the paper
-
-The beta.35+ product artifact has moved ahead of the formal runtime-correspondence milestone in UI and distribution engineering. Current product features include:
-
-- Patch Studio multi-file project bundle v3;
-- browser App Preview and Standalone Web support for list-backed multi-select ListBox, TreeView and Slider;
-- Native GUI IR 1.3 with hierarchical TreeView and Slider;
-- sealed payload v13 / runtime v1.4 for current token-free Ready/offline Windows, macOS and Linux Window applications;
-- frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView compatibility evidence;
-- preserved Table/Grid, responsive layout, list-state and Menu semantics from the frozen earlier native contracts;
-- SHA-256-verified browser runtime templates and a separately checksummed offline compiler distribution;
-- Studio diagnostics that map composed multi-file compiler lines to owning `file:line`;
-- `patch doctor` self-check of interpreter, direct Wasm and C99, including host-compiled C99 execution on Unix.
-
-These product features are implementation evidence and usability/distribution work. They do not imply a new Lean theorem, a fully verified compiler, native GUI semantic verification, Authenticode signing or Developer ID notarization.
-
-## Semantic-authority evaluation
-
-The eight micro-cases use the real Patch compiler/Change Capability analysis plus an intentionally coarse internal target-only write-authority ablation.
-
-Expected mechanized matrix:
-
-```text
-3  Patch accept / coarse accept
-4  Patch reject / coarse accept
-1  Patch reject / coarse reject
-```
-
-The four differential rejections cover magnitude escalation, operation-direction escalation, transitive helper magnitude escalation and fail-closed unknown magnitude. The shared rejection is a target escape.
-
-The coarse baseline is an internal ablation, not a model of a named effect or capability system.
-
-Reproduce:
-
-```bash
-npm run evaluate:security -- \
-  --out evaluation/security/report.json \
-  --csv evaluation/security/report.csv \
-  --markdown evaluation/security/table.md
-```
-
-## Multi-domain application corpus
-
-### Checkout/loyalty
-
-The safe checkout extension executes through direct Wasm and must finish at:
-
-```text
-balance = 80
-points = 8
-cashback = 0
-```
-
-Controlled variants exercise reward-magnitude escalation, balance-direction escalation and unauthorized cashback state.
-
-Reproduce:
-
-```bash
-npm run evaluate:checkout-extension -- \
-  --out evaluation/checkout/report.json \
-  --markdown evaluation/checkout/report.md
-```
-
-### Usage/quota
-
-The second application case uses a different domain and persistent state paths. Its safe execution must finish at:
-
-```text
-used = 35
-remaining = 85
-bonus = 5
-admin_credit = 0
-```
-
-Its protected entry signature carries bounded usage increase, remaining-quota decrease and bonus increase. Controlled variants exercise magnitude escalation, operation-direction reversal and unauthorized `admin_credit` state under the same internal target-only ablation.
-
-Reproduce:
-
-```bash
-npm run evaluate:quota-extension -- \
-  --out evaluation/quota/report.json \
-  --markdown evaluation/quota/report.md
-```
-
-Together these form a two-domain artifact corpus. They are larger motivating/engineering cases, not real third-party plugin integration, a complete plugin sandbox, or an empirical study of an external extension ecosystem.
-
-## Controlled performance protocol
-
-The phase harness and process-isolated controller are documented in:
-
-```text
-docs/EVALUATION.md
-docs/CONTROLLED_EVALUATION.md
-```
-
-A paper-candidate run uses fresh Node processes and preserves every raw report. The controller checks source commit, working-tree state, scenario/source/artifact identity and normalized machine/runtime identity before aggregation. It records Q1, median, Q3, p95, mean, MAD and IQR across process medians and hashes the complete dataset.
-
-Example controlled command:
-
-```bash
-npm run evaluate:assurance:controlled -- \
-  --preset paper \
-  --runs 10 \
-  --iterations 10 \
-  --warmup 3 \
-  --machine-id patch-lab-01 \
-  --label 2026-08-paper-baseline \
-  --out-dir evaluation/results/controlled
-```
-
-GitHub-hosted timing is explicitly labelled `hosted-ci` and cannot be relabelled `controlled` by the runner.
-
-### Empirical claim boundary
-
-No overhead, scalability or asymptotic claim belongs in `main.tex` until an actual fixed-machine controlled dataset has been collected, reviewed and analyzed. The manuscript currently states this explicitly.
-
-## Reproducibility bundle
-
-The `Patch Reproducibility Bundle` workflow binds source/evidence to an exact Patch version and Git commit, regenerates the formal/runtime/security/checkout/quota evidence, hashes every bundled source/evidence file and creates a deterministic archive envelope. The formal evidence includes the single-call, repeated-identical-call and mixed-guard invocation-frame certificates. The tracked source snapshot also contains the call-site validation implementation, tests and documentation that gate concrete call-witness generation.
-
-Reproduce locally:
-
-```bash
-npm run transitive-runtime-certify:mixed-guards
-npm run bundle:reproducibility
-npm run verify:reproducibility
-```
-
-The bundle deliberately excludes manuscript performance results from heterogeneous hosted runners.
-
-## Related work
-
-`paper/related-work.tex` is included by `main.tex` and cites the expanded `references.bib`.
-
-The structured comparison covers first-class state change, reified state, classical/algebraic/sequential effects, Effects-as-Capabilities/System C, graded quantitative reasoning, dependent effects, borrowing permissions, Mezzo, revocable-capability typestate, invalidation-sensitive type-and-effect analysis, HTT, F*, Dijkstra monads, explicit program edits/change calculi/patch theory, translation validation, PCC and provenance debugging.
-
-The targeted 2025-2026 follow-up narrows the Patch hypothesis. Value-dependent quantitative effects and flow-sensitive state/capability reasoning are explicit prior art. The remaining candidate distinction is the mandatory/default modeled persistent-mutation architecture, not the individual existence of magnitude bounds, capabilities or typestate-sensitive effects.
-
-The key discipline is to separate **expressibility** from **default mutation architecture**. Patch does not claim that richer systems cannot state an equivalent bounded transition.
-
-## Reproducibility commands
-
-Core assurance:
-
-```bash
-npm test
-npm run transitive-callee-trace-certify:example
-npm run transitive-runtime-certify:example
-npm run transitive-runtime-certify:repeated
-npm run transitive-runtime-certify:mixed-guards
-```
-
-Evidence:
-
-```bash
-npm run evaluate:security
-npm run evaluate:checkout-extension
-npm run evaluate:quota-extension
-npm run evaluate:assurance:isolated
-npm run analyze:assurance -- --summary <controlled-summary.json> --svg analysis.svg
-```
-
-Commit-bound artifact:
-
-```bash
-npm run bundle:reproducibility
-npm run verify:reproducibility
-```
-
-## Remaining high-value gaps
-
-1. collect the fixed-machine controlled overhead/scaling dataset;
-2. analyze that dataset with `scripts/analyze-assurance-results.js` (dispersion, OLS sketches, candidate TeX tables and SVG plots), review it, then synchronize measured results into `main.tex` by hand;
-3. validate Patch in a genuinely external or third-party extension/integration setting rather than another internally authored artifact case;
-4. continue reducing parser/lowering/runtime trust where the improvement materially strengthens the claim, with source/range, guard and static call-site identity already independently cross-checked for their supported fragments;
-5. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
-
-The manuscript now includes a scoped contributions list, construct/internal/external validity paragraphs, an artifact-reproduction appendix, the architecture figure, mixed-guard invocation-frame figure, Lean theorem table, trust-boundary table, measurement-class table, eight-case ablation table, two-domain application table and related-work comparison table. Analysis tooling exists, can emit SVG scaling sketches, and is fail-closed against promoting hosted-CI timing. Normal literature surveillance should continue before submission, but the targeted recent dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is part of the reproducible beta.32 artifact rather than an open backlog item.
+1. archive/tag the final source/evidence snapshot under an immutable identifier/DOI before submission if appropriate;
+2. expand the public audit into a larger independently coded or preregistered corpus and/or behavior-preserving translation cases;
+3. collect fixed-machine controlled assurance-cost measurements;
+4. implement or formally compare a representative modern effect/capability approach;
+5. develop Relational ChangeSets, Certified Change Adapters, and least-authority inference as separate follow-on research with their own formal obligations.

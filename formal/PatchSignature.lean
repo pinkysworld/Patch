@@ -1,10 +1,12 @@
-import PatchFormal
+import PatchChangeContract
 
 namespace PatchFormal
 
 /-- A small executable control-flow core used to connect static Change
     Signatures to runtime changes. `emit` represents a normalized persistent
-    semantic change after source lowering. -/
+    semantic change after source lowering. Effects are atomic in this formal
+    control-flow core; deriving those atoms from Patch source is validated by
+    the production/formal bridge rather than proved by this module. -/
 inductive CoreStmt where
   | skip
   | emit (effect : Effect)
@@ -24,7 +26,8 @@ def inferSignature : CoreStmt → List Effect
   | .repeat _ body => inferSignature body
 
 /-- Big-step trace semantics for the formal core. The trace contains exactly
-    the semantic persistent effects committed by one execution. -/
+    the semantic effect atoms committed by one execution of this normalized
+    control-flow model. -/
 inductive Executes : CoreStmt → List Effect → Prop where
   | skip : Executes .skip []
   | emit {effect : Effect} : Executes (.emit effect) [effect]
@@ -45,10 +48,11 @@ inductive Executes : CoreStmt → List Effect → Prop where
       Executes (.repeat n body) rest →
       Executes (.repeat (n + 1) body) (first ++ rest)
 
-/-- **Change Signature Soundness.** Every semantic change emitted by an
-    execution of the formal core appears in the statically inferred Change
-    Signature. The signature may contain effects from untaken branches, but it
-    cannot miss a runtime effect. -/
+/-- **Change Signature Soundness for the normalized formal core.** Every effect
+    atom emitted by an execution appears in the statically inferred signature.
+    The signature may contain effects from untaken branches, but cannot miss an
+    emitted atom. This theorem does not prove source-to-effect extraction; that
+    boundary is independently validated outside this module. -/
 theorem changeSignatureSoundness
     {stmt : CoreStmt} {runtime : List Effect}
     (hExec : Executes stmt runtime) :
@@ -86,10 +90,9 @@ theorem changeSignatureSoundness
 def Protected (stmt : CoreStmt) (policy : List Rule) : Prop :=
   PolicyAllows (inferSignature stmt) policy
 
-/-- **End-to-end Capability Soundness for the formal core.** Unlike the earlier
-    composition theorem, this result does not take `SignatureCovers` as an
-    assumption. It derives signature coverage from the execution semantics and
-    the static inference function, then composes it with policy checking. -/
+/-- **Capability Soundness for the normalized formal core.** This result does
+    not take signature coverage as an assumption: it derives coverage from the
+    normalized execution semantics and composes it with policy checking. -/
 theorem endToEndCapabilitySoundness
     {stmt : CoreStmt} {runtime : List Effect} {policy : List Rule}
     (hExec : Executes stmt runtime)
@@ -99,7 +102,7 @@ theorem endToEndCapabilitySoundness
   exact capabilitySoundness (changeSignatureSoundness hExec) hProtected
 
 /-- Set-inclusion-shaped corollary matching the paper statement
-    RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt). -/
+    RuntimeEffects(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt). -/
 theorem protectedExecutionCannotEscape
     {stmt : CoreStmt} {runtime : List Effect} {policy : List Rule}
     (hExec : Executes stmt runtime)

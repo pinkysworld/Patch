@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "study_id": "patch-real-code-mutation-audit-v1",
+  "selected_at": "2026-08-30",
+  "sampling": {
+    "design": "purposive maximum-variation audit",
+    "unit": "retained-state mutation observation",
+    "projects": 6,
+    "observations_per_project": 3,
+    "scope": "production JavaScript/TypeScript only",
+    "inclusion": [
+      "public repository with an exact immutable commit pin",
+      "retained component/application/context state rather than a loop-local temporary",
+      "source anchor small enough to audit without redistributing source files",
+      "three observations chosen to vary mutation shape within each project where possible"
+    ],
+    "exclusion": [
+      "tests, fixtures, generated files, build scripts, and benchmark-only code",
+      "purely local loop/index temporaries",
+      "DOM/toolkit presentation state unless it is also retained application/component state"
+    ],
+    "inference_boundary": "Counts describe this audited purposive corpus only. They are not estimates of ecosystem prevalence or developer effort."
+  },
+  "coding_rubric": {
+    "operation_family": "Closest local semantic operation in Patch's current vocabulary: increase, decrease, set, add, remove, or clear.",
+    "local_surface_fit": {
+      "direct": "The local update shape can be represented by the current Patch source surface without changing the relevant data-representation semantics assumed at that site.",
+      "adapter": "The local operation has a Patch analogue, but host-managed state, Map/Set/trie semantics, dynamic paths, or another representation boundary requires an adapter or data-model change.",
+      "restructure": "The intended update requires a source-level restructuring beyond a direct Change translation, for example filter replacement or spread/bulk insertion."
+    },
+    "lean_fragment_shape_match": "The local observation has the same singleton numeric directional constant-magnitude shape as the current Change-to-contract Lean bridge. This does not verify the external program.",
+    "context_constraint": {
+      "standalone": "No adjacent retained-state update is required for the local invariant visible in the audited context.",
+      "coupled_multi_target": "The observation participates in a logical update spanning more than one retained target.",
+      "external_persisted_state": "The update is written back through a host persistence/service boundary.",
+      "sequential_same_target": "The same retained target is rebuilt through multiple sequential source operations.",
+      "dynamic_target": "The retained target path/key is selected dynamically.",
+      "batched_dynamic_targets": "A loop or batch may update multiple dynamically selected retained target paths."
+    }
+  },
+  "projects": [
+    {
+      "id": "gitlens",
+      "repository": "gitkraken/vscode-gitlens",
+      "ecosystem": "VS Code extension",
+      "commit": "25d480b100320bbe386f3e966328d9c1196eccfe"
+    },
+    {
+      "id": "prettier-vscode",
+      "repository": "prettier/prettier-vscode",
+      "ecosystem": "VS Code extension",
+      "commit": "b3d5ea136fadf5a4cac835df074dc12fcb398b0c"
+    },
+    {
+      "id": "vscode-eslint",
+      "repository": "microsoft/vscode-eslint",
+      "ecosystem": "VS Code extension",
+      "commit": "f5e644a38575bdc652856be6c8e45559b18f52ad"
+    },
+    {
+      "id": "obsidian-dataview",
+      "repository": "blacksmithgu/obsidian-dataview",
+      "ecosystem": "Obsidian plugin",
+      "commit": "5ad0994ff384cbb797de382e7edff2388141b73a"
+    },
+    {
+      "id": "obsidian-tasks",
+      "repository": "obsidian-tasks-group/obsidian-tasks",
+      "ecosystem": "Obsidian plugin",
+      "commit": "f2695dfaf0c4dd2267c028ff9fcbb9b1c37dddc0"
+    },
+    {
+      "id": "node-red",
+      "repository": "node-red/node-red",
+      "ecosystem": "automation runtime",
+      "commit": "dcceaddf23ed489d8ad0ae4e472ec3cc13810695"
+    }
+  ],
+  "observations": [
+    {
+      "id": "GL-COUNT-INC",
+      "project": "gitlens",
+      "path": "src/repositories.ts",
+      "context": "Repositories.add",
+      "anchor": "this._count++;",
+      "operation_family": "increase",
+      "local_surface_fit": "direct",
+      "lean_fragment_shape_match": true,
+      "context_constraint": "coupled_multi_target",
+      "notes": "The scalar count increase is locally an exact +1, but it accompanies insertion into the repository trie, so translating the whole method preserves a multi-target consistency obligation."
+    },
+    {
+      "id": "GL-COUNT-DEC",
+      "project": "gitlens",
+      "path": "src/repositories.ts",
+      "context": "Repositories.remove",
+      "anchor": "this._count--;",
+      "operation_family": "decrease",
+      "local_surface_fit": "direct",
+      "lean_fragment_shape_match": true,
+      "context_constraint": "coupled_multi_target",
+      "notes": "The scalar count decrease is locally an exact -1 and occurs only after trie deletion succeeds; the complete method still couples two retained structures."
+    },
+    {
+      "id": "GL-TRIE-CLEAR",
+      "project": "gitlens",
+      "path": "src/repositories.ts",
+      "context": "Repositories.clear",
+      "anchor": "this._trie.clear();",
+      "operation_family": "clear",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "coupled_multi_target",
+      "notes": "UriTrie has no direct Patch data type, and the clear is paired with resetting the retained count to zero."
+    },
+    {
+      "id": "PV-WORKSPACE-REMOVE",
+      "project": "prettier-vscode",
+      "path": "src/PrettierEditService.ts",
+      "context": "PrettierEditService.resetFormatters",
+      "anchor": "this.registeredWorkspaces.delete(workspaceFolder?.uri.fsPath ?? \"global\");",
+      "operation_family": "remove",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "The retained collection is a JavaScript Set. Patch has add/remove vocabulary but no Set type with uniqueness semantics."
+    },
+    {
+      "id": "PV-WORKSPACE-CLEAR",
+      "project": "prettier-vscode",
+      "path": "src/PrettierEditService.ts",
+      "context": "PrettierEditService.resetFormatters",
+      "anchor": "this.registeredWorkspaces.clear();",
+      "operation_family": "clear",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "Clearing has a direct semantic verb in Patch, but preserving Set representation semantics requires an adapter/data-model choice."
+    },
+    {
+      "id": "PV-WORKSPACE-ADD",
+      "project": "prettier-vscode",
+      "path": "src/PrettierEditService.ts",
+      "context": "PrettierEditService.handleActiveTextEditorChanged",
+      "anchor": "this.registeredWorkspaces.add(workspaceFolder.uri.fsPath);",
+      "operation_family": "add",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "The operation aligns with add, but JavaScript Set uniqueness is not the current Patch list model."
+    },
+    {
+      "id": "ESLINT-EXIT-FLAG",
+      "project": "vscode-eslint",
+      "path": "client/src/client.ts",
+      "context": "ESLintClient ExitCalled notification",
+      "anchor": "serverCalledProcessExit = true;",
+      "operation_family": "set",
+      "local_surface_fit": "direct",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "A retained session flag is replaced with a Boolean constant; this is a direct local set shape but outside the numeric Lean bridge."
+    },
+    {
+      "id": "ESLINT-WORKSPACE-FLAG",
+      "project": "vscode-eslint",
+      "path": "client/src/client.ts",
+      "context": "NoESLintLibraryRequest workspace state",
+      "anchor": "state.workspaces[workspaceFolder.uri.toString()] = true;",
+      "operation_family": "set",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "external_persisted_state",
+      "notes": "The target is a dynamically keyed object that is written back through VS Code globalState; current Patch does not directly model this host persistence/keyed-object boundary."
+    },
+    {
+      "id": "ESLINT-GLOBAL-FLAG",
+      "project": "vscode-eslint",
+      "path": "client/src/client.ts",
+      "context": "NoESLintLibraryRequest global state",
+      "anchor": "state.global = true;",
+      "operation_family": "set",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "external_persisted_state",
+      "notes": "The local field replacement is simple, but the relevant state object is persisted through VS Code's globalState service rather than Patch application state."
+    },
+    {
+      "id": "DV-REVISION-INC",
+      "project": "obsidian-dataview",
+      "path": "src/data-index/index.ts",
+      "context": "FullIndex.touch",
+      "anchor": "this.revision += 1;",
+      "operation_family": "increase",
+      "local_surface_fit": "direct",
+      "lean_fragment_shape_match": true,
+      "context_constraint": "standalone",
+      "notes": "A retained numeric revision counter increases by exactly one; locally this matches Patch add 1 and the singleton numeric directional bridge shape."
+    },
+    {
+      "id": "DV-PAGES-DELETE",
+      "project": "obsidian-dataview",
+      "path": "src/data-index/index.ts",
+      "context": "FullIndex delete event",
+      "anchor": "this.pages.delete(file.path);",
+      "operation_family": "remove",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "coupled_multi_target",
+      "notes": "The event removes the same file from pages, tags, etags, and links and then advances revision. Map/index structures require adaptation and the logical event spans multiple retained targets."
+    },
+    {
+      "id": "DV-CSV-CACHE-DELETE",
+      "project": "obsidian-dataview",
+      "path": "src/data-index/index.ts",
+      "context": "CsvCache file invalidation",
+      "anchor": "this.cache.delete(file.path);",
+      "operation_family": "remove",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "The retained cache is a Map keyed by path. Patch has remove vocabulary but no direct Map representation with keyed deletion semantics."
+    },
+    {
+      "id": "TASKS-FIRST-RESOLVE",
+      "project": "obsidian-tasks",
+      "path": "src/Obsidian/Cache.ts",
+      "context": "Cache.subscribeToCache resolved handler",
+      "anchor": "this.loadedAfterFirstResolve = true;",
+      "operation_family": "set",
+      "local_surface_fit": "direct",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "standalone",
+      "notes": "A retained component Boolean is set to true; the local mutation shape is directly representable but is outside the numeric Lean bridge."
+    },
+    {
+      "id": "TASKS-FILTER-REPLACE",
+      "project": "obsidian-tasks",
+      "path": "src/Obsidian/Cache.ts",
+      "context": "Cache.indexFile",
+      "anchor": "this.tasks = this.tasks.filter((task: Task) => {",
+      "operation_family": "set",
+      "local_surface_fit": "restructure",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "sequential_same_target",
+      "notes": "The retained task list is rebuilt by a callback filter and then populated with new tasks. Patch can set lists but its current expression surface does not directly encode this callback/filter replacement."
+    },
+    {
+      "id": "TASKS-BULK-ADD",
+      "project": "obsidian-tasks",
+      "path": "src/Obsidian/Cache.ts",
+      "context": "Cache.indexFile",
+      "anchor": "this.tasks.push(...newTasks);",
+      "operation_family": "add",
+      "local_surface_fit": "restructure",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "sequential_same_target",
+      "notes": "Bulk spread insertion follows a prior filter replacement on the same retained list; a direct one-operation translation is not available in the current Patch source surface."
+    },
+    {
+      "id": "NR-SCOPE-INIT",
+      "project": "node-red",
+      "path": "packages/node_modules/@node-red/runtime/lib/nodes/context/memory.js",
+      "context": "Memory.set scope initialization",
+      "anchor": "this.data[scope] = {};",
+      "operation_family": "set",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "dynamic_target",
+      "notes": "The target scope is selected dynamically inside Node-RED's context store; current Patch Thing/list paths do not directly model arbitrary dynamic map keys."
+    },
+    {
+      "id": "NR-DYNAMIC-SET",
+      "project": "node-red",
+      "path": "packages/node_modules/@node-red/runtime/lib/nodes/context/memory.js",
+      "context": "Memory.set",
+      "anchor": "util.setObjectProperty(this.data[scope],key[i],v);",
+      "operation_family": "set",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "batched_dynamic_targets",
+      "notes": "A batch may update multiple dynamically named nested properties. The operation is set-like, but target identity and multiplicity are runtime-selected."
+    },
+    {
+      "id": "NR-SCOPE-DELETE",
+      "project": "node-red",
+      "path": "packages/node_modules/@node-red/runtime/lib/nodes/context/memory.js",
+      "context": "Memory.delete",
+      "anchor": "delete this.data[scope];",
+      "operation_family": "remove",
+      "local_surface_fit": "adapter",
+      "lean_fragment_shape_match": false,
+      "context_constraint": "dynamic_target",
+      "notes": "Deletion removes a dynamically selected context scope from a map-like store; Patch's remove vocabulary is analogous but its current data model lacks this dynamic keyed-store form."
+    }
+  ]
+}
