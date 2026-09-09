@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - name: Run NumberEdit and presentation lifecycle tests
         run: node --test tests/numberedit-stage1.test.js tests/passwordedit-stage1.test.js tests/maskededit-stage1.test.js tests/designer-control-duplicate.test.js tests/designer-control-clipboard-model.test.js tests/designer-presentation-metadata-lifecycle.test.js
