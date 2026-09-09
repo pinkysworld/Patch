@@ -19,6 +19,10 @@ import {
   buildWindowPanelScrollManifest
 } from './panel-scroll.js';
 import {
+  attachWindowPanelSplits,
+  buildWindowPanelSplitManifest
+} from './panel-split.js';
+import {
   attachWindowInputMasks,
   attachWindowInputPresentations,
   buildWindowInputMaskManifest,
@@ -53,6 +57,7 @@ export function compile(source, options = {}) {
   const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
   const windowPanelPresentation = buildWindowPanelPresentationManifest(source, ast);
   const windowPanelScroll = buildWindowPanelScrollManifest(source, ast);
+  const windowPanelSplit = buildWindowPanelSplitManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -77,11 +82,12 @@ export function compile(source, options = {}) {
   attachWindowSliderPresentations(ast, windowSliderPresentation);
   attachWindowPanelPresentations(ast, windowPanelPresentation);
   attachWindowPanelScroll(ast, windowPanelScroll);
+  attachWindowPanelSplits(ast, windowPanelSplit);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
     windowInputPresentation, windowInputMask, windowListboxPresentation,
-    windowSliderPresentation, windowPanelPresentation, windowPanelScroll
+    windowSliderPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit
   };
 }
 

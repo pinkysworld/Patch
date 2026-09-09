@@ -9,11 +9,12 @@ It complements, rather than replaces, `examples/workshop-desk.patch`:
 
 ## Visual structure
 
-The Showcase uses three focused Forms with a consistent card/dashboard layout:
+The Showcase uses four focused Forms with a consistent card/dashboard layout:
 
 - **Patch Studio Showcase** is the primary dashboard. It groups account inputs, preferences/state, secondary semantics and project actions into distinct visual regions with consistent spacing.
 - **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
 - **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.
+- **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.
 
 The visual fixture should remain presentation-ready. New controls should be integrated into an existing section or a deliberately designed new section rather than appended wherever space happens to remain.
 
@@ -27,6 +28,7 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 - ProgressBar as the passive number-backed Slider `# @slider-mode progress` presentation;
 - GroupBox as the source-backed Panel `# @panel-mode group` presentation, reusing Panel Stage 2 containment rather than creating a second container model;
 - ScrollBox as block-local `# @panel-scroll auto` on that same Panel, with positioned overflow proving the scrolling path;
+- SplitContainer as block-local `# @panel-split vertical 42` plus one explicit `# @panel-split-break`, with a dedicated Split Lab exercising both panes and the divider;
 - multiple Forms and Form navigation;
 - Project v4 multi-file composition and resource persistence;
 - one PNG reused as Window icon, Picture, ImageList/Button image and PaintBox image;
@@ -42,10 +44,11 @@ The project is primarily a **Studio Run acceptance project**, not a promise that
 
 Current important boundaries include:
 
-- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox and ScrollBox are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/scroll contract exists.
+- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.
 - ProgressBar is deliberately passive. It exposes no Patch event; the dashboard timer changes its explicit `create number completion` state through `change`.
 - GroupBox changes Panel presentation only. Its children remain ordinary Panel children and persistent application state still changes only through explicit `change`.
 - ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.
+- SplitContainer Stage 1 keeps orientation, pane boundary and initial ratio visible in source. Runtime divider movement is bounded transient UI state, emits no Patch event and does not mutate application state.
 - Standalone Window Web does not yet claim the complete Menu/Dialog runtime contract. In particular decorated menus with separators, shortcuts and enabled/checked bindings fail closed.
 - Current Ready native remains the right export target for the promoted native control subset, and Workshop Desk is the canonical buildable acceptance app for that path.
 

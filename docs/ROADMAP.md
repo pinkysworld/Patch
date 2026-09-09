@@ -165,11 +165,11 @@ Implemented R4 Stage 1 surfaces:
 - [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
 - [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed
+- [x] SplitContainer as block-local two-pane Panel behavior via `# @panel-split ...` plus `# @panel-split-break`, with source-backed initial ratio, transient runtime divider resizing and Current Ready native fail-closed
 - [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.10 Studio/Web surface, including current R4 presentation presets, and is explicitly loadable in hosted and Offline Studio
 
 Next component/project priorities:
 
-- [ ] SplitContainer
 - [ ] SpinEdit/NumberEdit and Date/Time controls
 - [ ] richer TreeView/ListView/Table metadata and image bindings
 - [ ] ToolBar / ToolButton / PopupMenu

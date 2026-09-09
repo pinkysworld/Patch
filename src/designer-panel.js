@@ -1,5 +1,6 @@
 import { parse } from './parser.js';
 import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
+import { buildWindowPanelSplitManifest } from './panel-split.js';
 
 export const PATCH_DESIGNER_PANEL_MODEL_VERSION = '0.2';
 export const PANEL_CHILD_TYPES = Object.freeze([
@@ -8,6 +9,8 @@ export const PANEL_CHILD_TYPES = Object.freeze([
 
 export function listDesignerPanels(source, windowIndex = null) {
   const ast = parse(source);
+  const splitManifest = buildWindowPanelSplitManifest(source, ast);
+  const splitByLine = new Map(splitManifest.controls.map(control => [control.line, control]));
   const panels = [];
   let formIndex = 0;
   for (const node of ast) {
@@ -15,16 +18,19 @@ export function listDesignerPanels(source, windowIndex = null) {
     let panelIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' || child.control !== 'panel') continue;
+      const splitRecord = splitByLine.get(child.line) ?? null;
+      const paneByLine = new Map((splitRecord?.children ?? []).map(item => [item.line, item.pane]));
       panels.push({
         windowIndex: formIndex,
         panelIndex,
         line: child.line,
         id: child.id,
+        panelSplit: splitRecord?.split ?? null,
         x: child.layout?.x ?? null,
         y: child.layout?.y ?? null,
         width: child.layout?.width ?? null,
         height: child.layout?.height ?? null,
-        children: (child.body ?? []).map((nested, childIndex) => panelChild(nested, formIndex, panelIndex, childIndex))
+        children: (child.body ?? []).map((nested, childIndex) => panelChild(nested, formIndex, panelIndex, childIndex, paneByLine.get(nested.line) ?? null))
       });
       panelIndex += 1;
     }
@@ -133,6 +139,7 @@ export function removeDesignerPanelChild(source, selector) {
   if (child.id) removeEventBlocks(lines, child.id);
   const next = preserveTrailingNewline(source, lines.join('\n'));
   parse(next);
+  listDesignerPanels(next);
   return next;
 }
 
@@ -157,7 +164,7 @@ export function duplicateDesignerPanelChild(source, selector) {
   return { source: next, child: duplicated };
 }
 
-function panelChild(node, windowIndex, panelIndex, childIndex) {
+function panelChild(node, windowIndex, panelIndex, childIndex, splitPane = null) {
   const item = {
     windowIndex,
     panelIndex,
@@ -174,7 +181,8 @@ function panelChild(node, windowIndex, panelIndex, childIndex) {
     y: node.layout?.y ?? null,
     width: node.layout?.width ?? null,
     height: node.layout?.height ?? null,
-    positioned: Boolean(node.layout)
+    positioned: Boolean(node.layout),
+    splitPane
   };
   if (node.control === 'button' && (node.imageListId || node.imageItem)) {
     item.imageListId = node.imageListId ?? null;
