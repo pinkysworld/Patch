@@ -3,9 +3,9 @@ export const PATCH_WINDOW_LAYOUT_POLICY_FORMAT = 'patch-window-layout-policy';
 export const PATCH_WINDOW_TAB_ORDER_VERSION = '0.1';
 export const PATCH_WINDOW_TAB_ORDER_FORMAT = 'patch-window-tab-order';
 export const PATCH_WINDOW_TAB_ORDER_MAX = 32767;
-export const PATCH_SLIDER_PRESENTATION_VERSION = '0.1';
+export const PATCH_SLIDER_PRESENTATION_VERSION = '0.2';
 export const PATCH_SLIDER_PRESENTATION_DIRECTIVE = 'slider-mode';
-export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.1';
+export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.2';
 export const PATCH_WINDOW_SLIDER_PRESENTATION_FORMAT = 'patch-window-slider-presentation';
 export const PATCH_PANEL_PRESENTATION_VERSION = '0.1';
 export const PATCH_PANEL_PRESENTATION_DIRECTIVE = 'panel-mode';
@@ -21,10 +21,11 @@ const SLIDER_MODE_PREFIX_RE = /^\s*#\s*@slider-mode\b/i;
 const PANEL_MODE_PREFIX_RE = /^\s*#\s*@panel-mode\b/i;
 const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode|slider-mode|panel-mode)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
-const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress']);
+const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress', 'spin']);
 const SLIDER_PRESENTATION_MODE_SET = new Set(SLIDER_PRESENTATION_MODES);
 const PLAIN_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
 const PROGRESS_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });
+const SPIN_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });
 const PANEL_PRESENTATION_MODES = Object.freeze(['plain', 'group']);
 const PANEL_PRESENTATION_MODE_SET = new Set(PANEL_PRESENTATION_MODES);
 const PLAIN_PANEL_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported' });
@@ -256,15 +257,15 @@ export function patchSliderPresentationModes() { return [...SLIDER_PRESENTATION_
 
 export function normalizePatchSliderPresentation(mode) {
   const normalized = String(mode ?? 'plain').trim().toLowerCase() || 'plain';
-  if (!SLIDER_PRESENTATION_MODE_SET.has(normalized)) throw new Error(`Unsupported Slider presentation '${mode}'. Use plain or progress.`);
+  if (!SLIDER_PRESENTATION_MODE_SET.has(normalized)) throw new Error(`Unsupported Slider presentation '${mode}'. Use plain, progress or spin.`);
   return normalized;
 }
 
 export function parsePatchSliderPresentationDirective(line) {
   const text = String(line ?? '');
   if (!SLIDER_MODE_PREFIX_RE.test(text)) return null;
-  const match = text.match(/^\s*#\s*@slider-mode\s+(plain|progress)\s*$/i);
-  if (!match) throw new Error(`Invalid # @slider-mode directive '${text.trim()}'. Use '# @slider-mode progress'.`);
+  const match = text.match(/^\s*#\s*@slider-mode\s+(plain|progress|spin)\s*$/i);
+  if (!match) throw new Error(`Invalid # @slider-mode directive '${text.trim()}'. Use '# @slider-mode progress' or '# @slider-mode spin'.`);
   return normalizePatchSliderPresentation(match[1]);
 }
 
@@ -273,13 +274,23 @@ export function formatPatchSliderPresentationDirective(mode) {
   return normalized === 'plain' ? null : `# @slider-mode ${normalized}`;
 }
 
-export function patchSliderPresentationTargetSupport(mode) { return normalizePatchSliderPresentation(mode) === 'progress' ? PROGRESS_SLIDER_TARGETS : PLAIN_SLIDER_TARGETS; }
+export function patchSliderPresentationTargetSupport(mode) {
+  const normalized = normalizePatchSliderPresentation(mode);
+  if (normalized === 'progress') return PROGRESS_SLIDER_TARGETS;
+  if (normalized === 'spin') return SPIN_SLIDER_TARGETS;
+  return PLAIN_SLIDER_TARGETS;
+}
 
 export function assertPatchSliderPresentationTarget(mode, target) {
   const normalizedMode = normalizePatchSliderPresentation(mode);
   const normalizedTarget = String(target ?? '').trim().toLowerCase();
   if (patchSliderPresentationTargetSupport(normalizedMode)[normalizedTarget] !== 'supported') {
-    throw new Error(`Slider presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` + (normalizedMode === 'progress' ? 'ProgressBar Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.' : 'Select a supported Patch target.'));
+    const detail = normalizedMode === 'progress'
+      ? 'ProgressBar Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
+      : normalizedMode === 'spin'
+        ? 'SpinEdit Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
+        : 'Select a supported Patch target.';
+    throw new Error(`Slider presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ${detail}`);
   }
   return true;
 }
@@ -293,9 +304,15 @@ export function buildWindowSliderPresentationManifest(source, ast) {
     if (mode !== null && node.control !== 'slider') throw new Error(`# @slider-mode belongs only to Slider controls, not '${node.control}' on source line ${node.line ?? '?'}.`);
     if (node.control !== 'slider') return;
     const effective = mode ?? 'plain';
-    if (effective === 'progress') {
+    if (effective === 'progress' || effective === 'spin') {
       const stateType = node.id ? stateTypes.get(node.id) : null;
-      if (stateType !== 'number') throw new Error(`ProgressBar '${node.id ?? '?'}' needs a matching 'create number ${node.id ?? 'name'} = ...' state declaration so the passive bar has one explicit numeric value source.`);
+      if (stateType !== 'number') {
+        const label = effective === 'progress' ? 'ProgressBar' : 'SpinEdit';
+        const reason = effective === 'progress'
+          ? 'so the passive bar has one explicit numeric value source'
+          : 'so the numeric editor has one explicit persistent value source';
+        throw new Error(`${label} '${node.id ?? '?'}' needs a matching 'create number ${node.id ?? 'name'} = ...' state declaration ${reason}.`);
+      }
     }
     controls.push({ line: node.line ?? null, id: node.id ?? null, mode: effective });
   });
@@ -358,6 +375,12 @@ export function setWindowSliderPresentation(source, sourceLine, mode) {
 export function collectWindowProgressBarIds(ast) {
   const ids = [];
   walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'progress' && node.id) ids.push(node.id); });
+  return ids;
+}
+
+export function collectWindowSpinEditIds(ast) {
+  const ids = [];
+  walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'spin' && node.id) ids.push(node.id); });
   return ids;
 }
 

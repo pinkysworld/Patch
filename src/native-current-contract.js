@@ -163,9 +163,14 @@ function assertCurrentNativeListboxPresentation(nodes) {
 
 function assertCurrentNativeSliderPresentation(nodes) {
   for (const node of nodes ?? []) {
-    if (node?.kind === 'uiControl' && node.control === 'slider' && node.sliderPresentation === 'progress') {
+    if (node?.kind === 'uiControl' && node.control === 'slider') {
       const name = node.id ? ` '${node.id}'` : '';
-      throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
+      if (node.sliderPresentation === 'progress') {
+        throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
+      }
+      if (node.sliderPresentation === 'spin') {
+        throw new NativeGuiError(`SpinEdit Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no numeric SpinEdit presentation contract; validation fails closed rather than lowering it as a Slider.`);
+      }
     }
     if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
       assertCurrentNativeSliderPresentation(node.body);

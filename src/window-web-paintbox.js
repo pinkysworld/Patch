@@ -5,6 +5,7 @@ export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_MASKED_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_PROGRESSBAR_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_SPINEDIT_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
@@ -26,12 +27,14 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   const maskedInputs = collectMaskedInputDescriptors(ast);
   const checkedListboxIds = collectCheckedListboxIds(ast);
   const progressBarIds = collectProgressBarIds(ast);
+  const spinEditIds = collectSpinEditIds(ast);
   const hasPaintBoxes = Object.keys(descriptors).length > 0;
   const hasPasswordEdits = passwordInputIds.length > 0;
   const hasMaskedEdits = Object.keys(maskedInputs).length > 0;
   const hasCheckedListBoxes = checkedListboxIds.length > 0;
   const hasProgressBars = progressBarIds.length > 0;
-  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes && !hasProgressBars) return built;
+  const hasSpinEdits = spinEditIds.length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes && !hasProgressBars && !hasSpinEdits) return built;
 
   let html = built.html;
   if (hasPaintBoxes) {
@@ -50,6 +53,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
     html = html
       .replace('</head>', `${progressBarStyle()}\n</head>`)
       .replace('</body>', `${progressBarRuntime(progressBarIds)}\n</body>`);
+  }
+  if (hasSpinEdits) {
+    html = html
+      .replace('</head>', `${spinEditStyle()}\n</head>`)
+      .replace('</body>', `${spinEditRuntime(spinEditIds)}\n</body>`);
   }
 
   return {
@@ -83,6 +91,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
         progressBarStage: 1,
         progressBarVersion: PATCH_WINDOW_WEB_PROGRESSBAR_VERSION,
         progressBarMode: 'passive-number-state-presentation'
+      } : {}),
+      ...(hasSpinEdits ? {
+        spinEditStage: 1,
+        spinEditVersion: PATCH_WINDOW_WEB_SPINEDIT_VERSION,
+        spinEditMode: 'interactive-number-state-presentation'
       } : {})
     }
   };
@@ -170,6 +183,19 @@ export function collectProgressBarIds(ast) {
   return ids;
 }
 
+export function collectSpinEditIds(ast) {
+  const ids = [];
+  walk(ast, node => {
+    if (
+      node.kind === 'uiControl' &&
+      node.control === 'slider' &&
+      node.sliderPresentation === 'spin' &&
+      node.id
+    ) ids.push(node.id);
+  });
+  return ids;
+}
+
 function clonePaintNodes(nodes) {
   return (nodes ?? []).map(node => {
     if (node.kind === 'drawPaint') {
@@ -223,6 +249,14 @@ function progressBarStyle() {
   return `<style data-patch-window-progressbar>
 .patch-progressbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px;min-width:180px;color:inherit}.patch-progressbar progress{width:100%;min-width:0;height:18px;accent-color:currentColor}.patch-progressbar output{min-width:4.5em;text-align:right;font:600 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:inherit}
 @media(forced-colors:active){.patch-progressbar progress{forced-color-adjust:auto}}
+</style>`;
+}
+
+function spinEditStyle() {
+  return `<style data-patch-window-spinedit>
+.patch-spinedit{display:inline-flex;align-items:center;min-width:140px;color:inherit}.patch-spinedit-input{width:100%;min-width:120px;border:1px solid #d4d4d8;border-radius:9px;padding:9px 11px;background:#fff;color:#18181b;font:inherit;font-variant-numeric:tabular-nums}.patch-spinedit-input:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+@media(prefers-color-scheme:dark){.patch-spinedit-input{border-color:#41444e;background:#17191e;color:#f4f4f5}}
+@media(forced-colors:active){.patch-spinedit-input{border:1px solid CanvasText;background:Canvas;color:CanvasText}.patch-spinedit-input:focus-visible{outline:3px solid Highlight}}
 </style>`;
 }
 
@@ -472,6 +506,52 @@ function checkedListboxRuntime(ids) {
     const element=patchCheckedListOriginalRenderControl(control,windowId,controlIndex);
     if(control?.type!=='listbox'||!PATCH_CHECKED_LISTBOX_IDS.has(String(control?.id||''))||element?.tagName!=='SELECT')return element;
     return patchCheckedListElement(control,element,windowId,controlIndex);
+  };
+  render();
+})();
+</script>`;
+}
+
+function spinEditRuntime(ids) {
+  const idJson = JSON.stringify(ids).replace(/</g, '\\u003c');
+  return `<script data-patch-window-spinedit>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_SPINEDIT_IDS=new Set(${idJson});
+  const patchSpinOriginalRenderControl=renderControl;
+
+  function patchSpinElement(control,sliderElement){
+    const source=sliderElement?.querySelector?.('input[type=\"range\"]');
+    if(!source)throw new PatchAppError("SpinEdit '"+String(control?.id||'?')+"' could not resolve its Slider underlay.");
+    const min=Number.isFinite(Number(source.min))?Number(source.min):0;
+    const max=Number.isFinite(Number(source.max))?Number(source.max):100;
+    const step=Number.isFinite(Number(source.step))&&Number(source.step)>0?Number(source.step):1;
+    const raw=Number.isFinite(Number(source.value))?Number(source.value):min;
+    const value=Math.min(max,Math.max(min,raw));
+    const wrap=document.createElement('label');
+    wrap.className='patch-spinedit';
+    wrap.dataset.patchSliderPresentation='spin';
+    wrap.dataset.controlId=String(control?.id||'');
+    const editor=document.createElement('input');
+    editor.type='number';
+    editor.className='patch-spinedit-input';
+    editor.min=String(min);editor.max=String(max);editor.step=String(step);editor.value=String(value);
+    editor.setAttribute('aria-label',String(control?.id||'SpinEdit')+' SpinEdit');
+    editor.addEventListener('change',function(){
+      const requested=Number(editor.value);
+      if(!Number.isFinite(requested)){editor.value=String(value);return;}
+      const bounded=Math.min(max,Math.max(min,requested));
+      editor.value=String(bounded);
+      safeTrigger(control.id,'changed',{value:bounded});
+    });
+    wrap.appendChild(editor);
+    return wrap;
+  }
+
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchSpinOriginalRenderControl(control,windowId,controlIndex);
+    if(control?.type!=='slider'||!PATCH_SPINEDIT_IDS.has(String(control?.id||'')))return element;
+    return patchSpinElement(control,element);
   };
   render();
 })();

@@ -23,8 +23,8 @@ window "Progress" as main size 520, 260:
 `;
 
 test('ProgressBar Stage 1 presentation vocabulary is versioned and fail-closed by target', () => {
-  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.1');
-  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.1');
+  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.2');
+  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.2');
   assert.equal(parsePatchSliderPresentationDirective('# @slider-mode progress'), 'progress');
   assert.equal(patchSliderPresentationTargetSupport('progress').studio, 'supported');
   assert.equal(patchSliderPresentationTargetSupport('progress').web, 'supported');
