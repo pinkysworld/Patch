@@ -163,6 +163,7 @@ Implemented R4 Stage 1 surfaces:
 - [x] MaskedEdit as `# @input-mask "..."` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
 - [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
 - [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
+- [x] SpinEdit/NumberEdit as interactive number-backed Slider presentation via `# @slider-mode spin`, preserving range/step and numeric `changed(value)`, Studio/Web supported and Current Ready native fail-closed
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
 - [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed
 - [x] SplitContainer as block-local two-pane Panel behavior via `# @panel-split ...` plus `# @panel-split-break`, with source-backed initial ratio, transient runtime divider resizing and Current Ready native fail-closed
@@ -170,7 +171,7 @@ Implemented R4 Stage 1 surfaces:
 
 Next component/project priorities:
 
-- [ ] SpinEdit/NumberEdit and Date/Time controls
+- [ ] Date/Time controls
 - [ ] richer TreeView/ListView/Table metadata and image bindings
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands

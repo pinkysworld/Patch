@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
+import { listDesignerControls } from '../src/designer.js';
+import { duplicateDesignerControl } from '../web/designer-control-duplicate-model.js';
+import { copyDesignerControlClipboard, pasteDesignerControlClipboard } from '../web/designer-control-clipboard-model.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
@@ -100,4 +103,32 @@ test('Patch Studio exposes SpinEdit as a Slider preset and Inspector mode', () =
   assert.match(studio, /value="spin">SpinEdit/);
   assert.match(studio, /patch-spinedit-input/);
   assert.match(studio, /# @slider-mode spin/);
+});
+
+
+test('Designer duplicate gives SpinEdit an independent source-backed number state', () => {
+  const selected = listDesignerControls(SOURCE).find(control => control.type === 'slider' && control.id === 'quantity');
+  assert.ok(selected);
+  const duplicated = duplicateDesignerControl(SOURCE, selected, { offset: false });
+  assert.deepEqual(duplicated.idMap, { quantity: 'slider_1' });
+  assert.match(duplicated.source, /create number quantity = 3\ncreate number slider_1 = 3/);
+  assert.match(duplicated.source, /# @slider-mode spin\n  slider 0\.\.10 as slider_1 step 1/);
+  assert.match(duplicated.source, /when slider_1 changed:/);
+  assert.doesNotThrow(() => compile(duplicated.source, { kind: 'window' }));
+});
+
+test('Designer clipboard carries SpinEdit number state across cut and cross-project paste', () => {
+  const selected = listDesignerControls(SOURCE).find(control => control.type === 'slider' && control.id === 'quantity');
+  assert.ok(selected);
+  const clipboard = copyDesignerControlClipboard(SOURCE, selected);
+  assert.deepEqual(clipboard.backingStates, [{ id: 'quantity', valueType: 'number', source: 'create number quantity = 3' }]);
+  assert.ok(clipboard.lines.includes('# @slider-mode spin'));
+
+  const target = `window "Target" as target size 520, 320:\n  text "Ready" at 20, 20 size 120, 24\n`;
+  const pasted = pasteDesignerControlClipboard(target, clipboard, { windowIndex: 0, offset: false });
+  assert.deepEqual(pasted.idMap, { quantity: 'quantity' });
+  assert.match(pasted.source, /^create number quantity = 3/m);
+  assert.match(pasted.source, /# @slider-mode spin\n  slider 0\.\.10 as quantity step 1/);
+  assert.match(pasted.source, /when quantity changed:/);
+  assert.doesNotThrow(() => compile(pasted.source, { kind: 'window' }));
 });

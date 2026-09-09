@@ -43,6 +43,8 @@ test('current Studio authoring surface records source-backed R4 presentations an
   assert.match(surface, /MaskedEdit as ordinary Input plus `# @input-mask "\.\.\."`/);
   assert.match(surface, /CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`/);
   assert.match(surface, /ProgressBar as number-backed Slider plus `# @slider-mode progress`/);
+  assert.match(surface, /SpinEdit as number-backed Slider plus `# @slider-mode spin`/);
+  assert.match(surface, /SpinEdit Stage 1 is interactive but does not introduce a second numeric model/);
   assert.match(surface, /GroupBox as ordinary Panel plus `# @panel-mode group`/);
   assert.match(surface, /ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto`/);
   assert.match(surface, /SplitContainer as ordinary Panel plus block-local `# @panel-split/);
@@ -87,8 +89,8 @@ test('current Studio authoring surface preserves source and assurance boundaries
 test('current Studio authoring surface explicitly separates future work from current implementation', () => {
   assert.match(surface, /complete current authoring surface for the \*\*existing Patch UI\/control vocabulary\*\*/);
   assert.match(surface, /new\/richer data controls beyond the current Table, ListBox and TreeView vocabulary/);
-  assert.match(surface, /Number\/SpinEdit, date\/time controls and richer shell controls/);
-  assert.doesNotMatch(surface, /Number\/SpinEdit, date\/time controls, SplitContainer/);
+  assert.match(surface, /date\/time controls and richer shell controls/);
+  assert.doesNotMatch(surface, /Number\/SpinEdit, date\/time controls/);
   assert.match(surface, /Undo\/Redo transaction coverage/);
   assert.match(surface, /manual assistive-technology verification with Narrator, VoiceOver, Orca/);
   assert.match(surface, /makes no WCAG conformance claim/);

@@ -31,13 +31,16 @@ The standard-control Stage-1 presentation layer additionally provides:
 - MaskedEdit as ordinary Input plus `# @input-mask "..."`;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
 - ProgressBar as number-backed Slider plus `# @slider-mode progress`;
+- SpinEdit as number-backed Slider plus `# @slider-mode spin`;
 - GroupBox as ordinary Panel plus `# @panel-mode group`;
 - ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header;
 - SplitContainer as ordinary Panel plus block-local `# @panel-split vertical|horizontal <ratio>` and one explicit `# @panel-split-break` between the two pane groups.
 
-These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
+These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, SpinEdit, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
 
 ProgressBar Stage 1 is passive. It reads the same-id explicit `create number` state and has no control event. Application code changes that number only through ordinary explicit `change`; Studio/Web then re-renders the passive progress presentation.
+
+SpinEdit Stage 1 is interactive but does not introduce a second numeric model. It reuses ordinary Slider range, step and finite numeric `changed(value)` semantics while presenting a numeric editor in Studio/Web. The renderer value remains transient until the handler performs explicit `change` on the same-id `create number` state. Duplicate and clipboard operations create or carry an independent explicit backing number state rather than sharing hidden mutable UI state.
 
 GroupBox Stage 1 does not introduce hidden state or a second containment type. It is the existing Panel containment contract with source-backed grouped presentation; its caption is derived from the Panel id in this stage. Plain Panel and GroupBox therefore share the same child structure and explicit application-state semantics.
 
@@ -54,7 +57,7 @@ For supported top-level visual controls, Studio provides:
 - duplicate as a real Patch source block;
 - globally unique id remapping for copied named controls;
 - matching handler duplication for copied ids where the control has handlers;
-- source-backed backing-state duplication for CheckedListBox and ProgressBar presets;
+- source-backed backing-state duplication for CheckedListBox, ProgressBar and SpinEdit presets;
 - pointer and keyboard positioning where the control owns geometry;
 - pointer resizing where supported;
 - Center H / Center V;
@@ -173,7 +176,7 @@ The Current Ready desktop consumer contract is Native GUI IR **1.9**, sealed pay
 
 Payload v17/runtime v1.8 remains an explicit compatibility path in the Offline Compiler. Earlier versioned contracts, including the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, remain compatibility/reproducibility evidence rather than current targets.
 
-Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
+Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, SpinEdit, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
 
 The current Ready/offline Windows, macOS and Linux path uses the stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
@@ -192,7 +195,7 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 Remaining product work includes:
 
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
-- Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
+- date/time controls and richer shell controls from the RAD master backlog;
 - Panel child Anchors/Dock, nested Panels, visual reparenting and later explicit native containment;
 - remaining resource/non-source Undo/Redo transaction coverage, further large-project virtualization and professional code-editor/debugger features;
 - broader ImageList consumers such as ToolBar/ToolButton/Menu/Tree only after those component contracts exist;

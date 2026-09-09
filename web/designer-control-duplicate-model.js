@@ -14,6 +14,7 @@ const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|list
 const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
 const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
 const PROGRESSBAR_RE = /^\s*#\s*@slider-mode\s+progress\s*$/i;
+const SPINEDIT_RE = /^\s*#\s*@slider-mode\s+spin\s*$/i;
 
 export function duplicateDesignerControl(source, selector, options = {}) {
   const controls = listDesignerControls(source);
@@ -141,6 +142,9 @@ function presentationBackingState(ast, control, copied) {
   } else if (control.type === 'slider' && copied.some(line => PROGRESSBAR_RE.test(line))) {
     valueType = 'number';
     label = 'ProgressBar';
+  } else if (control.type === 'slider' && copied.some(line => SPINEDIT_RE.test(line))) {
+    valueType = 'number';
+    label = 'SpinEdit';
   } else {
     return null;
   }

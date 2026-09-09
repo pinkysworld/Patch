@@ -17,6 +17,7 @@ const METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|list
 const TAB_ORDER_RE = /^(\s*#\s*@taborder\s+)(\d+)(\s*)$/i;
 const CHECKED_LISTBOX_RE = /^\s*#\s*@listbox-mode\s+checked\s*$/i;
 const PROGRESSBAR_RE = /^\s*#\s*@slider-mode\s+progress\s*$/i;
+const SPINEDIT_RE = /^\s*#\s*@slider-mode\s+spin\s*$/i;
 const ID_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const MAX_LINES = 4096;
 const MAX_LINE_LENGTH = 16384;
@@ -308,6 +309,7 @@ function presentationBackingRequirement(rows, record) {
   for (let index = declarationIndex - 1; index >= 0 && METADATA_RE.test(rows[index] ?? ''); index -= 1) {
     if (record.type === 'listbox' && CHECKED_LISTBOX_RE.test(rows[index])) return { valueType: 'list', label: 'CheckedListBox' };
     if (record.type === 'slider' && PROGRESSBAR_RE.test(rows[index])) return { valueType: 'number', label: 'ProgressBar' };
+    if (record.type === 'slider' && SPINEDIT_RE.test(rows[index])) return { valueType: 'number', label: 'SpinEdit' };
   }
   return null;
 }
