@@ -1,16 +1,17 @@
-name: SpinEdit core helper
+name: SpinEdit Stage 1 helper
 
 on:
   push:
-    branches: [spinedit-stage1]
+    branches:
+      - spinedit-stage1
 
 permissions:
   contents: write
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'github-actions[bot]' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,214 +19,16 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Patch SpinEdit core contract
-        shell: bash
+          node-version: '22'
+      - name: Apply SpinEdit Stage 1
+        run: python scripts/apply-spinedit-stage1.py
+      - name: Run focused regressions
+        run: node --test tests/spinedit-stage1.test.js tests/progressbar-stage1.test.js tests/slider-stage1.test.js
+      - name: Commit generated implementation
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(path, old, new):
-              p = Path(path)
-              s = p.read_text()
-              if s.count(old) != 1:
-                  raise SystemExit(f'{path}: expected unique anchor, found {s.count(old)}')
-              p.write_text(s.replace(old, new, 1))
-
-          p = Path('src/window-layout-policy.js')
-          s = p.read_text()
-          pairs = [
-              ("export const PATCH_SLIDER_PRESENTATION_VERSION = '0.1';", "export const PATCH_SLIDER_PRESENTATION_VERSION = '0.2';"),
-              ("export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.1';", "export const PATCH_WINDOW_SLIDER_PRESENTATION_VERSION = '0.2';"),
-              ("const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress']);", "const SLIDER_PRESENTATION_MODES = Object.freeze(['plain', 'progress', 'spin']);"),
-              ("const PROGRESS_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });\nconst PANEL_PRESENTATION_MODES", "const PROGRESS_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });\nconst SPIN_SLIDER_TARGETS = Object.freeze({ studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported' });\nconst PANEL_PRESENTATION_MODES"),
-              ("Unsupported Slider presentation '${mode}'. Use plain or progress.", "Unsupported Slider presentation '${mode}'. Use plain, progress or spin."),
-              ("const match = text.match(/^\\s*#\\s*@slider-mode\\s+(plain|progress)\\s*$/i);", "const match = text.match(/^\\s*#\\s*@slider-mode\\s+(plain|progress|spin)\\s*$/i);"),
-              ("if (!match) throw new Error(`Invalid # @slider-mode directive '${text.trim()}'. Use '# @slider-mode progress'.`);", "if (!match) throw new Error(`Invalid # @slider-mode directive '${text.trim()}'. Use '# @slider-mode progress' or '# @slider-mode spin'.`);"),
-              ("export function patchSliderPresentationTargetSupport(mode) { return normalizePatchSliderPresentation(mode) === 'progress' ? PROGRESS_SLIDER_TARGETS : PLAIN_SLIDER_TARGETS; }", "export function patchSliderPresentationTargetSupport(mode) {\n  const normalized = normalizePatchSliderPresentation(mode);\n  if (normalized === 'progress') return PROGRESS_SLIDER_TARGETS;\n  if (normalized === 'spin') return SPIN_SLIDER_TARGETS;\n  return PLAIN_SLIDER_TARGETS;\n}"),
-              ("throw new Error(`Slider presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` + (normalizedMode === 'progress' ? 'ProgressBar Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.' : 'Select a supported Patch target.'));", "const detail = normalizedMode === 'progress'\n      ? 'ProgressBar Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'\n      : normalizedMode === 'spin'\n        ? 'SpinEdit Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'\n        : 'Select a supported Patch target.';\n    throw new Error(`Slider presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ${detail}`);"),
-              ("    if (effective === 'progress') {\n      const stateType = node.id ? stateTypes.get(node.id) : null;\n      if (stateType !== 'number') throw new Error(`ProgressBar '${node.id ?? '?'}' needs a matching 'create number ${node.id ?? 'name'} = ...' state declaration so the passive bar has one explicit numeric value source.`);\n    }", "    if (effective === 'progress' || effective === 'spin') {\n      const stateType = node.id ? stateTypes.get(node.id) : null;\n      if (stateType !== 'number') {\n        const label = effective === 'progress' ? 'ProgressBar' : 'SpinEdit';\n        const reason = effective === 'progress'\n          ? 'so the passive bar has one explicit numeric value source'\n          : 'so the numeric editor has one explicit persistent value source';\n        throw new Error(`${label} '${node.id ?? '?'}' needs a matching 'create number ${node.id ?? 'name'} = ...' state declaration ${reason}.`);\n      }\n    }"),
-              ("export function collectWindowProgressBarIds(ast) {\n  const ids = [];\n  walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'progress' && node.id) ids.push(node.id); });\n  return ids;\n}\n", "export function collectWindowProgressBarIds(ast) {\n  const ids = [];\n  walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'progress' && node.id) ids.push(node.id); });\n  return ids;\n}\n\nexport function collectWindowSpinEditIds(ast) {\n  const ids = [];\n  walkWindowControls(ast, node => { if (node.control === 'slider' && node.sliderPresentation === 'spin' && node.id) ids.push(node.id); });\n  return ids;\n}\n")
-          ]
-          for old, new in pairs:
-              if s.count(old) != 1:
-                  raise SystemExit(f'window-layout-policy anchor mismatch: {old[:80]!r} count={s.count(old)}')
-              s = s.replace(old, new, 1)
-          p.write_text(s)
-
-          replace_once('src/slider-presentation.js',
-              "  setWindowSliderPresentation,\n  collectWindowProgressBarIds\n",
-              "  setWindowSliderPresentation,\n  collectWindowProgressBarIds,\n  collectWindowSpinEditIds\n")
-
-          p = Path('src/window-build.js')
-          s = p.read_text()
-          pairs = [
-              ("  let progressBars = 0;\n  let memos = 0;", "  let progressBars = 0;\n  let spinEdits = 0;\n  let memos = 0;"),
-              ("      if (child.sliderPresentation === 'progress') progressBars += 1;", "      if (child.sliderPresentation === 'progress') progressBars += 1;\n      if (child.sliderPresentation === 'spin') spinEdits += 1;"),
-              ("      if (child.sliderPresentation === 'progress' && stateType !== 'number') {\n        throw new WindowBuildError(\n          `line ${child.line ?? '?'}: ProgressBar '${child.id}' needs matching number state with the same name.`\n        );\n      }", "      if (child.sliderPresentation === 'progress' && stateType !== 'number') {\n        throw new WindowBuildError(\n          `line ${child.line ?? '?'}: ProgressBar '${child.id}' needs matching number state with the same name.`\n        );\n      }\n      if (child.sliderPresentation === 'spin' && stateType !== 'number') {\n        throw new WindowBuildError(\n          `line ${child.line ?? '?'}: SpinEdit '${child.id}' needs matching number state with the same name.`\n        );\n      }"),
-              ("  if (memos && !options.allowMemo) {", "  if (spinEdits && !options.allowSpinEdit) {\n    throw new WindowBuildError(\n      'SpinEdit Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no numeric SpinEdit presentation contract; validation fails closed rather than lowering it as a Slider.'\n    );\n  }\n\n  if (memos && !options.allowMemo) {"),
-              ("    progressBars,\n    memos,", "    progressBars,\n    spinEdits,\n    memos,")
-          ]
-          for old, new in pairs:
-              if s.count(old) != 1:
-                  raise SystemExit(f'window-build anchor mismatch: {old[:80]!r} count={s.count(old)}')
-              s = s.replace(old, new, 1)
-          p.write_text(s)
-
-          replace_once('src/window-compiled.js',
-              "    allowProgressBar: true,\n    allowMemo: true,",
-              "    allowProgressBar: true,\n    allowSpinEdit: true,\n    allowMemo: true,")
-
-          p = Path('src/native-current-contract.js')
-          s = p.read_text()
-          old = """function assertCurrentNativeSliderPresentation(nodes) {
-  for (const node of nodes ?? []) {
-    if (node?.kind === 'uiControl' && node.control === 'slider' && node.sliderPresentation === 'progress') {
-      const name = node.id ? ` '${node.id}'` : '';
-      throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
-    }
-    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
-      assertCurrentNativeSliderPresentation(node.body);
-    }
-    if (node?.kind === 'tabs') {
-      for (const page of node.body ?? []) assertCurrentNativeSliderPresentation(page.body);
-    }
-  }
-}
-"""
-          new = """function assertCurrentNativeSliderPresentation(nodes) {
-  for (const node of nodes ?? []) {
-    if (node?.kind === 'uiControl' && node.control === 'slider') {
-      const name = node.id ? ` '${node.id}'` : '';
-      if (node.sliderPresentation === 'progress') {
-        throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
-      }
-      if (node.sliderPresentation === 'spin') {
-        throw new NativeGuiError(`SpinEdit Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no numeric SpinEdit presentation contract; validation fails closed rather than lowering it as a Slider.`);
-      }
-    }
-    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
-      assertCurrentNativeSliderPresentation(node.body);
-    }
-    if (node?.kind === 'tabs') {
-      for (const page of node.body ?? []) assertCurrentNativeSliderPresentation(page.body);
-    }
-  }
-}
-"""
-          if s.count(old) != 1:
-              raise SystemExit('native slider presentation block mismatch')
-          p.write_text(s.replace(old, new, 1))
-
-          replace_once('tests/progressbar-stage1.test.js',
-              "  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.1');\n  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.1');",
-              "  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.2');\n  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.2');")
-
-          Path('tests/spinedit-stage1.test.js').write_text(r'''import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import { compile } from '../src/compiler.js';
-import { buildStandaloneWebApp } from '../src/webapp.js';
-import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
-import { validateWindowRuntimeSupport } from '../src/window-build.js';
-import { PATCH_COMPONENT_REGISTRY_VERSION } from '../src/component-registry.js';
-import {
-  PATCH_SLIDER_PRESENTATION_VERSION,
-  PATCH_WINDOW_SLIDER_PRESENTATION_VERSION,
-  assertPatchSliderPresentationTarget,
-  parsePatchSliderPresentationDirective,
-  patchSliderPresentationTargetSupport,
-  readWindowSliderPresentation,
-  setWindowSliderPresentation
-} from '../src/slider-presentation.js';
-
-const SOURCE = `create number quantity = 3
-
-window "Spin" as main size 520, 260:
-  # @slider-mode spin
-  slider 0..10 as quantity step 1 at 24, 72 size 180, 34
-
-when quantity changed:
-  change quantity:
-    set = value
-`;
-
-test('SpinEdit Stage 1 extends the versioned Slider presentation contract without IR or Registry bumps', () => {
-  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.2');
-  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.2');
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.10');
-  assert.equal(parsePatchSliderPresentationDirective('# @slider-mode spin'), 'spin');
-  assert.equal(patchSliderPresentationTargetSupport('spin').studio, 'supported');
-  assert.equal(patchSliderPresentationTargetSupport('spin').web, 'supported');
-  assert.equal(patchSliderPresentationTargetSupport('spin').windows, 'unsupported');
-  assert.doesNotThrow(() => assertPatchSliderPresentationTarget('spin', 'web'));
-  assert.throws(() => assertPatchSliderPresentationTarget('spin', 'windows'), /SpinEdit Stage 1 is Studio\/Web only/);
-});
-
-test('SpinEdit metadata round-trips on ordinary Slider syntax', () => {
-  const plain = `create number quantity = 2\n\nwindow "Spin" as main:\n  # @layout anchor left\n  slider 0..10 as quantity step 1\n`;
-  const line = plain.split('\n').findIndex(row => /^\s*slider\b/.test(row)) + 1;
-  const spin = setWindowSliderPresentation(plain, line, 'spin');
-  assert.match(spin, /# @layout anchor left\n  # @slider-mode spin\n  slider/);
-  assert.equal(readWindowSliderPresentation(spin, line + 1), 'spin');
-  const restored = setWindowSliderPresentation(spin, line + 1, 'plain');
-  assert.doesNotMatch(restored, /@slider-mode/);
-});
-
-test('compiler attaches SpinEdit presentation while preserving Change IR 0.10', () => {
-  const compiled = compile(SOURCE, { name: 'Spin', kind: 'window' });
-  const slider = compiled.ast.find(node => node.kind === 'window').body.find(node => node.control === 'slider');
-  assert.equal(compiled.ir.version, '0.10');
-  assert.equal(slider.sliderPresentation, 'spin');
-  assert.equal(compiled.windowSliderPresentation.controls[0].mode, 'spin');
-  const irSlider = compiled.ir.instructions.find(node => node.code === 'WINDOW').body.find(node => node.code === 'UI_CONTROL');
-  assert.equal(Object.hasOwn(irSlider, 'sliderPresentation'), false);
-});
-
-test('SpinEdit requires explicit matching number state and keeps numeric changed(value)', () => {
-  assert.throws(
-    () => compile(`window "Bad" as main:\n  # @slider-mode spin\n  slider 0..10 as quantity step 1\n`, { kind: 'window' }),
-    /SpinEdit 'quantity'.*create number quantity/i
-  );
-  const compiled = compile(SOURCE, { kind: 'window' });
-  assert.throws(
-    () => validateWindowRuntimeSupport(compiled, { allowSlider: true }),
-    /SpinEdit Stage 1.*Standalone Window Web.*no numeric SpinEdit presentation contract/i
-  );
-  const web = validateWindowRuntimeSupport(compiled, { allowSlider: true, allowSpinEdit: true });
-  assert.equal(web.sliders, 1);
-  assert.equal(web.spinEdits, 1);
-  assert.equal(web.events, 1);
-});
-
-test('Current Ready native fails closed instead of lowering SpinEdit to Slider', () => {
-  const compiled = compile(SOURCE, { name: 'Spin', kind: 'window' });
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compiled),
-    /SpinEdit Stage 1.*Studio\/Web only.*no numeric SpinEdit presentation contract/i
-  );
-});
-
-test('Standalone Web and Studio expose the SpinEdit presentation', () => {
-  const built = buildStandaloneWebApp(SOURCE, { name: 'Spin', kind: 'window' });
-  assert.equal(built.metadata.spinEditStage, 1);
-  assert.equal(built.metadata.spinEditMode, 'interactive-number-state-presentation');
-  assert.match(built.html, /data-patch-window-spinedit/);
-  assert.match(built.html, /patch-spinedit/);
-  assert.match(built.html, /type='number'|type="number"|\.type='number'/);
-  const studio = fs.readFileSync('web/slider-stage1.js', 'utf8');
-  assert.match(studio, /addSpinEdit/);
-  assert.match(studio, /\+ SpinEdit/);
-  assert.match(studio, /value="spin">SpinEdit/);
-  assert.match(studio, /patch-spinedit-input/);
-});
-''')
-          PY
-
-          node --test tests/progressbar-stage1.test.js tests/spinedit-stage1.test.js
-          rm .github/workflows/spinedit-core-helper.yml
+          rm .github/workflows/spinedit-core-helper.yml scripts/apply-spinedit-stage1.py
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/window-layout-policy.js src/slider-presentation.js src/window-build.js src/window-compiled.js src/native-current-contract.js tests/progressbar-stage1.test.js tests/spinedit-stage1.test.js .github/workflows/spinedit-core-helper.yml
-          git commit -m "feat: add SpinEdit Stage 1 core contract"
+          git add src/window-layout-policy.js src/slider-presentation.js src/window-build.js src/window-compiled.js src/window-webapp.js src/native-current-contract.js src/window-web-paintbox.js web/slider-stage1.js tests/progressbar-stage1.test.js tests/spinedit-stage1.test.js .github/workflows/spinedit-core-helper.yml scripts/apply-spinedit-stage1.py
+          git commit -m "feat: add SpinEdit Stage 1 for Studio and Web"
           git push origin HEAD:spinedit-stage1
