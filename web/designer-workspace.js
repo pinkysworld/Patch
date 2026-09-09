@@ -31,6 +31,7 @@ import './form-designer-workflow.js';
 import './designer-menu-designer.js';
 import './designer-panel.js';
 import './designer-splitcontainer.js';
+import './designer-numberedit.js';
 import './designer-ui-namespace.js';
 import './designer-toolbox.js';
 import './designer-statusbar.js';

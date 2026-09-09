@@ -10,8 +10,8 @@ export const PATCH_WINDOW_EVENTS_VERSION = '0.9';
  * Persistent state is never updated by this adapter. `changed` control values
  * and `chosen` file-dialog paths are exposed only as local `value`; source must
  * use an ordinary semantic `change` to commit them. Checkbox `changed` values
- * are Boolean. Slider `changed` values are finite numbers inside the declared
- * source-backed range. Input, ComboBox, Radio and text-bound ListBox `changed`
+ * are Boolean. Slider and NumberEdit `changed` values are finite numbers inside
+ * their declared source-backed ranges. Plain Input, ComboBox, Radio and text-bound ListBox `changed`
  * plus file-dialog `chosen` values are text. A ListBox whose id is backed by
  * `create list` carries the selected options as a transient text list. Table
  * `changed` carries the selected row as a transient list of display strings.
@@ -48,7 +48,16 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
         throw new PatchRuntimeError(`The 'changed' action for slider '${control}' needs a value from ${min} to ${max}.`);
       }
     }
-    if (['input', 'combo', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
+    if (controlType === 'input' && controlNode?.inputNumber) {
+      if (typeof payload.value !== 'number' || !Number.isFinite(payload.value)) {
+        throw new PatchRuntimeError(`The 'changed' action for NumberEdit '${control}' needs a finite number event-local value.`);
+      }
+      const min = Number(controlNode.inputNumber.min);
+      const max = Number(controlNode.inputNumber.max);
+      if (payload.value < min || payload.value > max) {
+        throw new PatchRuntimeError(`The 'changed' action for NumberEdit '${control}' needs a value from ${min} to ${max}.`);
+      }
+    } else if (['input', 'combo', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
       throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
     }
     if (controlType === 'listbox') {
@@ -92,6 +101,10 @@ function findControlNode(runtime, id) {
   const find = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'uiControl' && node.id === id) return node;
+      if (node.kind === 'uiControl' && node.control === 'panel') {
+        const nested = find(node.body);
+        if (nested) return nested;
+      }
       if (node.kind === 'tabs') {
         for (const page of node.body ?? []) {
           const nested = find(page.body);

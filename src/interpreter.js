@@ -242,6 +242,9 @@ export class PatchInterpreter {
           item.panelSplit=node.panelSplit?{orientation:node.panelSplit.orientation,ratio:node.panelSplit.ratio}:null;
           item.controls=this.buildUIItems(node.body, lists, true);
         }
+        if(node.control==='input'&&node.inputNumber){
+          item.inputNumber={min:node.inputNumber.min,max:node.inputNumber.max,step:node.inputNumber.step};
+        }
         if(node.control==='slider'){
           item.min=node.min;
           item.max=node.max;

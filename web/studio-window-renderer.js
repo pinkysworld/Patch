@@ -407,11 +407,21 @@ function createControlElement(control, context) {
     if (context.interactive) el.addEventListener('click', () => context.dispatch(control.id, 'clicked'));
   } else if (control.type === 'input') {
     el = document.createElement('input');
-    el.className = 'patch-input';
+    el.className = control.inputNumber ? 'patch-input patch-numberedit' : 'patch-input';
     el.value = control.value ?? '';
     el.placeholder = control.id ?? '';
-    if (context.interactive) el.addEventListener('input', () => context.dispatch(control.id, 'changed', { value: el.value }));
-    else el.readOnly = true;
+    if (control.inputNumber) {
+      el.type = 'number';
+      el.min = String(control.inputNumber.min);
+      el.max = String(control.inputNumber.max);
+      el.step = String(control.inputNumber.step);
+      el.inputMode = 'decimal';
+      el.dataset.patchNumberEdit = 'true';
+    }
+    if (context.interactive) {
+      if (control.inputNumber) el.addEventListener('change', () => context.dispatch(control.id, 'changed', { value: el.value === '' ? Number.NaN : Number(el.value) }));
+      else el.addEventListener('input', () => context.dispatch(control.id, 'changed', { value: el.value }));
+    } else el.readOnly = true;
   } else if (control.type === 'memo') {
     el = document.createElement('textarea');
     el.className = 'patch-input patch-memo';

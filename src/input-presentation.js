@@ -13,7 +13,7 @@ const MODE_SET = new Set(MODES);
 const LISTBOX_MODES = Object.freeze(['plain', 'checked']);
 const LISTBOX_MODE_SET = new Set(LISTBOX_MODES);
 const LISTBOX_MODE_PREFIX_RE = /^\s*#\s*@listbox-mode\b/i;
-const LISTBOX_DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
+const LISTBOX_DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|input-number|listbox-mode)\b/i;
 const MASK_TOKEN_KINDS = Object.freeze({
   '0': 'digit',
   A: 'letter',
