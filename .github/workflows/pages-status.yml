@@ -11,10 +11,11 @@ permissions:
 
 jobs:
   publish:
-    # A superseded Pages run can be cancelled by the shared deployment
-    # concurrency group. That is not a public-site failure and must not
-    # overwrite the status from the authoritative surviving deployment.
-    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion != 'cancelled'
+    # Only main deployments may influence the public-site commit status. The
+    # workflow itself can legitimately complete as skipped/cancelled when a
+    # runtime-triggered Pages attempt is inapplicable or superseded; those
+    # conclusions are not evidence that the currently published site failed.
+    if: github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,12 +28,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          state=failure
-          description='Patch Studio public deployment failed'
-          if [ "$DEPLOY_CONCLUSION" = 'success' ]; then
-            state=success
-            description='Patch Studio public deployment verified'
-          fi
+
+          case "$DEPLOY_CONCLUSION" in
+            success)
+              state=success
+              description='Patch Studio public deployment verified'
+              ;;
+            failure|timed_out|startup_failure|action_required)
+              state=failure
+              description='Patch Studio public deployment failed'
+              ;;
+            cancelled|skipped|neutral|stale)
+              echo "Ignoring non-authoritative Pages conclusion: $DEPLOY_CONCLUSION"
+              exit 0
+              ;;
+            *)
+              echo "Ignoring unknown Pages conclusion: $DEPLOY_CONCLUSION"
+              exit 0
+              ;;
+          esac
+
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
             -f state="$state" \
             -f context='patch-studio/public-site' \

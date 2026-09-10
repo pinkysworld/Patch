@@ -84,9 +84,13 @@ test('Pages source deploys cannot be cancelled by later runtime workflow_run tri
   assert.match(pages, /workflow_run:/);
 });
 
-test('cancelled superseded Pages runs cannot overwrite the public-site status', () => {
-  assert.match(pagesStatus, /github\.event\.workflow_run\.head_branch == 'main' && github\.event\.workflow_run\.conclusion != 'cancelled'/);
-  assert.match(pagesStatus, /if \[ "\$DEPLOY_CONCLUSION" = 'success' \]/);
+test('non-authoritative Pages runs cannot overwrite the public-site status', () => {
+  assert.match(pagesStatus, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(pagesStatus, /success\)/);
+  assert.match(pagesStatus, /failure\|timed_out\|startup_failure\|action_required\)/);
+  assert.match(pagesStatus, /cancelled\|skipped\|neutral\|stale\)/);
+  assert.match(pagesStatus, /Ignoring non-authoritative Pages conclusion/);
+  assert.match(pagesStatus, /state=success/);
   assert.match(pagesStatus, /state=failure/);
   assert.match(pagesStatus, /context='patch-studio\/public-site'/);
 });
