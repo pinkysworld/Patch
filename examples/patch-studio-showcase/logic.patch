@@ -58,12 +58,6 @@ when nested_code changed:
   change status:
     set = "Nested masked input updated"
 
-when nested_quantity changed:
-  change nested_quantity:
-    set = value
-  change status:
-    set = "NumberEdit text value updated"
-
 when nested_apply clicked:
   change status:
     set = "Nested code applied"
