@@ -239,11 +239,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         if: steps.runtime_assets.outputs.ready == 'true'
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: _site
       - name: Deploy
         if: steps.runtime_assets.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
       - name: Verify deployed Patch Studio critical assets
         if: steps.runtime_assets.outputs.ready == 'true'
         env:
