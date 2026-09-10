@@ -14,10 +14,15 @@ export const PATCH_WINDOW_INPUT_PRESENTATION_VERSION = '0.1';
 export const PATCH_WINDOW_INPUT_PRESENTATION_FORMAT = 'patch-window-input-presentation';
 export const PATCH_WINDOW_INPUT_MASK_VERSION = '0.1';
 export const PATCH_WINDOW_INPUT_MASK_FORMAT = 'patch-window-input-mask';
+export const PATCH_NUMBEREDIT_VERSION = '0.1';
+export const PATCH_NUMBEREDIT_FORMAT = 'patch-numberedit-presentation';
+export const PATCH_NUMBEREDIT_DIRECTIVE = 'number-edit';
 
 const INPUT_MODE_PREFIX_RE = /^\s*#\s*@input-mode\b/i;
 const INPUT_MASK_PREFIX_RE = /^\s*#\s*@input-mask\b/i;
-const DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask)\b/i;
+const NUMBEREDIT_RE = /^\s*#\s*@number-edit\s*$/i;
+const NUMBEREDIT_PREFIX_RE = /^\s*#\s*@number-edit\b/i;
+const DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|number-edit)\b/i;
 const DESIGNER_SELECTION_EVENT = 'patch-designer-selection-change';
 const DEFAULT_MASK = '000-000-0000';
 
@@ -97,6 +102,9 @@ export function setWindowInputPresentation(source, sourceLine, mode) {
     existingIndex = index;
   }
 
+  if (normalized === 'password' && readNumberEditFromRows(rows, sourceLine)) {
+    throw new Error('PasswordEdit cannot be enabled while NumberEdit is active. Change the Input mode to Text first.');
+  }
   const directive = formatPatchInputPresentationDirective(normalized);
   if (!directive) {
     if (existingIndex >= 0) rows.splice(existingIndex, 1);
@@ -132,6 +140,9 @@ export function buildWindowInputMaskManifest(source, ast) {
     const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
     if (mode === 'password') {
       throw new Error(`Input '${node.id ?? '?'}' cannot combine PasswordEdit and MaskedEdit presentation metadata.`);
+    }
+    if (readNumberEditFromRows(rows, node.line)) {
+      throw new Error(`Input '${node.id ?? '?'}' cannot combine NumberEdit and MaskedEdit presentation metadata.`);
     }
     controls.push({ line: node.line ?? null, id: node.id ?? null, mask });
   });
@@ -214,6 +225,9 @@ export function setWindowInputMask(source, sourceLine, mask) {
   if ((readInputPresentationFromRows(rows, sourceLine) ?? 'plain') === 'password') {
     throw new Error('MaskedEdit cannot be enabled while Input mode is Password. Change the Input mode to Text first.');
   }
+  if (readNumberEditFromRows(rows, sourceLine)) {
+    throw new Error('MaskedEdit cannot be enabled while NumberEdit is active. Change the Input mode to Text first.');
+  }
   const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
   const rendered = `${indent}${formatPatchInputMaskDirective(normalized)}`;
   if (existingIndex >= 0) rows[existingIndex] = rendered;
@@ -230,6 +244,111 @@ export function collectWindowInputMasks(source, ast) {
     if (mask !== null) controls.push({ id: node.id, line: node.line ?? null, mask });
   });
   return controls;
+}
+
+export function buildWindowNumberEditManifest(source, ast) {
+  const rows = sourceRows(source);
+  const controls = [];
+  walkControls(ast, node => {
+    const enabled = readNumberEditFromRows(rows, node.line);
+    if (enabled && node.control !== 'input') {
+      throw new Error(`# @number-edit belongs only to Input controls, not '${node.control}' on source line ${node.line ?? '?'}.`);
+    }
+    if (node.control !== 'input' || !enabled) return;
+    const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
+    const mask = readInputMaskFromRows(rows, node.line);
+    if (mode === 'password') {
+      throw new Error(`Input '${node.id ?? '?'}' cannot combine NumberEdit and PasswordEdit presentation metadata.`);
+    }
+    if (mask !== null) {
+      throw new Error(`Input '${node.id ?? '?'}' cannot combine NumberEdit and MaskedEdit presentation metadata.`);
+    }
+    controls.push({ line: node.line ?? null, id: node.id ?? null });
+  });
+  return validateWindowNumberEditManifest({
+    format: PATCH_NUMBEREDIT_FORMAT,
+    version: PATCH_NUMBEREDIT_VERSION,
+    controls
+  });
+}
+
+export function attachWindowNumberEdits(ast, manifest) {
+  validateWindowNumberEditManifest(manifest);
+  const lines = new Set(manifest.controls.map(control => control.line));
+  let attached = 0;
+  walkControls(ast, node => {
+    if (node.control !== 'input' || !lines.has(node.line)) return;
+    Object.defineProperty(node, 'numberEdit', {
+      value: true,
+      enumerable: true,
+      configurable: true,
+      writable: false
+    });
+    attached += 1;
+  });
+  if (attached !== manifest.controls.length) {
+    throw new Error('Window NumberEdit manifest does not match the compiled Input controls.');
+  }
+  return ast;
+}
+
+export function validateWindowNumberEditManifest(manifest) {
+  if (!manifest || manifest.format !== PATCH_NUMBEREDIT_FORMAT || manifest.version !== PATCH_NUMBEREDIT_VERSION || !Array.isArray(manifest.controls)) {
+    throw new Error('Window NumberEdit manifest format/version is unsupported.');
+  }
+  const lines = new Set();
+  for (const control of manifest.controls) {
+    if (!Number.isInteger(control?.line) || control.line < 1) throw new Error('Window NumberEdit control line is invalid.');
+    if (lines.has(control.line)) throw new Error(`Window NumberEdit source line ${control.line} appears more than once.`);
+    lines.add(control.line);
+    if (control.id !== null && control.id !== undefined && !/^[A-Za-z_]\w*$/.test(String(control.id))) {
+      throw new Error(`Window NumberEdit control id '${control.id}' is invalid.`);
+    }
+  }
+  return manifest;
+}
+
+export function readWindowNumberEdit(source, sourceLine) {
+  return readNumberEditFromRows(sourceRows(source), sourceLine);
+}
+
+export function setWindowNumberEdit(source, sourceLine, enabled = true) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  assertInputLine(rows, lineIndex, 'NumberEdit');
+
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
+    if (!NUMBEREDIT_PREFIX_RE.test(rows[index])) continue;
+    if (existingIndex >= 0) throw new Error(`NumberEdit is declared more than once before source line ${sourceLine}.`);
+    assertNumberEditDirective(rows[index], sourceLine);
+    existingIndex = index;
+  }
+
+  if (!enabled) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
+  }
+  if ((readInputPresentationFromRows(rows, sourceLine) ?? 'plain') === 'password') {
+    throw new Error('NumberEdit cannot be enabled while Input mode is Password. Change the Input mode to Text first.');
+  }
+  if (readInputMaskFromRows(rows, sourceLine) !== null) {
+    throw new Error('NumberEdit cannot be enabled while MaskedEdit is active. Change the Input mode to Text first.');
+  }
+  if (existingIndex >= 0) return original;
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  rows.splice(lineIndex, 0, `${indent}# @number-edit`);
+  return preserveTrailingNewline(original, rows.join('\n'));
+}
+
+export function collectWindowNumberEditInputIds(source, ast) {
+  const rows = sourceRows(source);
+  const ids = [];
+  walkControls(ast, node => {
+    if (node.control === 'input' && node.id && readNumberEditFromRows(rows, node.line)) ids.push(node.id);
+  });
+  return ids;
 }
 
 function readInputPresentationFromRows(rows, sourceLine) {
@@ -254,6 +373,25 @@ function readInputMaskFromRows(rows, sourceLine) {
     found = parsePatchInputMaskDirective(rows[index]);
   }
   return found;
+}
+
+function readNumberEditFromRows(rows, sourceLine) {
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 1) return false;
+  let found = false;
+  for (let index = lineIndex - 1; index >= 0 && DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
+    if (!NUMBEREDIT_PREFIX_RE.test(rows[index])) continue;
+    if (found) throw new Error(`NumberEdit is declared more than once before source line ${sourceLine}.`);
+    assertNumberEditDirective(rows[index], sourceLine);
+    found = true;
+  }
+  return found;
+}
+
+function assertNumberEditDirective(row, sourceLine) {
+  if (!NUMBEREDIT_RE.test(row)) {
+    throw new Error(`Invalid # @number-edit directive before source line ${sourceLine}. Use exactly '# @number-edit'.`);
+  }
 }
 
 function sourceRows(source) {
@@ -310,6 +448,7 @@ function parserApi() {
 function installInputPresentationStudio() {
   ensurePasswordEditButton();
   ensureMaskedEditButton();
+  ensureNumberEditButton();
   ensureInputPresentationInspector();
   ensureInputMaskInspector();
   installInputPresentationObservers();
@@ -319,6 +458,7 @@ function installInputPresentationStudio() {
     studioObserver = new MutationObserver(() => {
       ensurePasswordEditButton();
       ensureMaskedEditButton();
+      ensureNumberEditButton();
       ensureInputPresentationInspector();
       ensureInputMaskInspector();
       installInputPresentationObservers();
@@ -335,6 +475,7 @@ function studioSurfaceReady() {
   return Boolean(
     document.querySelector('#addPasswordEdit') &&
     document.querySelector('#addMaskedEdit') &&
+    document.querySelector('#addNumberEdit') &&
     document.querySelector('#designerInspectorInputPresentationField') &&
     document.querySelector('#designerInspectorInputMaskField')
   );
@@ -372,6 +513,22 @@ function ensureMaskedEditButton() {
   return true;
 }
 
+function ensureNumberEditButton() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  const anchor = toolbar?.querySelector('#addMaskedEdit') ?? toolbar?.querySelector('#addPasswordEdit') ?? toolbar?.querySelector('#addInput');
+  if (!toolbar || !anchor || toolbar.querySelector('#addNumberEdit')) return Boolean(toolbar?.querySelector('#addNumberEdit'));
+  const button = document.createElement('button');
+  button.id = 'addNumberEdit';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Number';
+  button.setAttribute('aria-label', 'Add NumberEdit');
+  button.title = 'Add a source-backed NumberEdit preset. It remains an Input, uses # @number-edit and changed(value) stays text-based.';
+  anchor.insertAdjacentElement('afterend', button);
+  button.addEventListener('click', addNumberEditFromStudio);
+  return true;
+}
+
 async function addPasswordEditFromStudio(event) {
   event?.preventDefault?.();
   await addInputPreset('password');
@@ -380,6 +537,11 @@ async function addPasswordEditFromStudio(event) {
 async function addMaskedEditFromStudio(event) {
   event?.preventDefault?.();
   await addInputPreset('masked');
+}
+
+async function addNumberEditFromStudio(event) {
+  event?.preventDefault?.();
+  await addInputPreset('number');
 }
 
 async function addInputPreset(kind) {
@@ -394,7 +556,8 @@ async function addInputPreset(kind) {
       .at(-1);
     if (!input) throw new Error('Designer created an Input but could not locate the new Input preset in Patch source.');
     if (kind === 'password') next = setWindowInputPresentation(next, input.line, 'password');
-    else next = setWindowInputMask(next, input.line, DEFAULT_MASK);
+    else if (kind === 'masked') next = setWindowInputMask(next, input.line, DEFAULT_MASK);
+    else next = setWindowNumberEdit(next, input.line, true);
     setStudioSource(code, next);
     input = findDesignerInputById(await designerApi(), next, input.id) ?? input;
     requestAnimationFrame(() => {
@@ -422,8 +585,9 @@ function ensureInputPresentationInspector() {
         <option value="plain">Text</option>
         <option value="password">Password</option>
         <option value="masked">Masked</option>
+        <option value="number">Number</option>
       </select>
-      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password and Masked are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
+      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password, Masked and Number are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
     form.appendChild(field);
     field.querySelector('#designerInspectorInputPresentation')?.addEventListener('change', applyInputPresentationInspector);
   } else {
@@ -433,6 +597,14 @@ function ensureInputPresentationInspector() {
       option.value = 'masked';
       option.textContent = 'Masked';
       select.appendChild(option);
+    }
+    if (select && !select.querySelector('option[value="number"]')) {
+      const option = document.createElement('option');
+      option.value = 'number';
+      option.textContent = 'Number';
+      select.appendChild(option);
+    }
+    if (select) {
       select.removeEventListener('change', applyInputPresentationInspector);
       select.addEventListener('change', applyInputPresentationInspector);
     }
@@ -491,9 +663,10 @@ async function syncInputPresentationInspector() {
   maskField.hidden = true;
   if (!control || !code) return;
   try {
+    const numberEdit = readWindowNumberEdit(code.value, control.line);
     const mask = readWindowInputMask(code.value, control.line);
     const mode = readWindowInputPresentation(code.value, control.line);
-    const effective = mask ? 'masked' : mode;
+    const effective = numberEdit ? 'number' : mask ? 'masked' : mode;
     if (document.activeElement !== presentationSelect) presentationSelect.value = effective;
     maskField.hidden = effective !== 'masked';
     if (effective === 'masked' && document.activeElement !== maskInput) maskInput.value = mask ?? DEFAULT_MASK;
@@ -512,14 +685,21 @@ async function applyInputPresentationInspector() {
   try {
     let next = code.value;
     if (select.value === 'password') {
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
       next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'password'));
     } else if (select.value === 'masked') {
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
       next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'plain'));
       const currentMask = inputMaskById(next, control.id);
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, currentMask ?? DEFAULT_MASK));
+    } else if (select.value === 'number') {
+      next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
+      next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'plain'));
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, true));
     } else {
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
       next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'plain'));
     }
     setStudioSource(code, next);
@@ -537,6 +717,7 @@ async function applyInputMaskInspector() {
   if (!control?.id) return;
   try {
     let next = code.value;
+    next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
     next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'plain'));
     next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, input.value));
     setStudioSource(code, next);
@@ -612,11 +793,13 @@ async function syncInputPresentationSurfaces() {
   if (!code) return;
   const generation = ++presentationGeneration;
   let passwordIds;
+  let numberIds;
   let masks;
   try {
     const { parse } = await parserApi();
     const ast = parse(code.value);
     passwordIds = new Set(collectWindowPasswordInputIds(code.value, ast));
+    numberIds = new Set(collectWindowNumberEditInputIds(code.value, ast));
     masks = new Map(collectWindowInputMasks(code.value, ast).map(control => [control.id, control.mask]));
   } catch {
     return;
@@ -626,11 +809,18 @@ async function syncInputPresentationSurfaces() {
   for (const root of [document.querySelector('#designerCanvas'), document.querySelector('#app')]) {
     for (const input of root?.querySelectorAll?.('input.patch-input') ?? []) {
       const id = String(input.placeholder ?? '');
+      const numberEdit = numberIds.has(id);
       const password = passwordIds.has(id);
       const mask = masks.get(id) ?? null;
-      input.type = password ? 'password' : 'text';
-      input.dataset.patchInputPresentation = password ? 'password' : mask ? 'masked' : 'plain';
-      if (mask && !password) applyMaskToStudioInput(input, id, mask);
+      input.type = numberEdit ? 'number' : password ? 'password' : 'text';
+      input.dataset.patchInputPresentation = numberEdit ? 'number' : password ? 'password' : mask ? 'masked' : 'plain';
+      input.removeAttribute('step');
+      if (numberEdit) {
+        clearMaskFromStudioInput(input);
+        input.step = 'any';
+        input.inputMode = 'decimal';
+        input.setAttribute('aria-label', `${id || 'Number'} number input`);
+      } else if (mask && !password) applyMaskToStudioInput(input, id, mask);
       else clearMaskFromStudioInput(input);
     }
   }
