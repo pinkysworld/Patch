@@ -396,8 +396,8 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] PasswordEdit Stage 1: ordinary Input plus `# @input-mode password`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] CheckedListBox Stage 1: list-backed ListBox plus `# @listbox-mode checked`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] ProgressBar Stage 1: number-backed Slider plus `# @slider-mode progress`, passive Studio/Web presentation with no control event, Current Ready native unsupported/fail-closed;
-- [ ] SpinEdit/NumberEdit;
-- [ ] DatePicker;
+- [x] SpinEdit/NumberEdit Stage 1: ordinary Input plus `# @number-edit`, Studio/Web numeric presentation with text `changed(value)`, Current Ready native unsupported/fail-closed;
+- [x] DatePicker Stage 1: ordinary Input plus `# @input-mode date`, Studio/Web browser date presentation with ISO date text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [ ] TimePicker;
 - [ ] Calendar;
 - [ ] LinkLabel;

@@ -131,6 +131,8 @@ test('roadmap records beta36 current Studio/native line and truthful RAD backlog
   assert.match(roadmap, /MaskedEdit as `# @input-mask "\.\.\."`/);
   assert.match(roadmap, /CheckedListBox as `# @listbox-mode checked`/);
   assert.match(roadmap, /ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`/);
-  assert.match(roadmap, /SpinEdit\/NumberEdit and Date\/Time controls/);
+  assert.match(roadmap, /NumberEdit as `# @number-edit`/);
+  assert.match(roadmap, /DatePicker as `# @input-mode date`/);
+  assert.match(roadmap, /TimePicker and Calendar/);
   assert.doesNotMatch(roadmap, /\[ \] ProgressBar,/);
 });

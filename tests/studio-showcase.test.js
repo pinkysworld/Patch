@@ -112,6 +112,8 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @input-mode password/);
   assert.match(composition.source, /# @input-mask "\(000\) 000-0000"/);
   assert.match(composition.source, /# @input-mask "AA-000"/);
+  assert.match(composition.source, /# @number-edit/);
+  assert.match(composition.source, /# @input-mode date/);
   assert.match(composition.source, /# @listbox-mode checked/);
   assert.match(composition.source, /# @slider-mode progress/);
   assert.match(composition.source, /# @panel-mode group/);
@@ -122,6 +124,8 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @locked/);
   assert.match(composition.source, /# @layout anchor right bottom/);
   assert.equal(compiled.windowInputPresentation.controls.some(control => control.mode === 'password'), true);
+  assert.equal(compiled.windowInputPresentation.controls.some(control => control.mode === 'date'), true);
+  assert.equal(compiled.windowNumberEdit.controls.some(control => control.id === 'nested_number'), true);
   assert.equal(compiled.windowInputMask.controls.length >= 2, true);
   assert.equal(compiled.windowListboxPresentation.controls.some(control => control.mode === 'checked'), true);
   assert.equal(compiled.windowSliderPresentation.controls.some(control => control.mode === 'progress' && control.id === 'completion'), true);
@@ -175,6 +179,9 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.projectKind, 'window');
   assert.equal(built.metadata.memoStage, 1);
   assert.equal(built.metadata.passwordEditStage, 1);
+  assert.equal(built.metadata.datePickerStage, 1);
+  assert.equal(built.metadata.datePickerEventValue, 'iso-date-text');
+  assert.equal(built.metadata.numberEditStage, 1);
   assert.equal(built.metadata.maskedEditStage, 1);
   assert.equal(built.metadata.checkedListBoxStage, 1);
   assert.equal(built.metadata.progressBarStage, 1);
@@ -188,6 +195,8 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.splitContainerResizeState, 'transient-runtime-only');
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
+  assert.match(built.html, /dataset\.patchInputPresentation='date'/);
+  assert.match(built.html, /dataset\.patchInputPresentation='number'/);
   assert.match(built.html, /data-patch-window-maskededit/);
   assert.match(built.html, /data-patch-window-checkedlistbox/);
   assert.match(built.html, /data-patch-window-progressbar/);
