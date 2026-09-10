@@ -39,7 +39,7 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Studio project/resource bundle **v4**;
 - Component Registry **0.10**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
-- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar presentation contracts;
+- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and SpinEdit presentation contracts;
 - source-backed Anchors/Dock, independent TabOrder, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Layers/Object Tree, Lock Controls and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
@@ -396,7 +396,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] PasswordEdit Stage 1: ordinary Input plus `# @input-mode password`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] CheckedListBox Stage 1: list-backed ListBox plus `# @listbox-mode checked`, Studio/Web supported, Current Ready native unsupported/fail-closed;
 - [x] ProgressBar Stage 1: number-backed Slider plus `# @slider-mode progress`, passive Studio/Web presentation with no control event, Current Ready native unsupported/fail-closed;
-- [ ] SpinEdit/NumberEdit;
+- [x] SpinEdit/NumberEdit Stage 1: number-backed Slider plus `# @slider-mode spin`, Studio/Web interactive numeric `changed(value)`, explicit backing number-state lifecycle and Current Ready native unsupported/fail-closed;
 - [ ] DatePicker;
 - [ ] TimePicker;
 - [ ] Calendar;

@@ -53,6 +53,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let treeViews = 0;
   let sliders = 0;
   let progressBars = 0;
+  let spinEdits = 0;
   let memos = 0;
   let paintboxes = 0;
   let imageLists = 0;
@@ -96,6 +97,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (child.control === 'slider') {
       sliders += 1;
       if (child.sliderPresentation === 'progress') progressBars += 1;
+      if (child.sliderPresentation === 'spin') spinEdits += 1;
       const stateType = stateTypes.get(child.id);
       if (stateType && stateType !== 'number') {
         throw new WindowBuildError(
@@ -105,6 +107,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       if (child.sliderPresentation === 'progress' && stateType !== 'number') {
         throw new WindowBuildError(
           `line ${child.line ?? '?'}: ProgressBar '${child.id}' needs matching number state with the same name.`
+        );
+      }
+      if (child.sliderPresentation === 'spin' && stateType !== 'number') {
+        throw new WindowBuildError(
+          `line ${child.line ?? '?'}: SpinEdit '${child.id}' needs matching number state with the same name.`
         );
       }
     }
@@ -350,6 +357,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (spinEdits && !options.allowSpinEdit) {
+    throw new WindowBuildError(
+      'SpinEdit Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no numeric SpinEdit presentation contract; validation fails closed rather than lowering it as a Slider.'
+    );
+  }
+
   if (memos && !options.allowMemo) {
     throw new WindowBuildError(
       'Memo Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no Memo contract; validation fails closed rather than lowering Memo as a single-line Input.'
@@ -386,6 +399,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     treeViews,
     sliders,
     progressBars,
+    spinEdits,
     memos,
     paintboxes,
     imageLists,

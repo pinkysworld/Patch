@@ -14,7 +14,7 @@ The Showcase uses four focused Forms with a consistent card/dashboard layout:
 - **Patch Studio Showcase** is the primary dashboard. It groups account inputs, preferences/state, secondary semantics and project actions into distinct visual regions with consistent spacing.
 - **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
 - **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.
-- **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.
+- **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider. A compact SpinEdit Stage 1 preset demonstrates numeric `changed(value)` state alongside the structural container without adding a fifth demo Form.
 
 The visual fixture should remain presentation-ready. New controls should be integrated into an existing section or a deliberately designed new section rather than appended wherever space happens to remain.
 
@@ -26,6 +26,7 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 - PasswordEdit and MaskedEdit source-backed Input presentations;
 - CheckedListBox as the list-backed `# @listbox-mode checked` presentation;
 - ProgressBar as the passive number-backed Slider `# @slider-mode progress` presentation;
+- SpinEdit as the interactive number-backed Slider `# @slider-mode spin` presentation, preserving Slider range, step and numeric `changed(value)` semantics;
 - GroupBox as the source-backed Panel `# @panel-mode group` presentation, reusing Panel Stage 2 containment rather than creating a second container model;
 - ScrollBox as block-local `# @panel-scroll auto` on that same Panel, with positioned overflow proving the scrolling path;
 - SplitContainer as block-local `# @panel-split vertical 42` plus one explicit `# @panel-split-break`, with a dedicated Split Lab exercising both panes and the divider;
@@ -44,8 +45,9 @@ The project is primarily a **Studio Run acceptance project**, not a promise that
 
 Current important boundaries include:
 
-- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.
+- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, SpinEdit, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.
 - ProgressBar is deliberately passive. It exposes no Patch event; the dashboard timer changes its explicit `create number completion` state through `change`.
+- SpinEdit remains an interactive Slider presentation. Its HTML numeric editor exposes a transient finite numeric value through ordinary Slider `changed(value)`; only the handler's explicit `change split_step` persists it.
 - GroupBox changes Panel presentation only. Its children remain ordinary Panel children and persistent application state still changes only through explicit `change`.
 - ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.
 - SplitContainer Stage 1 keeps orientation, pane boundary and initial ratio visible in source. Runtime divider movement is bounded transient UI state, emits no Patch event and does not mutate application state.

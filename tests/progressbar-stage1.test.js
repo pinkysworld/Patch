@@ -23,8 +23,8 @@ window "Progress" as main size 520, 260:
 `;
 
 test('ProgressBar Stage 1 presentation vocabulary is versioned and fail-closed by target', () => {
-  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.1');
-  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.1');
+  assert.equal(PATCH_SLIDER_PRESENTATION_VERSION, '0.2');
+  assert.equal(PATCH_WINDOW_SLIDER_PRESENTATION_VERSION, '0.2');
   assert.equal(parsePatchSliderPresentationDirective('# @slider-mode progress'), 'progress');
   assert.equal(patchSliderPresentationTargetSupport('progress').studio, 'supported');
   assert.equal(patchSliderPresentationTargetSupport('progress').web, 'supported');
@@ -111,7 +111,7 @@ test('Patch Studio exposes ProgressBar as a Slider preset and Inspector mode', (
   const studio = fs.readFileSync('web/slider-stage1.js', 'utf8');
   assert.match(studio, /addProgressBar/);
   assert.match(studio, /# @slider-mode progress/);
-  assert.match(studio, /ProgressBar is a passive source-backed number-state presentation/);
+  assert.match(studio, /ProgressBar is passive; SpinEdit is interactive/);
   assert.match(studio, /buildWindowSliderPresentationManifest/);
   assert.match(studio, /progress\.patch-progressbar-meter/);
   assert.doesNotMatch(studio, /context\.dispatch\([^\n]*ProgressBar/i);

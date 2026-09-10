@@ -52,13 +52,18 @@ function installStyles() {
 .patch-slider.patch-progressbar-studio .patch-progressbar-value{min-width:4.5em;text-align:right;font:600 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
 .patch-slider.patch-progressbar-studio>.patch-progressbar-source,.patch-slider.patch-progressbar-studio>output:not(.patch-progressbar-value){position:absolute!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important;opacity:0!important;pointer-events:none!important}
 .patch-slider.patch-progressbar-studio.designer-control{cursor:pointer}
-@media(forced-colors:active){.patch-slider.patch-progressbar-studio progress{forced-color-adjust:auto}}
+.patch-slider.patch-spinedit-studio{grid-template-columns:minmax(120px,180px);gap:0}
+.patch-slider.patch-spinedit-studio>.patch-spinedit-source,.patch-slider.patch-spinedit-studio>output{position:absolute!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important;opacity:0!important;pointer-events:none!important}
+.patch-spinedit-input{width:100%;min-width:0;border:1px solid var(--border,#d4d4d8);border-radius:7px;padding:7px 9px;background:var(--surface,#fff);color:inherit;font:inherit;font-variant-numeric:tabular-nums}
+.designer-control.patch-spinedit-studio .patch-spinedit-input{pointer-events:none}
+@media(forced-colors:active){.patch-slider.patch-progressbar-studio progress{forced-color-adjust:auto}.patch-spinedit-input{border:1px solid CanvasText}}
 `;
   document.head.appendChild(style);
 }
 
 function installProgressBarStudio() {
   ensureProgressBarButton();
+  ensureSpinEditButton();
   ensureProgressBarInspector();
   installProgressBarObservers();
   scheduleProgressBarSync();
@@ -68,9 +73,10 @@ function installProgressBarStudio() {
   body.dataset.patchProgressbarInstallObserver = '1';
   const observer = new MutationObserver(() => {
     ensureProgressBarButton();
+    ensureSpinEditButton();
     ensureProgressBarInspector();
     installProgressBarObservers();
-    if (document.querySelector('#addProgressBar') && document.querySelector('#designerInspectorSliderPresentationField')) observer.disconnect();
+    if (document.querySelector('#addProgressBar') && document.querySelector('#addSpinEdit') && document.querySelector('#designerInspectorSliderPresentationField')) observer.disconnect();
   });
   observer.observe(body, { childList: true, subtree: true });
 }
@@ -91,6 +97,22 @@ function ensureProgressBarButton() {
   return true;
 }
 
+function ensureSpinEditButton() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  const anchor = toolbar?.querySelector('#addProgressBar') ?? toolbar?.querySelector('#addSlider');
+  if (!toolbar || !anchor || toolbar.querySelector('#addSpinEdit')) return Boolean(toolbar?.querySelector('#addSpinEdit'));
+  const button = document.createElement('button');
+  button.id = 'addSpinEdit';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ SpinEdit';
+  button.setAttribute('aria-label', 'Add SpinEdit');
+  button.title = 'Add an interactive source-backed SpinEdit preset. It remains Slider number/range/step semantics and uses # @slider-mode spin.';
+  anchor.insertAdjacentElement('afterend', button);
+  button.addEventListener('click', addSpinEditFromStudio);
+  return true;
+}
+
 function addProgressBarFromStudio(event) {
   event?.preventDefault?.();
   event?.stopImmediatePropagation?.();
@@ -102,9 +124,34 @@ function addProgressBarFromStudio(event) {
       .filter(control => control.windowIndex === windowIndex && control.type === 'slider')
       .at(-1);
     if (!added?.id) throw new Error('Designer created a Slider but could not locate its source-backed id.');
-    next = ensureProgressNumberState(next, added.id, added.min ?? 0);
+    next = ensureSliderNumberState(next, added.id, added.min ?? 0, 'ProgressBar');
     const line = findSliderLineById(next, added.id);
     next = setWindowSliderPresentation(next, line, 'progress');
+    setSource(next);
+    added = listDesignerControls(next).find(control => control.id === added.id && control.type === 'slider') ?? added;
+    requestAnimationFrame(() => {
+      document.querySelector(`#designerCanvas .designer-control[data-window-index="${added.windowIndex}"][data-control-index="${added.controlIndex}"]`)?.click?.();
+      scheduleProgressBarSync();
+    });
+  } catch (error) {
+    showDesignerInspectorError(error, { document });
+  }
+}
+
+function addSpinEditFromStudio(event) {
+  event?.preventDefault?.();
+  event?.stopImmediatePropagation?.();
+  if (!code) return;
+  try {
+    const windowIndex = activeFormIndex();
+    let next = addDesignerControl(code.value, 'slider', { windowIndex });
+    let added = listDesignerControls(next)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'slider')
+      .at(-1);
+    if (!added?.id) throw new Error('Designer created a Slider but could not locate its source-backed id.');
+    next = ensureSliderNumberState(next, added.id, added.min ?? 0, 'SpinEdit');
+    const line = findSliderLineById(next, added.id);
+    next = setWindowSliderPresentation(next, line, 'spin');
     setSource(next);
     added = listDesignerControls(next).find(control => control.id === added.id && control.type === 'slider') ?? added;
     requestAnimationFrame(() => {
@@ -127,8 +174,9 @@ function ensureProgressBarInspector() {
     <select id="designerInspectorSliderPresentation" aria-describedby="designerInspectorSliderPresentationHint">
       <option value="plain">Slider</option>
       <option value="progress">ProgressBar</option>
+      <option value="spin">SpinEdit</option>
     </select>
-    <small id="designerInspectorSliderPresentationHint" class="inspector-hint">ProgressBar is a passive source-backed number-state presentation. Stage 1 is Studio/Web; Current Ready native 1.10 fails closed.</small>`;
+    <small id="designerInspectorSliderPresentationHint" class="inspector-hint">ProgressBar is passive; SpinEdit is interactive. Both remain source-backed Slider number/range/step presentations. Stage 1 is Studio/Web; Current Ready native 1.10 fails closed.</small>`;
   form.appendChild(field);
   field.querySelector('#designerInspectorSliderPresentation')?.addEventListener('change', applyProgressBarInspector);
   return true;
@@ -170,7 +218,9 @@ function applyProgressBarInspector() {
   if (!code || !select || !control?.id) return;
   try {
     let next = code.value;
-    if (select.value === 'progress') next = ensureProgressNumberState(next, control.id, control.min ?? 0);
+    if (select.value === 'progress' || select.value === 'spin') {
+      next = ensureSliderNumberState(next, control.id, control.min ?? 0, select.value === 'spin' ? 'SpinEdit' : 'ProgressBar');
+    }
     const line = findSliderLineById(next, control.id);
     next = setWindowSliderPresentation(next, line, select.value);
     setSource(next);
@@ -181,12 +231,12 @@ function applyProgressBarInspector() {
   }
 }
 
-function ensureProgressNumberState(source, id, initialValue = 0) {
+function ensureSliderNumberState(source, id, initialValue = 0, label = 'Slider presentation') {
   const ast = parse(source);
   const existing = ast.find(node => node.kind === 'create' && node.name === id);
   if (existing) {
     if (existing.valueType !== 'number') {
-      throw new Error(`ProgressBar '${id}' needs number state, but '${id}' is already declared as ${existing.valueType}.`);
+      throw new Error(`${label} '${id}' needs number state, but '${id}' is already declared as ${existing.valueType}.`);
     }
     return source;
   }
@@ -240,11 +290,11 @@ function scheduleProgressBarSync() {
 function syncProgressBarSurfaces() {
   if (!code) return;
   const currentGeneration = ++progressGeneration;
-  let progressIds;
+  let presentationModes;
   try {
     const ast = parse(code.value);
     const manifest = buildWindowSliderPresentationManifest(code.value, ast);
-    progressIds = new Set(manifest.controls.filter(control => control.mode === 'progress').map(control => control.id).filter(Boolean));
+    presentationModes = new Map(manifest.controls.filter(control => control.id).map(control => [control.id, control.mode]));
   } catch {
     return;
   }
@@ -255,7 +305,9 @@ function syncProgressBarSurfaces() {
     for (const slider of [...root.querySelectorAll('.patch-slider')]) {
       const id = sliderId(slider);
       if (!id) continue;
-      if (progressIds.has(id)) renderProgressPresentation(slider, id, root.id === 'app');
+      const mode = presentationModes.get(id) ?? 'plain';
+      if (mode === 'progress') renderProgressPresentation(slider, id, root.id === 'app');
+      else if (mode === 'spin') renderSpinPresentation(slider, id, root.id === 'app');
       else restoreSliderPresentation(slider, root.id === 'app');
     }
   }
@@ -270,6 +322,7 @@ function sliderId(slider) {
 }
 
 function renderProgressPresentation(slider, id, interactiveRoot) {
+  if (slider.classList.contains('patch-spinedit-studio')) restoreSliderPresentation(slider, interactiveRoot);
   slider.classList.add('patch-progressbar-studio');
   slider.dataset.patchSliderPresentation = 'progress';
   const input = slider.querySelector('input[type="range"]');
@@ -306,15 +359,56 @@ function renderProgressPresentation(slider, id, interactiveRoot) {
   if (interactiveRoot) slider.setAttribute('aria-label', `${id} ProgressBar`);
 }
 
+function renderSpinPresentation(slider, id, interactiveRoot) {
+  if (slider.classList.contains('patch-progressbar-studio')) restoreSliderPresentation(slider, interactiveRoot);
+  slider.classList.add('patch-spinedit-studio');
+  slider.dataset.patchSliderPresentation = 'spin';
+  const input = slider.querySelector('input[type="range"]');
+  if (!input) return;
+  input.classList.add('patch-spinedit-source');
+  input.tabIndex = -1;
+  input.setAttribute('aria-hidden', 'true');
+  input.disabled = !interactiveRoot;
+
+  let editor = slider.querySelector('input.patch-spinedit-input');
+  if (!editor) {
+    editor = document.createElement('input');
+    editor.type = 'number';
+    editor.className = 'patch-spinedit-input';
+    slider.appendChild(editor);
+  }
+  editor.min = input.min;
+  editor.max = input.max;
+  editor.step = input.step || '1';
+  editor.value = input.value;
+  editor.readOnly = !interactiveRoot;
+  editor.tabIndex = interactiveRoot ? 0 : -1;
+  editor.setAttribute('aria-label', `${id} SpinEdit`);
+  if (interactiveRoot && editor.dataset.patchSpinBound !== '1') {
+    editor.dataset.patchSpinBound = '1';
+    editor.addEventListener('change', () => {
+      const min = finiteNumber(input.min, 0);
+      const max = finiteNumber(input.max, 100);
+      const requested = Math.min(max, Math.max(min, finiteNumber(editor.value, finiteNumber(input.value, min))));
+      input.value = String(requested);
+      const value = finiteNumber(input.value, requested);
+      editor.value = formatNumber(value);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+  slider.setAttribute('aria-label', `${id} SpinEdit`);
+}
+
 function restoreSliderPresentation(slider, interactiveRoot) {
-  if (!slider.classList.contains('patch-progressbar-studio')) return;
-  slider.classList.remove('patch-progressbar-studio');
+  if (!slider.classList.contains('patch-progressbar-studio') && !slider.classList.contains('patch-spinedit-studio')) return;
+  slider.classList.remove('patch-progressbar-studio', 'patch-spinedit-studio');
   delete slider.dataset.patchSliderPresentation;
   slider.querySelector('progress.patch-progressbar-meter')?.remove();
   slider.querySelector('.patch-progressbar-value')?.remove();
+  slider.querySelector('input.patch-spinedit-input')?.remove();
   const input = slider.querySelector('input[type="range"]');
   if (input) {
-    input.classList.remove('patch-progressbar-source');
+    input.classList.remove('patch-progressbar-source', 'patch-spinedit-source');
     input.removeAttribute('aria-hidden');
     input.removeAttribute('tabindex');
     input.disabled = !interactiveRoot;
