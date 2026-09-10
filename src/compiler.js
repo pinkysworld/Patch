@@ -19,6 +19,10 @@ import {
   buildWindowPanelScrollManifest
 } from './panel-scroll.js';
 import {
+  attachWindowPanelSplits,
+  buildWindowPanelSplitManifest
+} from './panel-split.js';
+import {
   attachWindowInputMasks,
   attachWindowInputPresentations,
   attachWindowNumberEdits,
