@@ -22,7 +22,28 @@ jobs:
         with:
           node-version: 24
       - name: Apply DatePicker patch
-        run: python3 scripts/apply-datepicker-stage1.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-datepicker-stage1.py')
+          text = p.read_text(encoding='utf-8')
+          old = "        count=2)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')"
+          new = "        count=1)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')"
+          if text.count(old) != 1:
+              raise SystemExit('temporary DatePicker patch script count anchor changed')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python3 scripts/apply-datepicker-stage1.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/window-input-presentation.js')
+          text = p.read_text(encoding='utf-8')
+          old = "      ensureNumberEditButton();\n      ensureInputPresentationInspector();"
+          new = "      ensureNumberEditButton();\n      ensureDatePickerButton();\n      ensureInputPresentationInspector();"
+          if text.count(old) != 1:
+              raise SystemExit(f'observer DatePicker anchor count is {text.count(old)}, expected 1')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Syntax and targeted regression tests
         run: |
           node --check src/input-presentation.js
