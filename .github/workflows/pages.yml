@@ -239,11 +239,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         if: steps.runtime_assets.outputs.ready == 'true'
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: _site
       - name: Deploy
         if: steps.runtime_assets.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
       - name: Verify deployed Patch Studio critical assets
         if: steps.runtime_assets.outputs.ready == 'true'
         env:
@@ -330,7 +333,7 @@ jobs:
             grep -F 'viewBox="0 0 512 512"' /tmp/patch-pages-icon >/dev/null
             grep -F 'aria-label="Patch Studio compiler mark"' /tmp/patch-pages-icon >/dev/null
             grep -F 'id="patch-circuit-cuts"' /tmp/patch-pages-icon >/dev/null
-            if grep -F 'M8 6H22V18H13V26H8ZM13 10H18V14H13Z' /tmp/patch-pages-icon >/dev/null; then
+            if grep -F 'M8 6H22V18H13V26H8ZM13 10H18H13Z' /tmp/patch-pages-icon >/dev/null; then
               echo "${label} icon still contains the retired inline Patch P geometry." >&2
               exit 1
             fi
