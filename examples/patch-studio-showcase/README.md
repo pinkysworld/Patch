@@ -24,6 +24,8 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 
 - every Component Registry 0.10 type: Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer and ImageList;
 - PasswordEdit and MaskedEdit source-backed Input presentations;
+- NumberEdit as the source-backed `# @number-edit` Input presentation;
+- DatePicker as the source-backed `# @input-mode date` Input presentation with ISO date text;
 - CheckedListBox as the list-backed `# @listbox-mode checked` presentation;
 - ProgressBar as the passive number-backed Slider `# @slider-mode progress` presentation;
 - GroupBox as the source-backed Panel `# @panel-mode group` presentation, reusing Panel Stage 2 containment rather than creating a second container model;
@@ -44,7 +46,7 @@ The project is primarily a **Studio Run acceptance project**, not a promise that
 
 Current important boundaries include:
 
-- Memo, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.
+- Memo, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are Studio/Web Stage-1 surfaces at their present contracts and fail closed for Current Ready native 1.9 / payload v19 / runtime v1.10 where no matching native presentation/containment contract exists.
 - ProgressBar is deliberately passive. It exposes no Patch event; the dashboard timer changes its explicit `create number completion` state through `change`.
 - GroupBox changes Panel presentation only. Its children remain ordinary Panel children and persistent application state still changes only through explicit `change`.
 - ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.

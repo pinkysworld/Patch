@@ -161,6 +161,8 @@ Implemented R4 Stage 1 surfaces:
 - [x] Memo/TextArea source-backed Studio/Web control with `changed(value)` and explicit native fail-closed boundary
 - [x] PasswordEdit as `# @input-mode password` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
 - [x] MaskedEdit as `# @input-mask "..."` presentation of ordinary Input, Studio/Web supported and Current Ready native fail-closed
+- [x] NumberEdit as `# @number-edit` presentation of ordinary Input, Studio/Web numeric editor with text `changed(value)` and Current Ready native fail-closed
+- [x] DatePicker as `# @input-mode date` presentation of ordinary Input, Studio/Web browser date editor with ISO date text `changed(value)` and Current Ready native fail-closed
 - [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
 - [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
@@ -170,7 +172,7 @@ Implemented R4 Stage 1 surfaces:
 
 Next component/project priorities:
 
-- [ ] SpinEdit/NumberEdit and Date/Time controls
+- [ ] TimePicker and Calendar
 - [ ] richer TreeView/ListView/Table metadata and image bindings
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands

@@ -19,19 +19,22 @@ import {
   readWindowInputPresentation
 } from '../src/window-input-presentation.js';
 
-test('Input presentation contract is versioned and keeps plain/password modes explicit', () => {
-  assert.equal(PATCH_INPUT_PRESENTATION_VERSION, '0.1');
-  assert.deepEqual(patchInputPresentationModes(), ['plain', 'password']);
+test('Input presentation contract v0.2 keeps plain/password/date modes explicit', () => {
+  assert.equal(PATCH_INPUT_PRESENTATION_VERSION, '0.2');
+  assert.deepEqual(patchInputPresentationModes(), ['plain', 'password', 'date']);
   assert.equal(normalizePatchInputPresentation(), 'plain');
   assert.equal(normalizePatchInputPresentation(' PASSWORD '), 'password');
-  assert.throws(() => normalizePatchInputPresentation('secret'), /Use plain or password/);
+  assert.equal(normalizePatchInputPresentation(' DATE '), 'date');
+  assert.throws(() => normalizePatchInputPresentation('secret'), /Use plain, password or date/);
 });
 
 test('PasswordEdit source metadata is transparent and round-trippable', () => {
   assert.equal(parsePatchInputPresentationDirective('  # @input-mode password'), 'password');
   assert.equal(parsePatchInputPresentationDirective('# @input-mode plain'), 'plain');
+  assert.equal(parsePatchInputPresentationDirective('# @input-mode date'), 'date');
   assert.equal(parsePatchInputPresentationDirective('# ordinary comment'), null);
   assert.equal(formatPatchInputPresentationDirective('password'), '# @input-mode password');
+  assert.equal(formatPatchInputPresentationDirective('date'), '# @input-mode date');
   assert.equal(formatPatchInputPresentationDirective('plain'), null);
   assert.throws(
     () => parsePatchInputPresentationDirective('# @input-mode hidden'),
@@ -42,6 +45,7 @@ test('PasswordEdit source metadata is transparent and round-trippable', () => {
 test('PasswordEdit changes presentation only and maps to the browser password input type', () => {
   assert.equal(patchInputDomType('plain'), 'text');
   assert.equal(patchInputDomType('password'), 'password');
+  assert.equal(patchInputDomType('date'), 'date');
 });
 
 test('PasswordEdit Stage 1 support is explicit and native targets remain fail-closed', () => {
@@ -54,6 +58,13 @@ test('PasswordEdit Stage 1 support is explicit and native targets remain fail-cl
   assert.throws(
     () => assertPatchInputPresentationTarget('password', 'windows'),
     /PasswordEdit Stage 1 is Studio\/Web only/
+  );
+  assert.equal(patchInputPresentationTargetSupport('date').web, 'supported');
+  assert.equal(patchInputPresentationTargetSupport('date').windows, 'unsupported');
+  assert.equal(assertPatchInputPresentationTarget('date', 'web'), true);
+  assert.throws(
+    () => assertPatchInputPresentationTarget('date', 'windows'),
+    /DatePicker Stage 1 is Studio\/Web only/
   );
   assert.equal(assertPatchInputPresentationTarget('plain', 'linux'), true);
 });
@@ -69,7 +80,7 @@ test('Window input presentation manifest binds metadata to the matching Input so
 `;
   const ast = parse(source);
   const manifest = buildWindowInputPresentationManifest(source, ast);
-  assert.equal(PATCH_WINDOW_INPUT_PRESENTATION_VERSION, '0.1');
+  assert.equal(PATCH_WINDOW_INPUT_PRESENTATION_VERSION, '0.2');
   assert.deepEqual(manifest.controls.map(control => control.mode), ['plain', 'password']);
   assert.equal(readWindowInputPresentation(source, 3), 'plain');
   assert.equal(readWindowInputPresentation(source, 7), 'password');
@@ -91,7 +102,7 @@ when secret changed:
 `;
   const compiled = compile(source, { name: 'Login', kind: 'window' });
   assert.equal(compiled.ir.version, '0.10');
-  assert.equal(compiled.windowInputPresentation.version, '0.1');
+  assert.equal(compiled.windowInputPresentation.version, '0.2');
   assert.deepEqual(compiled.windowInputPresentation.controls, [{ line: 4, mode: 'password' }]);
   const input = compiled.ast.find(node => node.kind === 'window').body.find(node => node.control === 'input');
   assert.equal(input.inputPresentation, 'password');

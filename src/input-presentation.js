@@ -1,4 +1,4 @@
-export const PATCH_INPUT_PRESENTATION_VERSION = '0.1';
+export const PATCH_INPUT_PRESENTATION_VERSION = '0.2';
 export const PATCH_INPUT_PRESENTATION_DIRECTIVE = 'input-mode';
 export const PATCH_INPUT_MASK_VERSION = '0.1';
 export const PATCH_INPUT_MASK_DIRECTIVE = 'input-mask';
@@ -8,7 +8,7 @@ export const PATCH_LISTBOX_PRESENTATION_DIRECTIVE = 'listbox-mode';
 export const PATCH_WINDOW_LISTBOX_PRESENTATION_VERSION = '0.1';
 export const PATCH_WINDOW_LISTBOX_PRESENTATION_FORMAT = 'patch-window-listbox-presentation';
 
-const MODES = Object.freeze(['plain', 'password']);
+const MODES = Object.freeze(['plain', 'password', 'date']);
 const MODE_SET = new Set(MODES);
 const LISTBOX_MODES = Object.freeze(['plain', 'checked']);
 const LISTBOX_MODE_SET = new Set(LISTBOX_MODES);
@@ -21,6 +21,15 @@ const MASK_TOKEN_KINDS = Object.freeze({
 });
 
 const PASSWORD_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
+const DATE_TARGETS = Object.freeze({
   studio: 'supported',
   web: 'supported',
   windows: 'unsupported',
@@ -63,7 +72,7 @@ export function patchInputPresentationModes() {
 export function normalizePatchInputPresentation(mode) {
   const normalized = String(mode ?? 'plain').trim().toLowerCase() || 'plain';
   if (!MODE_SET.has(normalized)) {
-    throw new Error(`Unsupported input presentation '${mode}'. Use plain or password.`);
+    throw new Error(`Unsupported input presentation '${mode}'. Use plain, password or date.`);
   }
   return normalized;
 }
@@ -71,8 +80,8 @@ export function normalizePatchInputPresentation(mode) {
 export function parsePatchInputPresentationDirective(line) {
   const text = String(line ?? '');
   if (!/^\s*#\s*@input-mode\b/i.test(text)) return null;
-  const match = text.match(/^\s*#\s*@input-mode\s+(plain|password)\s*$/i);
-  if (!match) throw new Error(`Invalid # @input-mode directive '${text.trim()}'. Use '# @input-mode password'.`);
+  const match = text.match(/^\s*#\s*@input-mode\s+(plain|password|date)\s*$/i);
+  if (!match) throw new Error(`Invalid # @input-mode directive '${text.trim()}'. Use '# @input-mode password' or '# @input-mode date'.`);
   return normalizePatchInputPresentation(match[1]);
 }
 
@@ -82,11 +91,13 @@ export function formatPatchInputPresentationDirective(mode) {
 }
 
 export function patchInputDomType(mode) {
-  return normalizePatchInputPresentation(mode) === 'password' ? 'password' : 'text';
+  const normalized = normalizePatchInputPresentation(mode);
+  return normalized === 'password' ? 'password' : normalized === 'date' ? 'date' : 'text';
 }
 
 export function patchInputPresentationTargetSupport(mode) {
-  return normalizePatchInputPresentation(mode) === 'password' ? PASSWORD_TARGETS : PLAIN_TARGETS;
+  const normalized = normalizePatchInputPresentation(mode);
+  return normalized === 'password' ? PASSWORD_TARGETS : normalized === 'date' ? DATE_TARGETS : PLAIN_TARGETS;
 }
 
 export function assertPatchInputPresentationTarget(mode, target) {
@@ -98,7 +109,9 @@ export function assertPatchInputPresentationTarget(mode, target) {
       `Input presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` +
       (normalizedMode === 'password'
         ? 'PasswordEdit Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
-        : 'Select a supported Patch target.')
+        : normalizedMode === 'date'
+          ? 'DatePicker Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
+          : 'Select a supported Patch target.')
     );
   }
   return true;

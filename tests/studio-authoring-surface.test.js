@@ -87,7 +87,7 @@ test('current Studio authoring surface preserves source and assurance boundaries
 test('current Studio authoring surface explicitly separates future work from current implementation', () => {
   assert.match(surface, /complete current authoring surface for the \*\*existing Patch UI\/control vocabulary\*\*/);
   assert.match(surface, /new\/richer data controls beyond the current Table, ListBox and TreeView vocabulary/);
-  assert.match(surface, /Number\/SpinEdit, date\/time controls and richer shell controls/);
+  assert.match(surface, /TimePicker, Calendar and richer date\/time or shell controls/);
   assert.doesNotMatch(surface, /Number\/SpinEdit, date\/time controls, SplitContainer/);
   assert.match(surface, /Undo\/Redo transaction coverage/);
   assert.match(surface, /manual assistive-technology verification with Narrator, VoiceOver, Orca/);

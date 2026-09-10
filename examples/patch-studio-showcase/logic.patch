@@ -58,9 +58,21 @@ when nested_code changed:
   change status:
     set = "Nested masked input updated"
 
+when nested_number changed:
+  change nested_number:
+    set = value
+  change status:
+    set = "NumberEdit value updated"
+
+when review_date changed:
+  change review_date:
+    set = value
+  change status:
+    set = "DatePicker selection updated"
+
 when nested_apply clicked:
   change status:
-    set = "Nested code applied"
+    set = "Nested values applied"
 
 when showcase_logo clicked:
   change status:

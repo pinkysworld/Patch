@@ -14,6 +14,8 @@ create boolean pinned = false
 create text selected_path = "No file selected"
 create number ticks = 0
 create text nested_code = ""
+create text nested_number = "42"
+create text review_date = "2026-09-10"
 create text gallery_status = "Component Gallery ready"
 create text dialog_status = "Dialogs ready"
 create text split_status = "SplitContainer ready"
@@ -88,16 +90,20 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   text "Tabs keep secondary concepts available without crowding the primary dashboard." at 44, 484 size 660, 24
   tabs as showcase_tabs at 44, 516 size 692, 218:
     tab "Nested controls":
-      text "Tabs Stage 1 keeps supported flow controls source-backed."
+      text "Tabs Stage 1 keeps supported Input presentations source-backed."
       # @input-mask "AA-000"
       input nested_code
-      button "Apply nested code" as nested_apply
+      # @number-edit
+      input nested_number
+      # @input-mode date
+      input review_date
+      button "Apply nested values" as nested_apply
     tab "Project v4":
       text "Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle."
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer metadata stays source-backed."
+      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker and the current Panel/List/Slider presentations stay source-backed."
 
   # @layout anchor right bottom
   panel as actions_panel at 780, 436 size 376, 318:

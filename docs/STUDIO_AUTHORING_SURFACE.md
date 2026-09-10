@@ -29,13 +29,15 @@ The standard-control Stage-1 presentation layer additionally provides:
 
 - PasswordEdit as ordinary Input plus `# @input-mode password`;
 - MaskedEdit as ordinary Input plus `# @input-mask "..."`;
+- NumberEdit as ordinary Input plus `# @number-edit`;
+- DatePicker as ordinary Input plus `# @input-mode date`;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
 - ProgressBar as number-backed Slider plus `# @slider-mode progress`;
 - GroupBox as ordinary Panel plus `# @panel-mode group`;
 - ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header;
 - SplitContainer as ordinary Panel plus block-local `# @panel-split vertical|horizontal <ratio>` and one explicit `# @panel-split-break` between the two pane groups.
 
-These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
+These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, NumberEdit, DatePicker, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
 
 ProgressBar Stage 1 is passive. It reads the same-id explicit `create number` state and has no control event. Application code changes that number only through ordinary explicit `change`; Studio/Web then re-renders the passive progress presentation.
 
@@ -75,7 +77,7 @@ Timer and ImageList are nonvisual and live in the nonvisual tray. StatusBar owns
 
 The Designer clipboard uses a closed versioned source-backed contract. Clipboard v2 preserves the selected control block, relevant handlers, metadata and explicit backing-state records needed by CheckedListBox and ProgressBar. Version-1 clipboard payloads remain readable.
 
-Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar and GroupBox metadata move with their control through delete, copy, cut, paste and duplicate. ScrollBox and SplitContainer use block-local Panel metadata, so their directives and explicit split marker move atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
+Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, CheckedListBox, ProgressBar and GroupBox metadata move with their control through delete, copy, cut, paste and duplicate. ScrollBox and SplitContainer use block-local Panel metadata, so their directives and explicit split marker move atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
 
 ## Table
 
@@ -163,7 +165,7 @@ Handler duplication changes only the `when <id> ...:` target when an id is copie
 
 Application persistence still occurs only through ordinary Patch semantic `change` operations. Designer selection, filters, active nested editors, scroll offsets, transient runtime split ratios and other authoring/runtime view state do not become Patch application state or Change History entries.
 
-Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state. ProgressBar, ScrollBox and SplitContainer expose no events at all.
+Input presentations retain the ordinary Input `changed(value)` text contract: NumberEdit emits numeric text and DatePicker emits browser date text in `YYYY-MM-DD` form when a date is selected. Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state. ProgressBar, ScrollBox and SplitContainer expose no events at all.
 
 PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; state-dependent native drawing is refreshed from ordinary application state.
 
@@ -173,7 +175,7 @@ The Current Ready desktop consumer contract is Native GUI IR **1.9**, sealed pay
 
 Payload v17/runtime v1.8 remains an explicit compatibility path in the Offline Compiler. Earlier versioned contracts, including the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, remain compatibility/reproducibility evidence rather than current targets.
 
-Memo/TextArea, PasswordEdit, MaskedEdit, CheckedListBox, ProgressBar, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
+Memo/TextArea, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, CheckedListBox, ProgressBar, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
 
 The current Ready/offline Windows, macOS and Linux path uses the stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
@@ -192,7 +194,7 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 Remaining product work includes:
 
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
-- Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
+- TimePicker, Calendar and richer date/time or shell controls from the RAD master backlog;
 - Panel child Anchors/Dock, nested Panels, visual reparenting and later explicit native containment;
 - remaining resource/non-source Undo/Redo transaction coverage, further large-project virtualization and professional code-editor/debugger features;
 - broader ImageList consumers such as ToolBar/ToolButton/Menu/Tree only after those component contracts exist;
