@@ -71,7 +71,7 @@ jobs:
           git diff --check
       - name: Commit feature and remove temporary patch harness
         run: |
-          git rm .github/workflows/datepicker-stage1-apply.yml scripts/apply-datepicker-stage1.py
+          git rm -f .github/workflows/datepicker-stage1-apply.yml scripts/apply-datepicker-stage1.py
           git config user.name "pinkysworld"
           git config user.email "85413447+pinkysworld@users.noreply.github.com"
           git add src tests docs examples web
