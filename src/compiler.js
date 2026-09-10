@@ -19,14 +19,12 @@ import {
   buildWindowPanelScrollManifest
 } from './panel-scroll.js';
 import {
-  attachWindowPanelSplits,
-  buildWindowPanelSplitManifest
-} from './panel-split.js';
-import {
   attachWindowInputMasks,
   attachWindowInputPresentations,
+  attachWindowNumberEdits,
   buildWindowInputMaskManifest,
-  buildWindowInputPresentationManifest
+  buildWindowInputPresentationManifest,
+  buildWindowNumberEditManifest
 } from './window-input-presentation.js';
 import {
   attachWindowListboxPresentations,
@@ -53,6 +51,7 @@ export function compile(source, options = {}) {
   const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
+  const windowNumberEdit = buildWindowNumberEditManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
   const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
   const windowPanelPresentation = buildWindowPanelPresentationManifest(source, ast);
@@ -78,6 +77,7 @@ export function compile(source, options = {}) {
   attachWindowLayoutPolicies(ast, windowLayoutPolicy);
   attachWindowInputPresentations(ast, windowInputPresentation);
   attachWindowInputMasks(ast, windowInputMask);
+  attachWindowNumberEdits(ast, windowNumberEdit);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
   attachWindowSliderPresentations(ast, windowSliderPresentation);
   attachWindowPanelPresentations(ast, windowPanelPresentation);
@@ -86,7 +86,7 @@ export function compile(source, options = {}) {
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
-    windowInputPresentation, windowInputMask, windowListboxPresentation,
+    windowInputPresentation, windowInputMask, windowNumberEdit, windowListboxPresentation,
     windowSliderPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit
   };
 }
