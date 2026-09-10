@@ -27,22 +27,39 @@ jobs:
           from pathlib import Path
           p = Path('scripts/apply-datepicker-stage1.py')
           text = p.read_text(encoding='utf-8')
-          old = "        count=2)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')"
-          new = "        count=1)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')"
-          if text.count(old) != 1:
-              raise SystemExit('temporary DatePicker patch script count anchor changed')
-          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          replacements = [
+            ("        count=2)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')", "        count=1)\nreplace('src/window-input-presentation.js',\n        \"    document.querySelector('#addNumberEdit')"),
+            ("        'create text nested_number = \"42\"\\ncreate text review_date = \"2026-09-10\"\\n')", "        'create text nested_code = \"\"\\ncreate text nested_number = \"42\"\\ncreate text review_date = \"2026-09-10\"\\n')"),
+            ("        '      text \"Tabs Stage 1 keeps NumberEdit and DatePicker source-backed as Input presentations.\"\\n      # @number-edit\\n      input nested_number\\n      # @input-mode date\\n      input review_date\\n      button \"Apply nested values\" as nested_apply')", "        '      text \"Tabs Stage 1 keeps supported Input presentations source-backed.\"\\n      # @input-mask \"AA-000\"\\n      input nested_code\\n      # @number-edit\\n      input nested_number\\n      # @input-mode date\\n      input review_date\\n      button \"Apply nested values\" as nested_apply')"),
+            ("        'when nested_number changed:\\n  change nested_number:\\n    set = value\\n  change status:\\n    set = \"NumberEdit value updated\"", "        'when nested_code changed:\\n  change nested_code:\\n    set = value\\n  change status:\\n    set = \"Nested masked input updated\"\\n\\nwhen nested_number changed:\\n  change nested_number:\\n    set = value\\n  change status:\\n    set = \"NumberEdit value updated\""),
+            ("        '  assert.match(composition.source, /# @number-edit/);\\n  assert.match(composition.source, /# @input-mode date/);')", "        '  assert.match(composition.source, /# @input-mask \"AA-000\"/);\\n  assert.match(composition.source, /# @number-edit/);\\n  assert.match(composition.source, /# @input-mode date/);')")
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'temporary helper anchor count {text.count(old)}, expected 1: {old[:90]}')
+              text = text.replace(old, new, 1)
+          p.write_text(text, encoding='utf-8')
           PY
           python3 scripts/apply-datepicker-stage1.py
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('src/window-input-presentation.js')
-          text = p.read_text(encoding='utf-8')
-          old = "      ensureNumberEditButton();\n      ensureInputPresentationInspector();"
-          new = "      ensureNumberEditButton();\n      ensureDatePickerButton();\n      ensureInputPresentationInspector();"
-          if text.count(old) != 1:
-              raise SystemExit(f'observer DatePicker anchor count is {text.count(old)}, expected 1')
-          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          def exact(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one post-patch anchor, found {text.count(old)}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          exact('src/window-input-presentation.js',
+                "      ensureNumberEditButton();\n      ensureInputPresentationInspector();",
+                "      ensureNumberEditButton();\n      ensureDatePickerButton();\n      ensureInputPresentationInspector();")
+          exact('tests/docs-current-studio-surface.test.js',
+                "  assert.match(roadmap, /SpinEdit\\/NumberEdit and Date\\/Time controls/);",
+                "  assert.match(roadmap, /NumberEdit as `# @number-edit`/);\n  assert.match(roadmap, /DatePicker as `# @input-mode date`/);\n  assert.match(roadmap, /TimePicker and Calendar/);")
+          exact('tests/studio-authoring-surface.test.js',
+                "  assert.match(surface, /Number\\/SpinEdit, date\\/time controls and richer shell controls/);",
+                "  assert.match(surface, /TimePicker, Calendar and richer date\\/time or shell controls/);")
           PY
       - name: Syntax and targeted regression tests
         run: |
