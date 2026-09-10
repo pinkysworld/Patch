@@ -90,7 +90,7 @@ test('compiler activates NumberEdit without changing Change IR 0.10', () => {
 });
 
 test('Standalone Window Web renders NumberEdit as a numeric spinner but keeps changed(value) text-based', () => {
-  const source = `create text quantity = "12"\nwindow "Quantity" as main size 420, 220:\n  # @number-edit\n  input quantity at 24, 24 size 180, 36\n\nwhen quantity changed:\n  change quantity set value\n`;
+  const source = `create text quantity = "12"\nwindow "Quantity" as main size 420, 220:\n  # @number-edit\n  input quantity at 24, 24 size 180, 36\n\nwhen quantity changed:\n  change quantity:\n    set = value\n`;
   const built = buildStandaloneWebApp(source, { name: 'Quantity', kind: 'window' });
   assert.equal(built.metadata.numberEditStage, 1);
   assert.equal(built.metadata.numberEditVersion, '0.1');
