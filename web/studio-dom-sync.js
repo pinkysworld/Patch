@@ -250,7 +250,7 @@ function captureProgrammaticMutation() {
  * canonical polished v0.7 showcase. The compatibility literal remains embedded
  * in beta35-studio.js so old cached Studio shells still load, while this bridge
  * owns the current source. User-authored projects are not rewritten by this
- * helper unless they still match the known Workshop v0.5 signature.
+ * helper unless they still match a known canonical Workshop v0.5 or v0.6 signature.
  */
 export function upgradeWorkshopDeskSource(source) {
   let next = String(source ?? '');
@@ -265,6 +265,9 @@ export function upgradeWorkshopDeskSource(source) {
     && next.includes('window "Component Gallery" as components size 900, 640:')
     && next.includes('Seven-Form RAD showcase · every Component Registry 0.9 control is represented')
     && next.includes('Current desktop Ready runtime contract: v1.10.')
+    && next.includes('when quote_button clicked:\n  change ticket_total:\n    add 25\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Quote increased by 25"')
+    && next.includes('when details_quote clicked:\n  change ticket_total:\n    add 10\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Inspection added to quote"')
+    && next.includes('set = "Complete Component Registry 0.9 gallery opened"')
     && !next.includes('create number quote_revision = 0');
   if (v06) {
     return next

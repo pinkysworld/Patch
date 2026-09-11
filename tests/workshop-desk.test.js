@@ -78,6 +78,15 @@ test('Workshop Desk upgrades cached canonical v0.6 projects to v0.7', () => {
   assert.equal(upgradeWorkshopDeskSource(v06), example);
 });
 
+test('Workshop Desk leaves user-modified v0.6 projects untouched', () => {
+  const customized = workshopV06Fixture().replace(
+    '    set = "Quote increased by 25"',
+    '    set = "Custom quote workflow"'
+  );
+  assert.match(customized, /Custom quote workflow/);
+  assert.equal(upgradeWorkshopDeskSource(customized), customized);
+});
+
 test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to canonical v0.7', () => {
   assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.7');
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
