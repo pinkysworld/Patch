@@ -21,7 +21,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Repair temporary harness quoting
+      - name: Route Workshop details migration through upgrade bridge
+        run: python scripts/assistant-timepicker-prefix-fix.py
+      - name: Repair temporary harness and synchronize retained samples
         run: python scripts/assistant-timepicker-harness-fix.py
       - name: Apply product updates
         run: node scripts/assistant-timepicker-showcase-polish.mjs
@@ -40,6 +42,8 @@ jobs:
           tests/studio-showcase-loader.test.js
           tests/studio-authoring-surface.test.js
           tests/docs-current-studio-surface.test.js
+          tests/workshop-desk.test.js
+          tests/workshop-native-ready.test.js
       - name: Full repository tests
         run: npm test
       - name: Example smoke tests
@@ -53,6 +57,7 @@ jobs:
           rm -f .github/workflows/assistant-timepicker-showcase-polish.yml
           rm -f scripts/assistant-timepicker-showcase-polish.mjs
           rm -f scripts/assistant-timepicker-harness-fix.py
+          rm -f scripts/assistant-timepicker-prefix-fix.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
