@@ -1,6 +1,14 @@
 from pathlib import Path
 import subprocess
 
+# The public-site build is a validation artifact for this feature branch, not a
+# source change. Keep its generated tree out of the temporary workflow's broad
+# `git add -A` commit step without changing repository ignore policy.
+exclude = Path('.git/info/exclude')
+exclude.parent.mkdir(parents=True, exist_ok=True)
+with exclude.open('a', encoding='utf-8') as handle:
+    handle.write('\n_site/\n')
+
 # Reuse the last preflight revision that already reached the targeted suite
 # successfully. Keeping this bootstrap small avoids quoting drift in the
 # temporary harness while the product changes are still being validated.
