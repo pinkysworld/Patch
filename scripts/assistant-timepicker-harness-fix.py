@@ -45,7 +45,7 @@ path.write_text(text.replace(old, new, 1))
 # Workshop Desk is also materialized by the Studio compatibility-upgrade bridge.
 rewrite('web/studio-dom-sync.js', "export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.6';", "export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.7';")
 rewrite('web/studio-dom-sync.js', '  text "Quote {ticket_total} · {ticket_state}" at 790, 18 size 260, 28', '  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 750, 18 size 300, 28')
-rewrite('web/studio-dom-sync.js', 'Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component.', 'Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component.', 2)
+rewrite('web/studio-dom-sync.js', 'Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component.', 'Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component.', 1)
 rewrite('web/studio-dom-sync.js', 'It covers the complete Component Registry 0.9 surface, including nonvisual Timer and ImageList authoring.', 'It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring.', 1)
 rewrite('web/studio-dom-sync.js', 'Workshop Desk exercises seven Forms and the complete Component Registry 0.9 surface.', 'Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10.', 1)
 rewrite('web/studio-dom-sync.js', 'node "Registry 0.9"', 'node "Registry 0.10 native subset"', 1)
