@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# One-shot preflight: reshape the temporary harness before the verified product patch.
 fixer = Path('scripts/assistant-timepicker-harness-fix.py')
 text = fixer.read_text()
 start_marker = "rewrite(\n    'web/studio-dom-sync.js',\n    '  panel as runtime_panel at 326, 172 size 280, 170:"
