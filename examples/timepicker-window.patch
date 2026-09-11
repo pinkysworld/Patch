@@ -1,0 +1,15 @@
+create text appointment_time = "09:30"
+create text status = "Choose a workshop slot."
+
+window "TimePicker" as main size 520, 280:
+  text "Appointment time" at 24, 28 size 220, 28
+  # @input-mode time
+  input appointment_time at 24, 66 size 220, 38
+  text "Selected: {appointment_time}" at 24, 126 size 360, 28
+  text "{status}" at 24, 166 size 440, 46
+
+when appointment_time changed:
+  change appointment_time:
+    set = value
+  change status:
+    set = "TimePicker changed with local HH:MM text"
