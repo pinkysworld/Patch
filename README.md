@@ -50,18 +50,19 @@ Patch Studio aims for a Delphi / Visual Basic style RAD workflow while keeping o
 - Object Inspector with Properties and Events;
 - project bundle **v4**, Project Tree, recovery, resources, and `file:line` diagnostics;
 - Resource Manager with deterministic SHA-256 metadata;
-- Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, and Menu authoring;
+- Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, and Menu authoring;
 - Table exposes the selected row as a transient text-list; persistent state still changes only through ordinary Patch `change` semantics;
 - nonvisual component tray for Timer and ImageList;
 - Anchors/Dock, grid snap, alignment, sizing, distribution, z-order, and Focus Order Stage 1;
 - source-backed Undo/Redo for editor and Designer changes;
 - structural editors for Table, TreeView, Tabs, and Panel;
+- source-backed Studio/Web R4 presentations for PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, CheckedListBox, ProgressBar, GroupBox, ScrollBox, and SplitContainer, with unsupported Current Ready native combinations failing closed;
 - active-Form Designer materialization for larger projects;
 - keyed incremental runtime rendering with bounded transient Table/Tree selection restoration;
 - Command Palette and project/symbol navigation;
 - standalone Web builds, token-free native Ready builds, Offline Compiler kits, and the downloadable Offline Studio beta.
 
-Open **Workshop desk** from Examples for the main RAD showcase and stress fixture.
+Open **Patch Studio Showcase** for the complete current Studio/Web Project-v4 acceptance surface. Open **Workshop Desk** for the seven-Form Current Ready native acceptance and stress application.
 
 For the full IDE contract and long-term backlog, see [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) and [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md).
 

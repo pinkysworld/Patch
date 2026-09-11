@@ -114,6 +114,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @input-mask "AA-000"/);
   assert.match(composition.source, /# @number-edit/);
   assert.match(composition.source, /# @input-mode date/);
+  assert.match(composition.source, /# @input-mode time/);
   assert.match(composition.source, /# @listbox-mode checked/);
   assert.match(composition.source, /# @slider-mode progress/);
   assert.match(composition.source, /# @panel-mode group/);
@@ -125,6 +126,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @layout anchor right bottom/);
   assert.equal(compiled.windowInputPresentation.controls.some(control => control.mode === 'password'), true);
   assert.equal(compiled.windowInputPresentation.controls.some(control => control.mode === 'date'), true);
+  assert.equal(compiled.windowInputPresentation.controls.some(control => control.mode === 'time'), true);
   assert.equal(compiled.windowNumberEdit.controls.some(control => control.id === 'nested_number'), true);
   assert.equal(compiled.windowInputMask.controls.length >= 2, true);
   assert.equal(compiled.windowListboxPresentation.controls.some(control => control.mode === 'checked'), true);
@@ -181,6 +183,8 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.passwordEditStage, 1);
   assert.equal(built.metadata.datePickerStage, 1);
   assert.equal(built.metadata.datePickerEventValue, 'iso-date-text');
+  assert.equal(built.metadata.timePickerStage, 1);
+  assert.equal(built.metadata.timePickerEventValue, 'local-time-text');
   assert.equal(built.metadata.numberEditStage, 1);
   assert.equal(built.metadata.maskedEditStage, 1);
   assert.equal(built.metadata.checkedListBoxStage, 1);
@@ -196,6 +200,7 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /dataset\.patchInputPresentation='date'/);
+  assert.match(built.html, /dataset\.patchInputPresentation='time'/);
   assert.match(built.html, /dataset\.patchInputPresentation='number'/);
   assert.match(built.html, /data-patch-window-maskededit/);
   assert.match(built.html, /data-patch-window-checkedlistbox/);

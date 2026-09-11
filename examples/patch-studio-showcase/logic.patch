@@ -70,6 +70,12 @@ when review_date changed:
   change status:
     set = "DatePicker selection updated"
 
+when review_time changed:
+  change review_time:
+    set = value
+  change status:
+    set = "TimePicker selection updated"
+
 when nested_apply clicked:
   change status:
     set = "Nested values applied"

@@ -10,7 +10,7 @@ import {
   patchInputMaskPlaceholder
 } from './input-presentation.js';
 
-export const PATCH_WINDOW_INPUT_PRESENTATION_VERSION = '0.2';
+export const PATCH_WINDOW_INPUT_PRESENTATION_VERSION = '0.3';
 export const PATCH_WINDOW_INPUT_PRESENTATION_FORMAT = 'patch-window-input-presentation';
 export const PATCH_WINDOW_INPUT_MASK_VERSION = '0.1';
 export const PATCH_WINDOW_INPUT_MASK_FORMAT = 'patch-window-input-mask';
@@ -103,7 +103,7 @@ export function setWindowInputPresentation(source, sourceLine, mode) {
   }
 
   if (normalized !== 'plain') {
-    const label = normalized === 'date' ? 'DatePicker' : 'PasswordEdit';
+    const label = normalized === 'date' ? 'DatePicker' : normalized === 'time' ? 'TimePicker' : 'PasswordEdit';
     if (readNumberEditFromRows(rows, sourceLine)) {
       throw new Error(`${label} cannot be enabled while NumberEdit is active. Change the Input mode to Text first.`);
     }
@@ -144,6 +144,16 @@ export function collectWindowDateInputIds(source, ast) {
   return ids;
 }
 
+export function collectWindowTimeInputIds(source, ast) {
+  const rows = sourceRows(source);
+  const ids = [];
+  walkControls(ast, node => {
+    if (node.control !== 'input' || !node.id) return;
+    if ((readInputPresentationFromRows(rows, node.line) ?? 'plain') === 'time') ids.push(node.id);
+  });
+  return ids;
+}
+
 export function buildWindowInputMaskManifest(source, ast) {
   const rows = sourceRows(source);
   const controls = [];
@@ -155,7 +165,7 @@ export function buildWindowInputMaskManifest(source, ast) {
     if (node.control !== 'input' || mask === null) return;
     const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
     if (mode !== 'plain') {
-      const label = mode === 'date' ? 'DatePicker' : 'PasswordEdit';
+      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : 'PasswordEdit';
       throw new Error(`Input '${node.id ?? '?'}' cannot combine ${label} and MaskedEdit presentation metadata.`);
     }
     if (readNumberEditFromRows(rows, node.line)) {
@@ -241,7 +251,7 @@ export function setWindowInputMask(source, sourceLine, mask) {
   const normalized = normalizePatchInputMask(mask);
   const presentation = readInputPresentationFromRows(rows, sourceLine) ?? 'plain';
   if (presentation !== 'plain') {
-    throw new Error(`MaskedEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : 'Password'}. Change the Input mode to Text first.`);
+    throw new Error(`MaskedEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : 'Password'}. Change the Input mode to Text first.`);
   }
   if (readNumberEditFromRows(rows, sourceLine)) {
     throw new Error('MaskedEdit cannot be enabled while NumberEdit is active. Change the Input mode to Text first.');
@@ -276,7 +286,7 @@ export function buildWindowNumberEditManifest(source, ast) {
     const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
     const mask = readInputMaskFromRows(rows, node.line);
     if (mode !== 'plain') {
-      const label = mode === 'date' ? 'DatePicker' : 'PasswordEdit';
+      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : 'PasswordEdit';
       throw new Error(`Input '${node.id ?? '?'}' cannot combine NumberEdit and ${label} presentation metadata.`);
     }
     if (mask !== null) {
@@ -351,7 +361,7 @@ export function setWindowNumberEdit(source, sourceLine, enabled = true) {
   }
   const presentation = readInputPresentationFromRows(rows, sourceLine) ?? 'plain';
   if (presentation !== 'plain') {
-    throw new Error(`NumberEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : 'Password'}. Change the Input mode to Text first.`);
+    throw new Error(`NumberEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : 'Password'}. Change the Input mode to Text first.`);
   }
   if (readInputMaskFromRows(rows, sourceLine) !== null) {
     throw new Error('NumberEdit cannot be enabled while MaskedEdit is active. Change the Input mode to Text first.');
@@ -470,6 +480,7 @@ function installInputPresentationStudio() {
   ensureMaskedEditButton();
   ensureNumberEditButton();
   ensureDatePickerButton();
+  ensureTimePickerButton();
   ensureInputPresentationInspector();
   ensureInputMaskInspector();
   installInputPresentationObservers();
@@ -481,6 +492,7 @@ function installInputPresentationStudio() {
       ensureMaskedEditButton();
       ensureNumberEditButton();
       ensureDatePickerButton();
+      ensureTimePickerButton();
       ensureInputPresentationInspector();
       ensureInputMaskInspector();
       installInputPresentationObservers();
@@ -499,6 +511,7 @@ function studioSurfaceReady() {
     document.querySelector('#addMaskedEdit') &&
     document.querySelector('#addNumberEdit') &&
     document.querySelector('#addDatePicker') &&
+    document.querySelector('#addTimePicker') &&
     document.querySelector('#designerInspectorInputPresentationField') &&
     document.querySelector('#designerInspectorInputMaskField')
   );
@@ -568,6 +581,22 @@ function ensureDatePickerButton() {
   return true;
 }
 
+function ensureTimePickerButton() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  const anchor = toolbar?.querySelector('#addDatePicker') ?? toolbar?.querySelector('#addNumberEdit') ?? toolbar?.querySelector('#addInput');
+  if (!toolbar || !anchor || toolbar.querySelector('#addTimePicker')) return Boolean(toolbar?.querySelector('#addTimePicker'));
+  const button = document.createElement('button');
+  button.id = 'addTimePicker';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Time';
+  button.setAttribute('aria-label', 'Add TimePicker');
+  button.title = 'Add a source-backed TimePicker preset. It remains an Input, uses # @input-mode time and changed(value) stays local HH:MM text.';
+  anchor.insertAdjacentElement('afterend', button);
+  button.addEventListener('click', addTimePickerFromStudio);
+  return true;
+}
+
 async function addPasswordEditFromStudio(event) {
   event?.preventDefault?.();
   await addInputPreset('password');
@@ -588,6 +617,11 @@ async function addDatePickerFromStudio(event) {
   await addInputPreset('date');
 }
 
+async function addTimePickerFromStudio(event) {
+  event?.preventDefault?.();
+  await addInputPreset('time');
+}
+
 async function addInputPreset(kind) {
   const code = document.querySelector('#code');
   if (!code) return;
@@ -602,6 +636,7 @@ async function addInputPreset(kind) {
     if (kind === 'password') next = setWindowInputPresentation(next, input.line, 'password');
     else if (kind === 'masked') next = setWindowInputMask(next, input.line, DEFAULT_MASK);
     else if (kind === 'date') next = setWindowInputPresentation(next, input.line, 'date');
+    else if (kind === 'time') next = setWindowInputPresentation(next, input.line, 'time');
     else next = setWindowNumberEdit(next, input.line, true);
     setStudioSource(code, next);
     input = findDesignerInputById(await designerApi(), next, input.id) ?? input;
@@ -632,8 +667,9 @@ function ensureInputPresentationInspector() {
         <option value="masked">Masked</option>
         <option value="number">Number</option>
         <option value="date">Date</option>
+        <option value="time">Time</option>
       </select>
-      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password, Masked, Number and Date are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
+      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password, Masked, Number, Date and Time are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
     form.appendChild(field);
     field.querySelector('#designerInspectorInputPresentation')?.addEventListener('change', applyInputPresentationInspector);
   } else {
@@ -654,6 +690,12 @@ function ensureInputPresentationInspector() {
       const option = document.createElement('option');
       option.value = 'date';
       option.textContent = 'Date';
+      select.appendChild(option);
+    }
+    if (select && !select.querySelector('option[value="time"]')) {
+      const option = document.createElement('option');
+      option.value = 'time';
+      option.textContent = 'Time';
       select.appendChild(option);
     }
     if (select) {
@@ -753,6 +795,10 @@ async function applyInputPresentationInspector() {
       next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
       next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'date'));
+    } else if (select.value === 'time') {
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
+      next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
+      next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'time'));
     } else {
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
       next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
@@ -850,6 +896,7 @@ async function syncInputPresentationSurfaces() {
   const generation = ++presentationGeneration;
   let passwordIds;
   let dateIds;
+  let timeIds;
   let numberIds;
   let masks;
   try {
@@ -857,6 +904,7 @@ async function syncInputPresentationSurfaces() {
     const ast = parse(code.value);
     passwordIds = new Set(collectWindowPasswordInputIds(code.value, ast));
     dateIds = new Set(collectWindowDateInputIds(code.value, ast));
+    timeIds = new Set(collectWindowTimeInputIds(code.value, ast));
     numberIds = new Set(collectWindowNumberEditInputIds(code.value, ast));
     masks = new Map(collectWindowInputMasks(code.value, ast).map(control => [control.id, control.mask]));
   } catch {
@@ -869,10 +917,11 @@ async function syncInputPresentationSurfaces() {
       const id = String(input.placeholder ?? '');
       const numberEdit = numberIds.has(id);
       const date = dateIds.has(id);
+      const time = timeIds.has(id);
       const password = passwordIds.has(id);
       const mask = masks.get(id) ?? null;
-      input.type = numberEdit ? 'number' : date ? 'date' : password ? 'password' : 'text';
-      input.dataset.patchInputPresentation = numberEdit ? 'number' : date ? 'date' : password ? 'password' : mask ? 'masked' : 'plain';
+      input.type = numberEdit ? 'number' : date ? 'date' : time ? 'time' : password ? 'password' : 'text';
+      input.dataset.patchInputPresentation = numberEdit ? 'number' : date ? 'date' : time ? 'time' : password ? 'password' : mask ? 'masked' : 'plain';
       input.removeAttribute('step');
       if (numberEdit) {
         clearMaskFromStudioInput(input);
@@ -882,6 +931,9 @@ async function syncInputPresentationSurfaces() {
       } else if (date) {
         clearMaskFromStudioInput(input);
         input.setAttribute('aria-label', `${id || 'Date'} date input`);
+      } else if (time) {
+        clearMaskFromStudioInput(input);
+        input.setAttribute('aria-label', `${id || 'Time'} time input`);
       } else if (mask && !password) applyMaskToStudioInput(input, id, mask);
       else clearMaskFromStudioInput(input);
     }

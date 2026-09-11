@@ -2,7 +2,7 @@
 
 Patch production readiness is about dependable artifacts, diagnostics, compatibility, upgrades and support boundaries. It is deliberately separate from research novelty and from the narrower beta.32 formal assurance claim.
 
-Current product baseline: **0.2.0-beta.36**, Change IR **0.10**, Patch Studio project bundle **v4**, Component Registry **0.9**, Native GUI IR **1.9**, sealed Window payload **v19** and desktop runtime **v1.10**. `src/native-current-contract.js` owns that product-facing native boundary. Older versioned native lines remain explicit compatibility contracts rather than being silently reinterpreted.
+Current product baseline: **0.2.0-beta.36**, Change IR **0.10**, Patch Studio project bundle **v4**, Component Registry **0.10**, Native GUI IR **1.9**, sealed Window payload **v19** and desktop runtime **v1.10**. `src/native-current-contract.js` owns that product-facing native boundary. Older versioned native lines remain explicit compatibility contracts rather than being silently reinterpreted.
 
 ## P0 reliability status
 

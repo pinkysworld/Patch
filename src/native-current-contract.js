@@ -136,6 +136,9 @@ function assertCurrentNativeInputPresentation(nodes) {
       if (node.inputPresentation === 'date') {
         throw new NativeGuiError(`DatePicker Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no date-input presentation contract; validation fails closed rather than lowering it as a plain text Input.`);
       }
+      if (node.inputPresentation === 'time') {
+        throw new NativeGuiError(`TimePicker Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no time-input presentation contract; validation fails closed rather than lowering it as a plain text Input.`);
+      }
       if (node.inputMask) {
         throw new NativeGuiError(`MaskedEdit Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no input-mask contract; validation fails closed rather than dropping mask enforcement and lowering it as a plain Input.`);
       }

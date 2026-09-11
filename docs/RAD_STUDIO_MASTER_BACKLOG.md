@@ -398,7 +398,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] ProgressBar Stage 1: number-backed Slider plus `# @slider-mode progress`, passive Studio/Web presentation with no control event, Current Ready native unsupported/fail-closed;
 - [x] SpinEdit/NumberEdit Stage 1: ordinary Input plus `# @number-edit`, Studio/Web numeric presentation with text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [x] DatePicker Stage 1: ordinary Input plus `# @input-mode date`, Studio/Web browser date presentation with ISO date text `changed(value)`, Current Ready native unsupported/fail-closed;
-- [ ] TimePicker;
+- [x] TimePicker Stage 1: ordinary Input plus `# @input-mode time`, Studio/Web browser time presentation with local `HH:MM` text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [ ] Calendar;
 - [ ] LinkLabel;
 - [ ] Separator;
