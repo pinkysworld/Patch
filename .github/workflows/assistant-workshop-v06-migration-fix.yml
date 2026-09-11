@@ -1,0 +1,40 @@
+name: Assistant Workshop v0.6 migration fix
+
+on:
+  push:
+    branches:
+      - rad/timepicker-showcase-polish
+    paths:
+      - .github/workflows/assistant-workshop-v06-migration-fix.yml
+      - scripts/assistant-workshop-v06-migration-fix.py
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rad/timepicker-showcase-polish
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply migration fix
+        run: python scripts/assistant-workshop-v06-migration-fix.py
+      - name: Syntax check
+        run: npm run check:syntax
+      - name: Workshop regression tests
+        run: node --test tests/workshop-desk.test.js tests/workshop-native-ready.test.js
+      - name: Verify clean diff
+        run: git diff --check
+      - name: Commit verified product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/studio-dom-sync.js tests/workshop-desk.test.js
+          git diff --cached --check
+          git commit -m "Fix Workshop v0.6 to v0.7 migration"
+          git push origin HEAD:rad/timepicker-showcase-polish
