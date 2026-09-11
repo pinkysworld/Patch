@@ -26,8 +26,8 @@ function normalizeRetainedSampleSpacing(source) {
   );
 }
 
-test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to canonical v0.6', () => {
-  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.6');
+test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to canonical v0.7', () => {
+  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.7');
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
   assert.match(studioModule, /sample\.value === 'workshopDesk'/);
   assert.equal(
@@ -42,6 +42,10 @@ test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample 
   const runtime = new PatchInterpreter();
   const result = runtime.run(example);
   assert.equal(result.state.ticket_total, 40);
+  assert.equal(result.state.base_rate, 25);
+  assert.equal(result.state.inspection_fee, 15);
+  assert.equal(result.state.rush_fee, 20);
+  assert.equal(result.state.quote_revision, 0);
   assert.equal(result.state.ticket_bench, 'Bench A');
   assert.equal(result.state.ticket_state, 'Open');
   assert.equal(result.state.heartbeat, 0);
@@ -100,9 +104,10 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
   assert.equal(result.state.heartbeat, 1);
 
   result = triggerWindowEvent(runtime, 'quote_button', 'clicked');
-  assert.equal(result.state.ticket_total, 65);
+  assert.equal(result.state.ticket_total, 80);
   assert.equal(result.state.ticket_state, 'Quoted');
-  assert.equal(result.state.status, 'Quote increased by 25');
+  assert.equal(result.state.quote_revision, 1);
+  assert.equal(result.state.status, 'Base rate and inspection added');
 
   result = triggerWindowEvent(runtime, 'settings_button', 'clicked');
   assert.equal(result.ui.find(window => window.id === 'settings')?.visible, true);
@@ -115,8 +120,9 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
   assert.equal(result.ui.find(window => window.id === 'details')?.visible, true);
 
   result = triggerWindowEvent(runtime, 'details_quote', 'clicked');
-  assert.equal(result.state.ticket_total, 75);
+  assert.equal(result.state.ticket_total, 95);
   assert.equal(result.state.ticket_state, 'Quoted');
+  assert.equal(result.state.quote_revision, 2);
 
   result = triggerWindowEvent(runtime, 'details_ready', 'clicked');
   assert.equal(result.state.ticket_state, 'Ready');
@@ -159,7 +165,7 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
 
   result = triggerWindowEvent(runtime, 'components_button', 'clicked');
   assert.equal(result.ui.find(window => window.id === 'components')?.visible, true);
-  assert.equal(result.state.gallery_status, 'Complete Component Registry 0.9 gallery opened');
+  assert.equal(result.state.gallery_status, 'Current Ready Component Registry 0.10 subset opened');
 
   result = triggerWindowEvent(runtime, 'gallery_text', 'changed', { value: 'Edited sample' });
   assert.equal(result.state.gallery_text, 'Edited sample');
@@ -175,7 +181,7 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
   assert.equal(result.state.gallery_level, 80);
   result = triggerWindowEvent(runtime, 'gallery_table', 'changed', { value: ['Table', 'changed', 'Ready'] });
   assert.equal(result.state.gallery_status, 'Table selection handled');
-  result = triggerWindowEvent(runtime, 'gallery_tree', 'changed', { value: ['Registry 0.9', 'Data', 'TreeView'] });
+  result = triggerWindowEvent(runtime, 'gallery_tree', 'changed', { value: ['Registry 0.10 native subset', 'Data', 'TreeView'] });
   assert.equal(result.state.gallery_status, 'TreeView selection handled');
   result = triggerWindowEvent(runtime, 'gallery_picture', 'clicked');
   assert.equal(result.state.gallery_status, 'Picture click handled');
@@ -191,6 +197,7 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
   assert.equal(result.state.pay, 'Card');
   assert.equal(result.state.ticket_state, 'Open');
   assert.equal(result.state.ticket_total, 40);
+  assert.equal(result.state.quote_revision, 0);
   assert.equal(result.state.ticket_bench, 'Bench A');
   assert.equal(result.state.qty, 1);
   assert.equal(result.state.heartbeat, 0);
@@ -212,7 +219,7 @@ test('Workshop Desk exercises the seven-Form workflow and Component Gallery even
   assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Workshop Desk covers every Component Registry 0.9 control without hidden app state', () => {
+test('Workshop Desk covers the Current Ready Component Registry 0.10 subset without hidden app state', () => {
   for (const marker of [
     'window "Workshop Desk" as main',
     'window "Workshop settings" as settings',
@@ -234,11 +241,11 @@ test('Workshop Desk covers every Component Registry 0.9 control without hidden a
     'when ticket_canvas paint:', 'when gallery_canvas paint:',
     'draw clear #f8fafc', 'draw rectangle 12, 12', 'draw ellipse 146, 12', 'draw image "data:image/png;base64,',
     'button "Components" as components_button', 'button "Refresh" as gallery_refresh',
-    'create number ticket_total = 40', 'create text gallery_text = "Workshop sample"',
+    'create number ticket_total = 40', 'create number base_rate = 25', 'create number quote_revision = 0', 'create text gallery_text = "Workshop sample"',
     'open settings', 'open details', 'open inventory', 'open customer_profile', 'open diagnostics', 'open components',
     'close settings', 'close details', 'close inventory', 'close customer_profile', 'close diagnostics', 'close components',
     'Current desktop Ready runtime contract: v1.10.',
-    'Seven-Form RAD showcase · every Component Registry 0.9 control is represented',
+    'Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented',
     '# @layout anchor left right bottom'
   ]) assert.ok(example.includes(marker), marker);
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);

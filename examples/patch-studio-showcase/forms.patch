@@ -14,6 +14,7 @@ window "Component Gallery" as components size 1080, 760:
     row "MaskedEdit", "Input mask", "Studio/Web"
     row "NumberEdit", "Numeric Input presentation", "Studio/Web"
     row "DatePicker", "Date Input presentation", "Studio/Web"
+    row "TimePicker", "Time Input presentation", "Studio/Web"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"

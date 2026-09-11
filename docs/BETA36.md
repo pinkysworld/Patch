@@ -7,7 +7,7 @@ Patch beta.36 is the current integration and RAD-authoring development line. It 
 - Patch package: `0.2.0-beta.36`
 - Change IR: `0.10`
 - Studio project bundle: `v4`
-- Component Registry: `0.9`
+- Component Registry: `0.10`
 - Native GUI IR: `1.9`
 - sealed payload: `v19`
 - desktop runtime: `v1.10`

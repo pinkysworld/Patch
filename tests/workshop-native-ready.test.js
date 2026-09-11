@@ -14,7 +14,7 @@ import {
 
 const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 
-test('Workshop Desk builds on current Ready across the complete Component Registry 0.9 showcase', () => {
+test('Workshop Desk builds on Current Ready across the Component Registry 0.10 native subset', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   const support = validateWindowRuntimeSupport(compiled, {
     allowTables: true,

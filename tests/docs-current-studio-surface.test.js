@@ -133,6 +133,7 @@ test('roadmap records beta36 current Studio/native line and truthful RAD backlog
   assert.match(roadmap, /ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`/);
   assert.match(roadmap, /NumberEdit as `# @number-edit`/);
   assert.match(roadmap, /DatePicker as `# @input-mode date`/);
-  assert.match(roadmap, /TimePicker and Calendar/);
+  assert.match(roadmap, /TimePicker as `# @input-mode time`/);
+  assert.equal(roadmap.includes("- [ ] Calendar"), true);
   assert.doesNotMatch(roadmap, /\[ \] ProgressBar,/);
 });

@@ -9,7 +9,7 @@ Patch Studio currently tracks:
 - Patch package **0.2.0-beta.36**;
 - Change IR **0.10**;
 - Studio project bundle **v4**;
-- Component Registry **0.9**;
+- Component Registry **0.10**;
 - Current Ready Native GUI IR **1.9**;
 - Current Ready sealed payload **v19**;
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
