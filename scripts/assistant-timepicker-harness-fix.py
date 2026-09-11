@@ -13,4 +13,11 @@ end = text.index("\n\n// Standalone Web contract and renderer.", start)
 replacement = '''replaceOnce('src/native-current-contract.js', "      if (node.inputPresentation === 'date') {\\n        throw new NativeGuiError(`DatePicker Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no date-input presentation contract; validation fails closed rather than lowering it as a plain text Input.`);\\n      }\\n      if (node.inputMask) {", "      if (node.inputPresentation === 'date') {\\n        throw new NativeGuiError(`DatePicker Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no date-input presentation contract; validation fails closed rather than lowering it as a plain text Input.`);\\n      }\\n      if (node.inputPresentation === 'time') {\\n        throw new NativeGuiError(`TimePicker Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no time-input presentation contract; validation fails closed rather than lowering it as a plain text Input.`);\\n      }\\n      if (node.inputMask) {");'''
 text = text[:start] + replacement + text[end:]
 
+old = '''replaceAll('src/window-input-presentation.js', "  ensureDatePickerButton();\\n  ensureInputPresentationInspector();", "  ensureDatePickerButton();\\n  ensureTimePickerButton();\\n  ensureInputPresentationInspector();", 2);'''
+new = '''replaceOnce('src/window-input-presentation.js', "  ensureDatePickerButton();\\n  ensureInputPresentationInspector();", "  ensureDatePickerButton();\\n  ensureTimePickerButton();\\n  ensureInputPresentationInspector();");
+replaceOnce('src/window-input-presentation.js', "      ensureDatePickerButton();\\n      ensureInputPresentationInspector();", "      ensureDatePickerButton();\\n      ensureTimePickerButton();\\n      ensureInputPresentationInspector();");'''
+if old not in text:
+    raise SystemExit('missing DatePicker install anchor in temporary harness')
+text = text.replace(old, new, 1)
+
 path.write_text(text)
