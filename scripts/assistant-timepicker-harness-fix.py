@@ -111,4 +111,13 @@ for before, after in [
     if test_text.count(before) != 1:
         raise SystemExit(f'tests/workshop-desk.test.js: expected one match for {before!r}, got {test_text.count(before)}')
     test_text = test_text.replace(before, after, 1)
+quote_state_before = """assert.equal(result.state.ticket_total, 80);
+  assert.equal(result.state.ticket_state, 'Approval');
+  assert.equal(result.state.quote_revision, 1);"""
+quote_state_after = """assert.equal(result.state.ticket_total, 80);
+  assert.equal(result.state.ticket_state, 'Quoted');
+  assert.equal(result.state.quote_revision, 1);"""
+if test_text.count(quote_state_before) != 1:
+    raise SystemExit(f'tests/workshop-desk.test.js: expected one stale quote-state block, got {test_text.count(quote_state_before)}')
+test_text = test_text.replace(quote_state_before, quote_state_after, 1)
 test_path.write_text(test_text)
