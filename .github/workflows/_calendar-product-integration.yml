@@ -21,10 +21,12 @@ jobs:
           node-version: 24
       - name: Apply Calendar product integration
         run: node scripts/_calendar-product-integration.mjs
+      - name: Update Calendar current/future contract test
+        run: node scripts/_calendar-product-test-fix.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused Calendar and Showcase tests
-        run: npm test -- tests/calendar-stage1.test.js tests/studio-showcase.test.js tests/studio-showcase-loader.test.js tests/docs-current-studio-surface.test.js tests/handbook-site.test.js
+        run: npm test -- tests/calendar-stage1.test.js tests/studio-showcase.test.js tests/studio-showcase-loader.test.js tests/docs-current-studio-surface.test.js tests/studio-authoring-surface.test.js tests/handbook-site.test.js
       - name: Full repository tests
         run: npm test
       - name: Example checks
@@ -53,6 +55,7 @@ jobs:
             web/studio-showcase-project.js \
             tests/studio-showcase.test.js \
             tests/docs-current-studio-surface.test.js \
+            tests/studio-authoring-surface.test.js \
             tests/handbook-site.test.js
           git commit -m "RAD: integrate Calendar across Showcase and docs [skip ci]"
           git push origin HEAD:rad/calendar-stage1
