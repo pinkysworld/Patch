@@ -33,13 +33,14 @@ The standard-control Stage-1 presentation layer additionally provides:
 - DatePicker as ordinary Input plus `# @input-mode date`;
 - TimePicker as ordinary Input plus `# @input-mode time`;
 - Calendar as ordinary Input plus `# @input-mode calendar`;
+- LinkLabel as ordinary Button plus `# @button-mode link`, preserving the ordinary `clicked` event without implicit browser navigation;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
 - ProgressBar as number-backed Slider plus `# @slider-mode progress`;
 - GroupBox as ordinary Panel plus `# @panel-mode group`;
 - ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header;
 - SplitContainer as ordinary Panel plus block-local `# @panel-split vertical|horizontal <ratio>` and one explicit `# @panel-split-break` between the two pane groups.
 
-These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
+These presentation contracts remain source-backed. PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, LinkLabel, CheckedListBox, ProgressBar, GroupBox, ScrollBox and SplitContainer are supported in Studio and Standalone Web. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 deliberately fails closed for those presentation contracts rather than silently lowering them to a different native control.
 
 ProgressBar Stage 1 is passive. It reads the same-id explicit `create number` state and has no control event. Application code changes that number only through ordinary explicit `change`; Studio/Web then re-renders the passive progress presentation.
 
@@ -79,7 +80,7 @@ Timer and ImageList are nonvisual and live in the nonvisual tray. StatusBar owns
 
 The Designer clipboard uses a closed versioned source-backed contract. Clipboard v2 preserves the selected control block, relevant handlers, metadata and explicit backing-state records needed by CheckedListBox and ProgressBar. Version-1 clipboard payloads remain readable.
 
-Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, CheckedListBox, ProgressBar and GroupBox metadata move with their control through delete, copy, cut, paste and duplicate. ScrollBox and SplitContainer use block-local Panel metadata, so their directives and explicit split marker move atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
+Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, LinkLabel, CheckedListBox, ProgressBar and GroupBox metadata move with their control through delete, copy, cut, paste and duplicate. ScrollBox and SplitContainer use block-local Panel metadata, so their directives and explicit split marker move atomically with the Panel block through the same lifecycle without extending the generic pre-declaration metadata grammar. Cross-project paste allocates fresh ids and explicit backing states when required instead of introducing hidden runtime storage.
 
 ## Table
 

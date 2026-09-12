@@ -22,7 +22,7 @@ const INPUT_MODE_PREFIX_RE = /^\s*#\s*@input-mode\b/i;
 const INPUT_MASK_PREFIX_RE = /^\s*#\s*@input-mask\b/i;
 const NUMBEREDIT_RE = /^\s*#\s*@number-edit\s*$/i;
 const NUMBEREDIT_PREFIX_RE = /^\s*#\s*@number-edit\b/i;
-const DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|number-edit)\b/i;
+const DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|number-edit|button-mode)\b/i;
 const DESIGNER_SELECTION_EVENT = 'patch-designer-selection-change';
 const DEFAULT_MASK = '000-000-0000';
 

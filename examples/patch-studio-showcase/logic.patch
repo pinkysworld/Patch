@@ -199,6 +199,10 @@ when gallery_update clicked:
   change gallery_status:
     set = "Panel child action completed"
 
+when gallery_link clicked:
+  change gallery_status:
+    set = "LinkLabel clicked through ordinary Button semantics"
+
 when gallery_canvas paint:
   draw clear #f8fafc
   draw rectangle 10, 10 size 58, 30 fill #dbeafe stroke #2563eb width 2

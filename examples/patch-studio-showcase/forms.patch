@@ -16,6 +16,7 @@ window "Component Gallery" as components size 1080, 760:
     row "DatePicker", "Date Input presentation", "Studio/Web"
     row "TimePicker", "Time Input presentation", "Studio/Web"
     row "Calendar", "Inline month-grid Input", "Studio/Web"
+    row "LinkLabel", "Button link presentation", "Studio/Web"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
@@ -28,6 +29,7 @@ window "Component Gallery" as components size 1080, 760:
       node "Basic"
         node "Text"
         node "Button"
+        node "LinkLabel"
         node "Input"
         node "Memo"
       node "Choices"
@@ -84,6 +86,8 @@ window "Component Gallery" as components size 1080, 760:
     button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40
     button "Split Lab" as gallery_split at 18, 264 size 150, 40
     button "Calendar Lab" as gallery_calendar at 182, 264 size 148, 40
+    # @button-mode link
+    button "LinkLabel action" as gallery_link at 18, 318 size 180, 34
 
   button "Close Gallery" as close_gallery at 24, 690 size 180, 40
   statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28

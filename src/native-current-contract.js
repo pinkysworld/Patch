@@ -64,6 +64,7 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
 
 export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeInputPresentation(compiled?.ast);
+  assertCurrentNativeButtonPresentation(compiled?.ast);
   assertCurrentNativeListboxPresentation(compiled?.ast);
   assertCurrentNativeSliderPresentation(compiled?.ast);
   assertCurrentNativePanelPresentation(compiled?.ast);
@@ -155,6 +156,17 @@ function assertCurrentNativeInputPresentation(nodes) {
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativeInputPresentation(page.body);
     }
+  }
+}
+
+function assertCurrentNativeButtonPresentation(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'button' && node.buttonPresentation === 'link') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`LinkLabel Stage 1 Button${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no link-style Button presentation contract; validation fails closed rather than lowering it as an ordinary native Button.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) assertCurrentNativeButtonPresentation(node.body);
+    if (node?.kind === 'tabs') for (const page of node.body ?? []) assertCurrentNativeButtonPresentation(page.body);
   }
 }
 

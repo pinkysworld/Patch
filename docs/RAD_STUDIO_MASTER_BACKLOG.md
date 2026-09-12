@@ -400,7 +400,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] DatePicker Stage 1: ordinary Input plus `# @input-mode date`, Studio/Web browser date presentation with ISO date text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [x] TimePicker Stage 1: ordinary Input plus `# @input-mode time`, Studio/Web browser time presentation with local `HH:MM` text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [x] Calendar Stage 1: ordinary Input plus `# @input-mode calendar`, Studio/Web inline month-grid presentation with transient month navigation and ISO date text `changed(value)`, Current Ready native unsupported/fail-closed;
-- [ ] LinkLabel;
+- [x] LinkLabel Stage 1: ordinary Button plus `# @button-mode link`, Studio/Web link presentation with ordinary `clicked` semantics and no implicit navigation, Current Ready native unsupported/fail-closed;
 - [ ] Separator;
 - [ ] standalone ScrollBar where useful.
 
