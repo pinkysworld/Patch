@@ -28,7 +28,11 @@ jobs:
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused LinkLabel and Button tests
-        run: npm test -- tests/linklabel-stage1.test.js tests/window-webapp.test.js tests/native-current-contract.test.js tests/designer-control-duplicate.test.js tests/designer-control-clipboard.test.js tests/studio-live-update.test.js tests/offline-downloads-page.test.js tests/site-alignment-bundle.test.js
+        run: npm test -- tests/linklabel-stage1.test.js tests/window-webapp.test.js tests/native-current-contract.test.js tests/designer-control-duplicate.test.js tests/designer-control-clipboard.test.js
+      - name: Public site bundle gate
+        run: |
+          node scripts/build-site.js
+          node scripts/validate-current-site.js
       - name: Full repository tests
         run: npm test
       - name: Commit verified LinkLabel core
