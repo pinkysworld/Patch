@@ -49,7 +49,19 @@ jobs:
       - name: Focused Calendar and input-presentation tests
         run: npm test -- tests/input-presentation.test.js tests/datepicker-stage1.test.js tests/timepicker-stage1.test.js tests/calendar-stage1.test.js
       - name: Full repository tests
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test > /tmp/calendar-full-test.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "CALENDAR_FULL_SUITE_FAILURES_BEGIN"
+            grep -n -E "not ok|AssertionError|ERR_ASSERTION|FAIL|failed|Expected values|actual:|expected:" /tmp/calendar-full-test.log | tail -n 120 || true
+            echo "CALENDAR_FULL_SUITE_FAILURES_END"
+            tail -n 120 /tmp/calendar-full-test.log
+            exit "$status"
+          fi
+          tail -n 40 /tmp/calendar-full-test.log
       - name: Commit verified Calendar core
         shell: bash
         run: |
