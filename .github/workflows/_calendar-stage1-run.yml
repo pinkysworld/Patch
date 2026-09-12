@@ -34,6 +34,20 @@ jobs:
           path.write_text('\n'.join(lines) + '\n')
           PY
           node scripts/_calendar-stage1-dev.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/calendar-stage1.test.js')
+          text = path.read_text()
+          before = '''      input tab_calendar
+  panel as holder at 340, 230 size 250, 180:'''
+          after = '''      input tab_calendar
+    tab "Other":
+      text "Other"
+  panel as holder at 340, 230 size 250, 180:'''
+          if before not in text:
+              raise SystemExit('Missing Calendar nested Tabs fixture anchor')
+          path.write_text(text.replace(before, after, 1))
+          PY
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused Calendar and input-presentation tests
