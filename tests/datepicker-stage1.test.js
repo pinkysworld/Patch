@@ -66,7 +66,7 @@ test('DatePicker compile metadata preserves ordinary Input and Change IR 0.10 se
   const compiled = compile(SOURCE, { name: 'Schedule', kind: 'window', entry: 'main.patch' });
   const input = compiled.ast.find(node => node.kind === 'window').body.find(node => node.control === 'input');
   assert.equal(compiled.ir.version, '0.10');
-  assert.equal(compiled.windowInputPresentation.version, '0.3');
+  assert.equal(compiled.windowInputPresentation.version, '0.4');
   assert.equal(input.control, 'input');
   assert.equal(input.inputPresentation, 'date');
 });
@@ -74,7 +74,7 @@ test('DatePicker compile metadata preserves ordinary Input and Change IR 0.10 se
 test('Standalone Window Web renders DatePicker as browser date input while changed(value) stays text', () => {
   const built = buildStandaloneWebApp(SOURCE, { name: 'Schedule', kind: 'window' });
   assert.equal(built.metadata.datePickerStage, 1);
-  assert.equal(built.metadata.datePickerVersion, '0.3');
+  assert.equal(built.metadata.datePickerVersion, '0.4');
   assert.equal(built.metadata.datePickerMode, 'source-backed-date-input');
   assert.equal(built.metadata.datePickerEventValue, 'iso-date-text');
   assert.match(built.html, /inputPresentation:node\.control==='input'/);
