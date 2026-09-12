@@ -31,6 +31,10 @@ jobs:
           if len(matches) != 1:
               raise SystemExit(f'Expected one Calendar DOM aria anchor, found {len(matches)}')
           lines[matches[0]] = replacement
+          web_version = "  s = once(s, \"export const PATCH_WINDOW_WEB_VERSION = '0.9';\", \"export const PATCH_WINDOW_WEB_VERSION = '0.10';\", 'Window Web version');"
+          if web_version not in lines:
+              raise SystemExit('Missing Window Web version bump anchor')
+          lines.remove(web_version)
           path.write_text('\n'.join(lines) + '\n')
           PY
           node scripts/_calendar-stage1-dev.mjs
