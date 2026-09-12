@@ -20,7 +20,20 @@ jobs:
         with:
           node-version: 24
       - name: Apply Calendar Stage 1 patch
-        run: node scripts/_calendar-stage1-dev.mjs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/_calendar-stage1-dev.mjs')
+          lines = path.read_text().splitlines()
+          replacement = r'''  s = once(s, "      } else if (time) {\n        clearMaskFromStudioInput(input);\n        input.setAttribute('aria-label', `${id || 'Time'} time input`);\n      } else if (mask && !password) applyMaskToStudioInput(input, id, mask);", "      } else if (time) {\n        clearMaskFromStudioInput(input);\n        input.setAttribute('aria-label', `${id || 'Time'} time input`);\n      } else if (calendar) {\n        clearMaskFromStudioInput(input);\n        input.setAttribute('aria-label', `${id || 'Calendar'} calendar input`);\n      } else if (mask && !password) applyMaskToStudioInput(input, id, mask);", 'Calendar Studio aria');'''
+          matches = [i for i, line in enumerate(lines) if 'Calendar DOM aria' in line]
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one Calendar DOM aria anchor, found {len(matches)}')
+          lines[matches[0]] = replacement
+          path.write_text('\n'.join(lines) + '\n')
+          PY
+          node scripts/_calendar-stage1-dev.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused Calendar and input-presentation tests
