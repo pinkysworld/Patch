@@ -30,6 +30,7 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 - TimePicker as the source-backed `# @input-mode time` Input presentation with local `HH:MM` text;
 - Calendar as the source-backed `# @input-mode calendar` inline month-grid presentation with ISO `YYYY-MM-DD` text;
 - LinkLabel as ordinary Button plus source-backed `# @button-mode link`, retaining the normal `clicked` event without implicit navigation;
+- Separator as the source-backed Designer preset over ordinary `shape line`, keeping existing Shape Web/native portability;
 - CheckedListBox as the list-backed `# @listbox-mode checked` presentation;
 - ProgressBar as the passive number-backed Slider `# @slider-mode progress` presentation;
 - GroupBox as the source-backed Panel `# @panel-mode group` presentation, reusing Panel Stage 2 containment rather than creating a second container model;

@@ -1,4 +1,5 @@
 import {
+  addDesignerSeparator,
   addDesignerShape,
   listDesignerShapes,
   removeDesignerShape,
@@ -231,6 +232,18 @@ function installShapeStudio(inspector, toolbar) {
     toolbar.appendChild(add);
   }
 
+  let addSeparator = toolbar.querySelector('#addSeparator');
+  if (!addSeparator) {
+    addSeparator = document.createElement('button');
+    addSeparator.id = 'addSeparator';
+    addSeparator.className = 'secondary small';
+    addSeparator.type = 'button';
+    addSeparator.textContent = '+ Separator';
+    addSeparator.setAttribute('aria-label', 'Add Separator');
+    addSeparator.title = 'Add a source-backed Separator preset using the canonical Shape line control';
+    add.insertAdjacentElement('afterend', addSeparator);
+  }
+
   const shapeFields = createShapeInspectorFields();
   const genericActions = form.querySelector(':scope > .inspector-actions');
   form.insertBefore(shapeFields, genericActions ?? null);
@@ -248,6 +261,20 @@ function installShapeStudio(inspector, toolbar) {
       const result = addDesignerShape(code.value, { windowIndex });
       setShapeSource(code, result.source);
       rememberDesignerSelection(canvas, designerSelectionForControl(result.shape, 'core'), { reason: 'add-shape' });
+      schedule();
+    } catch (error) {
+      showShapeError(error);
+    }
+  }, { capture: true });
+
+  addSeparator.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    try {
+      const windowIndex = Number(document.querySelector('#patchFormSelect')?.value) || 0;
+      const result = addDesignerSeparator(code.value, { windowIndex });
+      setShapeSource(code, result.source);
+      rememberDesignerSelection(canvas, designerSelectionForControl(result.shape, 'core'), { reason: 'add-separator' });
       schedule();
     } catch (error) {
       showShapeError(error);
@@ -315,7 +342,7 @@ function createShapeInspectorFields() {
 
   const hint = document.createElement('p');
   hint.className = 'inspector-hint';
-  hint.textContent = 'Designer-only Shape Stage 1. Web and native build targets remain capability-gated until their renderer slices land.';
+  hint.textContent = 'Shape is source-backed across Studio/Web and current desktop-native targets. Separator is the canonical Shape line preset and follows the same target support.';
   section.appendChild(hint);
 
   const actions = document.createElement('div');

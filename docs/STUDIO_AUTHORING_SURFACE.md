@@ -34,6 +34,7 @@ The standard-control Stage-1 presentation layer additionally provides:
 - TimePicker as ordinary Input plus `# @input-mode time`;
 - Calendar as ordinary Input plus `# @input-mode calendar`;
 - LinkLabel as ordinary Button plus `# @button-mode link`, preserving the ordinary `clicked` event without implicit browser navigation;
+- Separator as a Designer preset that writes an ordinary `shape line` with a `separator_N` id, so the source remains portable and uses the existing Shape renderer/native contract;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
 - ProgressBar as number-backed Slider plus `# @slider-mode progress`;
 - GroupBox as ordinary Panel plus `# @panel-mode group`;
