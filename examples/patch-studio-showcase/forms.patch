@@ -17,6 +17,7 @@ window "Component Gallery" as components size 1080, 760:
     row "TimePicker", "Time Input presentation", "Studio/Web"
     row "Calendar", "Inline month-grid Input", "Studio/Web"
     row "LinkLabel", "Button link presentation", "Studio/Web"
+    row "Separator", "Shape line Designer preset", "Ready"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
@@ -50,6 +51,7 @@ window "Component Gallery" as components size 1080, 760:
       node "Graphics"
         node "Picture"
         node "Shape"
+        node "Separator"
         node "PaintBox"
       node "Chrome"
         node "StatusBar"
@@ -65,7 +67,10 @@ window "Component Gallery" as components size 1080, 760:
   shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 18 opacity 1 at 728, 204 size 140, 84
   text "PaintBox" at 888, 178 size 100, 20
   paintbox as gallery_canvas at 888, 204 size 148, 116
-  text "Both remain source-visible and deterministic." at 728, 342 size 288, 44
+  text "Separator preset" at 728, 326 size 160, 20
+  # @locked
+  shape line as gallery_separator fill transparent stroke #94a3b8 stroke-width 1 radius 0 opacity 1 at 728, 350 size 308, 16
+  text "All graphics remain source-visible and deterministic." at 728, 374 size 288, 32
 
   # @locked
   shape rounded as resources_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 446 size 660, 220

@@ -96,6 +96,8 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
   assert.match(forms, /button "Calendar Lab" as gallery_calendar/);
   assert.match(forms, /# @button-mode link\n    button "LinkLabel action" as gallery_link/);
   assert.match(forms, /row "LinkLabel", "Button link presentation", "Studio\/Web"/);
+  assert.match(forms, /row "Separator", "Shape line Designer preset", "Ready"/);
+  assert.match(forms, /shape line as gallery_separator fill transparent stroke #94a3b8 stroke-width 1 radius 0 opacity 1/);
   assert.match(forms, /window "Split Lab" as split_lab size 820, 560/);
   assert.match(forms, /window "Calendar Lab" as calendar_lab size 760, 620/);
   assert.match(forms, /row "Calendar", "Inline month-grid Input", "Studio\/Web"/);
@@ -122,6 +124,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @input-mode time/);
   assert.match(composition.source, /# @input-mode calendar/);
   assert.match(composition.source, /# @button-mode link/);
+  assert.match(composition.source, /shape line as gallery_separator/);
   assert.match(composition.source, /# @listbox-mode checked/);
   assert.match(composition.source, /# @slider-mode progress/);
   assert.match(composition.source, /# @panel-mode group/);

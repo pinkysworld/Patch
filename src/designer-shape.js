@@ -84,6 +84,25 @@ export function addDesignerShape(source, options = {}) {
   return Object.freeze({ source: next, shape });
 }
 
+export function addDesignerSeparator(source, options = {}) {
+  const normalized = String(source ?? '').replace(/\r\n/g, '\n');
+  const id = options.id === undefined
+    ? nextShapeId(listDesignerControls(normalized), 'separator')
+    : validId(options.id);
+  return addDesignerShape(normalized, {
+    ...options,
+    id,
+    shapeKind: 'line',
+    fill: 'transparent',
+    stroke: options.stroke ?? '#94a3b8',
+    strokeWidth: options.strokeWidth ?? 1,
+    cornerRadius: 0,
+    opacity: options.opacity ?? 1,
+    width: options.width ?? 180,
+    height: options.height ?? 16
+  });
+}
+
 export function updateDesignerShape(source, selector, changes = {}) {
   const shapes = listDesignerShapes(source);
   const current = findShape(shapes, selector);
@@ -181,10 +200,10 @@ function findShape(shapes, selector) {
   return shape;
 }
 
-function nextShapeId(controls) {
+function nextShapeId(controls, prefix = 'shape') {
   const used = new Set(controls.map(control => control.id).filter(Boolean));
   for (let index = 1; index < 100000; index += 1) {
-    const id = `shape_${index}`;
+    const id = `${prefix}_${index}`;
     if (!used.has(id)) return id;
   }
   throw new Error('Designer could not allocate a Shape id.');
