@@ -388,8 +388,9 @@ function createControlElement(control, context) {
     el.textContent = control.text;
   } else if (control.type === 'button') {
     el = document.createElement('button');
-    el.className = 'patch-button';
+    el.className = control.buttonPresentation === 'link' ? 'patch-button patch-linklabel' : 'patch-button';
     el.type = 'button';
+    if (control.buttonPresentation === 'link') el.dataset.patchButtonPresentation = 'link';
     if (control.imageSource) {
       const img = document.createElement('img');
       img.className = 'patch-button-image';

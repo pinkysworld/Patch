@@ -31,6 +31,10 @@ import {
   buildWindowNumberEditManifest
 } from './window-input-presentation.js';
 import {
+  attachWindowButtonPresentations,
+  buildWindowButtonPresentationManifest
+} from './button-presentation.js';
+import {
   attachWindowListboxPresentations,
   buildWindowListboxPresentationManifest
 } from './input-presentation.js';
@@ -56,6 +60,7 @@ export function compile(source, options = {}) {
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
   const windowInputMask = buildWindowInputMaskManifest(source, ast);
   const windowNumberEdit = buildWindowNumberEditManifest(source, ast);
+  const windowButtonPresentation = buildWindowButtonPresentationManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
   const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
   const windowPanelPresentation = buildWindowPanelPresentationManifest(source, ast);
@@ -82,6 +87,7 @@ export function compile(source, options = {}) {
   attachWindowInputPresentations(ast, windowInputPresentation);
   attachWindowInputMasks(ast, windowInputMask);
   attachWindowNumberEdits(ast, windowNumberEdit);
+  attachWindowButtonPresentations(ast, windowButtonPresentation);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
   attachWindowSliderPresentations(ast, windowSliderPresentation);
   attachWindowPanelPresentations(ast, windowPanelPresentation);
@@ -90,7 +96,7 @@ export function compile(source, options = {}) {
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
-    windowInputPresentation, windowInputMask, windowNumberEdit, windowListboxPresentation,
+    windowInputPresentation, windowInputMask, windowNumberEdit, windowButtonPresentation, windowListboxPresentation,
     windowSliderPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit
   };
 }

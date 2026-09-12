@@ -273,6 +273,10 @@ pre {
 .patch-window-body { min-height: 180px; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
 .patch-text { margin: 0; font-size: 18px; }
 .patch-button { padding: 8px 15px; display: inline-flex; align-items: center; gap: 8px; }
+.patch-button.patch-linklabel { padding: 2px 0; border: 0; border-radius: 0; background: transparent; color: #2563eb; box-shadow: none; text-decoration: underline; text-underline-offset: 3px; font-weight: 650; }
+.patch-button.patch-linklabel:hover { color: #1d4ed8; background: transparent; }
+.patch-button.patch-linklabel:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (prefers-color-scheme: dark) { .patch-button.patch-linklabel { color: #93c5fd; } .patch-button.patch-linklabel:hover { color: #bfdbfe; } }
 .patch-button-image { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; border: 0; }
 .patch-input { width: 100%; max-width: 280px; }
 .patch-tabs { width: 100%; min-height: 180px; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); }

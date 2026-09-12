@@ -225,6 +225,7 @@ export class PatchInterpreter {
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
           nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes):[],
           source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
+          buttonPresentation:node.control==='button'?(node.buttonPresentation??'plain'):null,
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
         };
         if(panelChildren&&node.splitPane)item.splitPane=node.splitPane;
