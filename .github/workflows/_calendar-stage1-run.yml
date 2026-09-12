@@ -38,12 +38,8 @@ jobs:
           from pathlib import Path
           path = Path('tests/calendar-stage1.test.js')
           text = path.read_text()
-          before = '''      input tab_calendar
-  panel as holder at 340, 230 size 250, 180:'''
-          after = '''      input tab_calendar
-    tab "Other":
-      text "Other"
-  panel as holder at 340, 230 size 250, 180:'''
+          before = "      input tab_calendar\n  panel as holder at 340, 230 size 250, 180:"
+          after = "      input tab_calendar\n    tab \"Other\":\n      text \"Other\"\n  panel as holder at 340, 230 size 250, 180:"
           if before not in text:
               raise SystemExit('Missing Calendar nested Tabs fixture anchor')
           path.write_text(text.replace(before, after, 1))
