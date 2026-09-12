@@ -29,6 +29,7 @@ test('Patch handbook exposes dedicated tutorial and example pages', () => {
   assert.match(examples, /Showcases: Studio\/Web and Current Ready native/);
   assert.match(examples, /Patch Studio Showcase/);
   assert.match(examples, /Workshop Desk/);
+  assert.match(examples, /Calendar Window/);
   assert.match(examples, /# @slider-mode progress/);
 });
 
@@ -44,7 +45,7 @@ test('handbook is part of the generated and offline site closure', () => {
 });
 
 test('public handbook points to tested beginner and showcase programs', () => {
-  for (const name of ['hello-world.patch', 'hello-window.patch', 'counter-window.patch', 'checkbox-window.patch', 'combo-window.patch', 'workshop-desk.patch', 'patch-studio-showcase.patchproject', 'change-capabilities.patch']) {
+  for (const name of ['hello-world.patch', 'hello-window.patch', 'counter-window.patch', 'checkbox-window.patch', 'combo-window.patch', 'calendar-window.patch', 'workshop-desk.patch', 'patch-studio-showcase.patchproject', 'change-capabilities.patch']) {
     assert.ok(tutorials.includes(name) || examples.includes(name), `${name} should be discoverable from the handbook`);
   }
 });

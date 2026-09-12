@@ -1,0 +1,16 @@
+create text selected_date = "2026-09-12"
+create text status = "Choose a date from the inline month grid."
+
+window "Calendar" as main size 760, 500:
+  text "Calendar Stage 1" at 24, 24 size 320, 30
+  # @input-mode calendar
+  input selected_date at 24, 70 size 320, 330
+  text "Selected date" at 388, 90 size 180, 24
+  text "{selected_date}" at 388, 124 size 300, 34
+  text "{status}" at 388, 180 size 320, 72
+
+when selected_date changed:
+  change selected_date:
+    set = value
+  change status:
+    set = "Calendar changed with ISO YYYY-MM-DD text"

@@ -76,6 +76,12 @@ when review_time changed:
   change status:
     set = "TimePicker selection updated"
 
+when calendar_date changed:
+  change calendar_date:
+    set = value
+  change calendar_status:
+    set = "Calendar date selection persisted explicitly"
+
 when nested_apply clicked:
   change status:
     set = "Nested values applied"
@@ -284,3 +290,19 @@ when close_split_lab clicked:
   close split_lab
   change status:
     set = "Returned from SplitContainer Lab"
+
+when gallery_calendar clicked:
+  open calendar_lab
+  change calendar_status:
+    set = "Calendar Lab opened from Component Gallery"
+
+when calendar_gallery clicked:
+  open components
+  close calendar_lab
+  change gallery_status:
+    set = "Returned from Calendar Lab"
+
+when close_calendar_lab clicked:
+  close calendar_lab
+  change status:
+    set = "Returned from Calendar Lab"
