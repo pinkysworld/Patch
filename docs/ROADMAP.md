@@ -165,6 +165,7 @@ Implemented R4 Stage 1 surfaces:
 - [x] DatePicker as `# @input-mode date` presentation of ordinary Input, Studio/Web browser date editor with ISO date text `changed(value)` and Current Ready native fail-closed
 - [x] TimePicker as `# @input-mode time` presentation of ordinary Input, Studio/Web browser time editor with local `HH:MM` text `changed(value)` and Current Ready native fail-closed
 - [x] Calendar as `# @input-mode calendar` presentation of ordinary Input, Studio/Web inline month grid with ISO date text `changed(value)` and Current Ready native fail-closed
+- [x] LinkLabel as `# @button-mode link` presentation of ordinary Button, Studio/Web link styling with ordinary `clicked` semantics, no implicit navigation and Current Ready native fail-closed
 - [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
 - [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
