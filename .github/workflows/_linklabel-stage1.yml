@@ -1,0 +1,50 @@
+name: LinkLabel Stage 1 Helper
+
+on:
+  push:
+    branches:
+      - rad/linklabel-stage1
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rad/linklabel-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply LinkLabel Stage 1 patch
+        run: node scripts/_linklabel-stage1.mjs
+      - name: Syntax gate
+        run: npm run check:syntax
+      - name: Focused LinkLabel and Button tests
+        run: npm test -- tests/linklabel-stage1.test.js tests/window-webapp.test.js tests/native-current-contract.test.js tests/designer-control-duplicate.test.js tests/designer-control-clipboard.test.js
+      - name: Full repository tests
+        run: npm test
+      - name: Commit verified LinkLabel core
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/button-presentation.js \
+            src/compiler.js \
+            src/interpreter.js \
+            src/native-current-contract.js \
+            src/window-webapp.js \
+            src/window-layout-policy.js \
+            src/window-input-presentation.js \
+            src/input-presentation.js \
+            src/designer.js \
+            web/studio-window-renderer.js \
+            web/style.css \
+            web/designer-control-duplicate-model.js \
+            web/designer-control-clipboard-model.js \
+            tests/linklabel-stage1.test.js
+          git commit -m "RAD: add LinkLabel Stage 1 [skip ci]"
+          git push origin HEAD:rad/linklabel-stage1
