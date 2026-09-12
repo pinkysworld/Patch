@@ -88,4 +88,10 @@ test('Patch Studio exposes Calendar palette and Inspector mode', () => {
   assert.match(studio, /option value="calendar">Calendar<\/option>/);
   assert.match(studio, /calendarIds = new Set\(collectWindowCalendarInputIds/);
   assert.match(studio, /calendar \? 'calendar'/);
+  assert.match(studio, /function syncStudioCalendar\(input, id, interactive\)/);
+  assert.match(studio, /patch-calendar-stage1-grid/);
+  assert.match(studio, /Previous month/);
+  assert.match(studio, /Next month/);
+  assert.match(studio, /input\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/);
+  assert.match(studio, /host\.dataset\.patchControlKey = input\.dataset\.patchControlKey/);
 });
