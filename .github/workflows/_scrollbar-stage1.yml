@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Fix helper anchors
+        run: node scripts/_scrollbar-harness-fix.mjs
       - name: Apply ScrollBar Stage 1
         run: node scripts/_scrollbar-stage1.mjs
       - name: Syntax gate
