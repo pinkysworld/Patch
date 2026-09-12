@@ -33,6 +33,7 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 - Separator as the source-backed Designer preset over ordinary `shape line`, keeping existing Shape Web/native portability;
 - CheckedListBox as the list-backed `# @listbox-mode checked` presentation;
 - ProgressBar as the passive number-backed Slider `# @slider-mode progress` presentation;
+- ScrollBar as the interactive Slider `# @slider-mode scrollbar` presentation with numeric `changed(value)`;
 - GroupBox as the source-backed Panel `# @panel-mode group` presentation, reusing Panel Stage 2 containment rather than creating a second container model;
 - ScrollBox as block-local `# @panel-scroll auto` on that same Panel, with positioned overflow proving the scrolling path;
 - SplitContainer as block-local `# @panel-split vertical 42` plus one explicit `# @panel-split-break`, with a dedicated Split Lab exercising both panes and the divider;

@@ -127,6 +127,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /shape line as gallery_separator/);
   assert.match(composition.source, /# @listbox-mode checked/);
   assert.match(composition.source, /# @slider-mode progress/);
+  assert.match(composition.source, /# @slider-mode scrollbar/);
   assert.match(composition.source, /# @panel-mode group/);
   assert.match(composition.source, /# @panel-scroll auto/);
   assert.match(composition.source, /# @panel-split vertical 42/);
@@ -143,6 +144,7 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.equal(compiled.windowInputMask.controls.length >= 2, true);
   assert.equal(compiled.windowListboxPresentation.controls.some(control => control.mode === 'checked'), true);
   assert.equal(compiled.windowSliderPresentation.controls.some(control => control.mode === 'progress' && control.id === 'completion'), true);
+  assert.equal(compiled.windowSliderPresentation.controls.some(control => control.mode === 'scrollbar' && control.id === 'scroll_position'), true);
   assert.equal(compiled.windowPanelPresentation.controls.some(control => control.mode === 'group' && control.id === 'gallery_panel'), true);
   assert.equal(compiled.windowPanelScroll.controls.some(control => control.mode === 'auto' && control.id === 'gallery_panel'), true);
   assert.equal(compiled.windowPanelSplit.controls.some(control => control.id === 'split_demo' && control.split?.orientation === 'vertical' && control.split?.ratio === 42), true);
@@ -207,6 +209,8 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.maskedEditStage, 1);
   assert.equal(built.metadata.checkedListBoxStage, 1);
   assert.equal(built.metadata.progressBarStage, 1);
+  assert.equal(built.metadata.scrollBarStage, 1);
+  assert.equal(built.metadata.scrollBarEvent, 'changed-number');
   assert.equal(built.metadata.progressBarMode, 'passive-number-state-presentation');
   assert.equal(built.metadata.groupBoxStage, 1);
   assert.equal(built.metadata.groupBoxMode, 'source-backed-panel-presentation');
@@ -226,6 +230,7 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.match(built.html, /data-patch-window-maskededit/);
   assert.match(built.html, /data-patch-window-checkedlistbox/);
   assert.match(built.html, /data-patch-window-progressbar/);
+  assert.match(built.html, /patch-scrollbar/);
   assert.match(built.html, /createElement\('progress'\)/);
   assert.match(built.html, /patch-groupbox/);
   assert.match(built.html, /patch-scrollbox/);

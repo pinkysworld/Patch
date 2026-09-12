@@ -37,6 +37,7 @@ The standard-control Stage-1 presentation layer additionally provides:
 - Separator as a Designer preset that writes an ordinary `shape line` with a `separator_N` id, so the source remains portable and uses the existing Shape renderer/native contract;
 - CheckedListBox as list-backed ListBox plus `# @listbox-mode checked`;
 - ProgressBar as number-backed Slider plus `# @slider-mode progress`;
+- ScrollBar as ordinary interactive Slider plus `# @slider-mode scrollbar`, preserving numeric `changed(value)` and explicit persistence;
 - GroupBox as ordinary Panel plus `# @panel-mode group`;
 - ScrollBox as ordinary Panel plus block-local `# @panel-scroll auto` directly inside the Panel block header;
 - SplitContainer as ordinary Panel plus block-local `# @panel-split vertical|horizontal <ratio>` and one explicit `# @panel-split-break` between the two pane groups.

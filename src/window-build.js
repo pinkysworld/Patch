@@ -53,6 +53,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let treeViews = 0;
   let sliders = 0;
   let progressBars = 0;
+  let scrollBars = 0;
   let memos = 0;
   let paintboxes = 0;
   let imageLists = 0;
@@ -96,6 +97,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (child.control === 'slider') {
       sliders += 1;
       if (child.sliderPresentation === 'progress') progressBars += 1;
+      if (child.sliderPresentation === 'scrollbar') scrollBars += 1;
       const stateType = stateTypes.get(child.id);
       if (stateType && stateType !== 'number') {
         throw new WindowBuildError(
@@ -350,6 +352,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (scrollBars && !options.allowScrollBar) {
+    throw new WindowBuildError(
+      'ScrollBar Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no standalone ScrollBar presentation contract; validation fails closed rather than lowering it as an ordinary Slider.'
+    );
+  }
+
   if (memos && !options.allowMemo) {
     throw new WindowBuildError(
       'Memo Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no Memo contract; validation fails closed rather than lowering Memo as a single-line Input.'
@@ -386,6 +394,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     treeViews,
     sliders,
     progressBars,
+    scrollBars,
     memos,
     paintboxes,
     imageLists,

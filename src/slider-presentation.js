@@ -14,5 +14,6 @@ export {
   validateWindowSliderPresentationManifest,
   readWindowSliderPresentation,
   setWindowSliderPresentation,
-  collectWindowProgressBarIds
+  collectWindowProgressBarIds,
+  collectWindowScrollBarIds
 } from './window-layout-policy.js';

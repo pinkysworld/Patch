@@ -52,7 +52,14 @@ function installStyles() {
 .patch-slider.patch-progressbar-studio .patch-progressbar-value{min-width:4.5em;text-align:right;font:600 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace}
 .patch-slider.patch-progressbar-studio>.patch-progressbar-source,.patch-slider.patch-progressbar-studio>output:not(.patch-progressbar-value){position:absolute!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important;opacity:0!important;pointer-events:none!important}
 .patch-slider.patch-progressbar-studio.designer-control{cursor:pointer}
-@media(forced-colors:active){.patch-slider.patch-progressbar-studio progress{forced-color-adjust:auto}}
+.patch-slider.patch-scrollbar-studio{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-width:180px;padding:4px 2px}
+.patch-slider.patch-scrollbar-studio input[type="range"]{grid-column:1;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:#e4e4e7;appearance:none;-webkit-appearance:none}
+.patch-slider.patch-scrollbar-studio input[type="range"]::-webkit-slider-thumb{width:48px;height:14px;border:1px solid #71717a;border-radius:999px;background:#a1a1aa;-webkit-appearance:none}
+.patch-slider.patch-scrollbar-studio input[type="range"]::-moz-range-thumb{width:48px;height:14px;border:1px solid #71717a;border-radius:999px;background:#a1a1aa}
+.patch-slider.patch-scrollbar-studio input[type="range"]::-moz-range-track{height:16px;border:0;border-radius:999px;background:#e4e4e7}
+.patch-slider.patch-scrollbar-studio>output,.patch-slider.patch-scrollbar-studio>.patch-slider-range{position:absolute!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important}
+@media(prefers-color-scheme:dark){.patch-slider.patch-scrollbar-studio input[type="range"]{background:#3f3f46}.patch-slider.patch-scrollbar-studio input[type="range"]::-webkit-slider-thumb,.patch-slider.patch-scrollbar-studio input[type="range"]::-moz-range-thumb{border-color:#a1a1aa;background:#71717a}}
+@media(forced-colors:active){.patch-slider.patch-progressbar-studio progress{forced-color-adjust:auto}.patch-slider.patch-scrollbar-studio input[type="range"]{forced-color-adjust:auto}}
 `;
   document.head.appendChild(style);
 }
@@ -70,7 +77,7 @@ function installProgressBarStudio() {
     ensureProgressBarButton();
     ensureProgressBarInspector();
     installProgressBarObservers();
-    if (document.querySelector('#addProgressBar') && document.querySelector('#designerInspectorSliderPresentationField')) observer.disconnect();
+    if (document.querySelector('#addProgressBar') && document.querySelector('#addScrollBar') && document.querySelector('#designerInspectorSliderPresentationField')) observer.disconnect();
   });
   observer.observe(body, { childList: true, subtree: true });
 }
@@ -78,16 +85,31 @@ function installProgressBarStudio() {
 function ensureProgressBarButton() {
   const toolbar = document.querySelector('#designer .designer-toolbar');
   const sliderButton = toolbar?.querySelector('#addSlider');
-  if (!toolbar || !sliderButton || toolbar.querySelector('#addProgressBar')) return Boolean(toolbar?.querySelector('#addProgressBar'));
-  const button = document.createElement('button');
+  if (!toolbar || !sliderButton) return false;
+  if (toolbar.querySelector('#addProgressBar') && toolbar.querySelector('#addScrollBar')) return true;
+  const button = toolbar.querySelector('#addProgressBar') ?? document.createElement('button');
   button.id = 'addProgressBar';
   button.className = 'secondary small';
   button.type = 'button';
   button.textContent = '+ Progress';
   button.setAttribute('aria-label', 'Add ProgressBar');
   button.title = 'Add a passive source-backed ProgressBar preset. It remains Slider state/range semantics and uses # @slider-mode progress.';
-  sliderButton.insertAdjacentElement('afterend', button);
-  button.addEventListener('click', addProgressBarFromStudio);
+  if (!button.isConnected) {
+    sliderButton.insertAdjacentElement('afterend', button);
+    button.addEventListener('click', addProgressBarFromStudio);
+  }
+  let scroll = toolbar.querySelector('#addScrollBar');
+  if (!scroll) {
+    scroll = document.createElement('button');
+    scroll.id = 'addScrollBar';
+    scroll.className = 'secondary small';
+    scroll.type = 'button';
+    scroll.textContent = '+ ScrollBar';
+    scroll.setAttribute('aria-label', 'Add ScrollBar');
+    scroll.title = 'Add an interactive source-backed ScrollBar preset. It remains Slider changed(value) semantics and uses # @slider-mode scrollbar.';
+    button.insertAdjacentElement('afterend', scroll);
+    scroll.addEventListener('click', addScrollBarFromStudio);
+  }
   return true;
 }
 
@@ -116,6 +138,27 @@ function addProgressBarFromStudio(event) {
   }
 }
 
+function addScrollBarFromStudio(event) {
+  event?.preventDefault?.();
+  event?.stopImmediatePropagation?.();
+  if (!code) return;
+  try {
+    const windowIndex = activeFormIndex();
+    let next = addDesignerControl(code.value, 'slider', { windowIndex });
+    const added = listDesignerControls(next).filter(control => control.windowIndex === windowIndex && control.type === 'slider').at(-1);
+    if (!added?.id) throw new Error('Designer created a Slider but could not locate its source-backed id.');
+    const line = findSliderLineById(next, added.id);
+    next = setWindowSliderPresentation(next, line, 'scrollbar');
+    setSource(next);
+    requestAnimationFrame(() => {
+      document.querySelector(`#designerCanvas .designer-control[data-window-index="${added.windowIndex}"][data-control-index="${added.controlIndex}"]`)?.click?.();
+      scheduleProgressBarSync();
+    });
+  } catch (error) {
+    showDesignerInspectorError(error, { document });
+  }
+}
+
 function ensureProgressBarInspector() {
   const form = document.querySelector('#designerInspectorForm');
   if (!form || form.querySelector('#designerInspectorSliderPresentationField')) return Boolean(form?.querySelector('#designerInspectorSliderPresentationField'));
@@ -127,8 +170,9 @@ function ensureProgressBarInspector() {
     <select id="designerInspectorSliderPresentation" aria-describedby="designerInspectorSliderPresentationHint">
       <option value="plain">Slider</option>
       <option value="progress">ProgressBar</option>
+      <option value="scrollbar">ScrollBar</option>
     </select>
-    <small id="designerInspectorSliderPresentationHint" class="inspector-hint">ProgressBar is a passive source-backed number-state presentation. Stage 1 is Studio/Web; Current Ready native 1.10 fails closed.</small>`;
+    <small id="designerInspectorSliderPresentationHint" class="inspector-hint">ProgressBar is a passive source-backed number-state presentation. ScrollBar stays interactive with ordinary Slider changed(value). Both presentations are Studio/Web and fail closed on Current Ready native 1.10.</small>`;
   form.appendChild(field);
   field.querySelector('#designerInspectorSliderPresentation')?.addEventListener('change', applyProgressBarInspector);
   return true;
@@ -245,6 +289,7 @@ function syncProgressBarSurfaces() {
     const ast = parse(code.value);
     const manifest = buildWindowSliderPresentationManifest(code.value, ast);
     progressIds = new Set(manifest.controls.filter(control => control.mode === 'progress').map(control => control.id).filter(Boolean));
+    var scrollBarIds = new Set(manifest.controls.filter(control => control.mode === 'scrollbar').map(control => control.id).filter(Boolean));
   } catch {
     return;
   }
@@ -256,6 +301,7 @@ function syncProgressBarSurfaces() {
       const id = sliderId(slider);
       if (!id) continue;
       if (progressIds.has(id)) renderProgressPresentation(slider, id, root.id === 'app');
+      else if (scrollBarIds.has(id)) renderScrollBarPresentation(slider, id, root.id === 'app');
       else restoreSliderPresentation(slider, root.id === 'app');
     }
   }
@@ -306,9 +352,22 @@ function renderProgressPresentation(slider, id, interactiveRoot) {
   if (interactiveRoot) slider.setAttribute('aria-label', `${id} ProgressBar`);
 }
 
+function renderScrollBarPresentation(slider, id, interactiveRoot) {
+  restoreSliderPresentation(slider, interactiveRoot);
+  slider.classList.add('patch-scrollbar-studio');
+  slider.dataset.patchSliderPresentation = 'scrollbar';
+  const input = slider.querySelector('input[type=\"range\"]');
+  if (!input) return;
+  input.disabled = !interactiveRoot;
+  input.removeAttribute('aria-hidden');
+  input.setAttribute('aria-label', `${id} scrollbar`);
+  input.setAttribute('aria-roledescription', 'scroll bar');
+  if (interactiveRoot) input.removeAttribute('tabindex'); else input.tabIndex = -1;
+}
+
 function restoreSliderPresentation(slider, interactiveRoot) {
-  if (!slider.classList.contains('patch-progressbar-studio')) return;
-  slider.classList.remove('patch-progressbar-studio');
+  if (!slider.classList.contains('patch-progressbar-studio') && !slider.classList.contains('patch-scrollbar-studio')) return;
+  slider.classList.remove('patch-progressbar-studio', 'patch-scrollbar-studio');
   delete slider.dataset.patchSliderPresentation;
   slider.querySelector('progress.patch-progressbar-meter')?.remove();
   slider.querySelector('.patch-progressbar-value')?.remove();
@@ -316,6 +375,7 @@ function restoreSliderPresentation(slider, interactiveRoot) {
   if (input) {
     input.classList.remove('patch-progressbar-source');
     input.removeAttribute('aria-hidden');
+    input.removeAttribute('aria-roledescription');
     input.removeAttribute('tabindex');
     input.disabled = !interactiveRoot;
   }

@@ -20,6 +20,7 @@ window "Component Gallery" as components size 1080, 760:
     row "Separator", "Shape line Designer preset", "Ready"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
+    row "ScrollBar", "Interactive Slider presentation", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
     row "ScrollBox", "Panel auto-scroll", "Studio/Web"
     row "SplitContainer", "Two-pane Panel", "Studio/Web"
@@ -39,6 +40,7 @@ window "Component Gallery" as components size 1080, 760:
         node "ComboBox"
         node "ListBox"
         node "Slider"
+        node "ScrollBar"
       node "Data"
         node "Table"
         node "TreeView"
@@ -91,6 +93,8 @@ window "Component Gallery" as components size 1080, 760:
     button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40
     button "Split Lab" as gallery_split at 18, 264 size 150, 40
     button "Calendar Lab" as gallery_calendar at 182, 264 size 148, 40
+    # @slider-mode scrollbar
+    slider 0..100 as scroll_position step 5 at 18, 368 size 312, 28
     # @button-mode link
     button "LinkLabel action" as gallery_link at 18, 318 size 180, 34
 

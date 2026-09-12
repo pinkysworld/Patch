@@ -169,6 +169,7 @@ Implemented R4 Stage 1 surfaces:
 - [x] Separator as a source-backed Designer preset over canonical `shape line`, retaining existing Shape Web/native support and requiring no language or IR version bump
 - [x] CheckedListBox as `# @listbox-mode checked` presentation of list-backed ListBox, Studio/Web supported and Current Ready native fail-closed
 - [x] ProgressBar as passive number-backed Slider presentation via `# @slider-mode progress`, Studio/Web supported with no control event and Current Ready native fail-closed
+- [x] ScrollBar as interactive Slider presentation via `# @slider-mode scrollbar`, preserving numeric `changed(value)` semantics in Studio/Web with Current Ready native fail-closed
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
 - [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed
 - [x] SplitContainer as block-local two-pane Panel behavior via `# @panel-split ...` plus `# @panel-split-break`, with source-backed initial ratio, transient runtime divider resizing and Current Ready native fail-closed
