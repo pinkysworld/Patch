@@ -17,6 +17,8 @@ create text nested_code = ""
 create text nested_number = "42"
 create text review_date = "2026-09-10"
 create text review_time = "14:30"
+create text calendar_date = "2026-09-12"
+create text calendar_status = "Calendar ready"
 create text gallery_status = "Component Gallery ready"
 create text dialog_status = "Dialogs ready"
 create text split_status = "SplitContainer ready"
@@ -107,7 +109,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker and the current Panel/List/Slider presentations stay source-backed."
+      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar and the current Panel/List/Slider presentations stay source-backed."
 
   # @layout anchor right bottom
   panel as actions_panel at 780, 436 size 376, 318:

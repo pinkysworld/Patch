@@ -15,6 +15,7 @@ window "Component Gallery" as components size 1080, 760:
     row "NumberEdit", "Numeric Input presentation", "Studio/Web"
     row "DatePicker", "Date Input presentation", "Studio/Web"
     row "TimePicker", "Time Input presentation", "Studio/Web"
+    row "Calendar", "Inline month-grid Input", "Studio/Web"
     row "CheckedListBox", "List presentation", "Studio/Web"
     row "ProgressBar", "Passive Slider", "Studio/Web"
     row "GroupBox", "Panel presentation", "Studio/Web"
@@ -82,6 +83,7 @@ window "Component Gallery" as components size 1080, 760:
     text "Scroll for the second action" at 18, 174 size 250, 22
     button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40
     button "Split Lab" as gallery_split at 18, 264 size 150, 40
+    button "Calendar Lab" as gallery_calendar at 182, 264 size 148, 40
 
   button "Close Gallery" as close_gallery at 24, 690 size 180, 40
   statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28
@@ -133,3 +135,22 @@ window "Split Lab" as split_lab size 820, 560:
   button "Back to Gallery" as split_gallery at 44, 490 size 180, 40
   button "Close Split Lab" as close_split_lab at 240, 490 size 180, 40
   statusbar "{split_status}" as split_statusbar at 0, 532 size 820, 28
+
+window "Calendar Lab" as calendar_lab size 760, 620:
+  # @locked
+  shape rounded as calendar_header fill #fff7ed stroke #fed7aa stroke-width 1 radius 20 opacity 1 at 24, 18 size 712, 84
+  text "Calendar Lab" at 44, 36 size 300, 32
+  text "An inline month grid backed by ordinary ISO date text and explicit change." at 44, 68 size 520, 22
+  text "{calendar_status}" at 548, 42 size 168, 38
+
+  # @locked
+  shape rounded as calendar_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 124 size 712, 388
+  # @input-mode calendar
+  input calendar_date at 44, 148 size 320, 330
+  text "Selected date" at 400, 166 size 180, 22
+  text "{calendar_date}" at 400, 198 size 280, 32
+  text "Month navigation is transient UI state. Selecting a day emits changed(value); only the handler persists it." at 400, 250 size 292, 96
+
+  button "Back to Gallery" as calendar_gallery at 44, 536 size 180, 40
+  button "Close Calendar Lab" as close_calendar_lab at 240, 536 size 190, 40
+  statusbar "{calendar_status}" as calendar_statusbar at 0, 592 size 760, 28

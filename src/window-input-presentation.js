@@ -10,7 +10,7 @@ import {
   patchInputMaskPlaceholder
 } from './input-presentation.js';
 
-export const PATCH_WINDOW_INPUT_PRESENTATION_VERSION = '0.3';
+export const PATCH_WINDOW_INPUT_PRESENTATION_VERSION = '0.4';
 export const PATCH_WINDOW_INPUT_PRESENTATION_FORMAT = 'patch-window-input-presentation';
 export const PATCH_WINDOW_INPUT_MASK_VERSION = '0.1';
 export const PATCH_WINDOW_INPUT_MASK_FORMAT = 'patch-window-input-mask';
@@ -103,7 +103,7 @@ export function setWindowInputPresentation(source, sourceLine, mode) {
   }
 
   if (normalized !== 'plain') {
-    const label = normalized === 'date' ? 'DatePicker' : normalized === 'time' ? 'TimePicker' : 'PasswordEdit';
+    const label = normalized === 'date' ? 'DatePicker' : normalized === 'time' ? 'TimePicker' : normalized === 'calendar' ? 'Calendar' : 'PasswordEdit';
     if (readNumberEditFromRows(rows, sourceLine)) {
       throw new Error(`${label} cannot be enabled while NumberEdit is active. Change the Input mode to Text first.`);
     }
@@ -154,6 +154,16 @@ export function collectWindowTimeInputIds(source, ast) {
   return ids;
 }
 
+export function collectWindowCalendarInputIds(source, ast) {
+  const rows = sourceRows(source);
+  const ids = [];
+  walkControls(ast, node => {
+    if (node.control !== 'input' || !node.id) return;
+    if ((readInputPresentationFromRows(rows, node.line) ?? 'plain') === 'calendar') ids.push(node.id);
+  });
+  return ids;
+}
+
 export function buildWindowInputMaskManifest(source, ast) {
   const rows = sourceRows(source);
   const controls = [];
@@ -165,7 +175,7 @@ export function buildWindowInputMaskManifest(source, ast) {
     if (node.control !== 'input' || mask === null) return;
     const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
     if (mode !== 'plain') {
-      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : 'PasswordEdit';
+      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : mode === 'calendar' ? 'Calendar' : 'PasswordEdit';
       throw new Error(`Input '${node.id ?? '?'}' cannot combine ${label} and MaskedEdit presentation metadata.`);
     }
     if (readNumberEditFromRows(rows, node.line)) {
@@ -251,7 +261,7 @@ export function setWindowInputMask(source, sourceLine, mask) {
   const normalized = normalizePatchInputMask(mask);
   const presentation = readInputPresentationFromRows(rows, sourceLine) ?? 'plain';
   if (presentation !== 'plain') {
-    throw new Error(`MaskedEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : 'Password'}. Change the Input mode to Text first.`);
+    throw new Error(`MaskedEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : presentation === 'calendar' ? 'Calendar' : 'Password'}. Change the Input mode to Text first.`);
   }
   if (readNumberEditFromRows(rows, sourceLine)) {
     throw new Error('MaskedEdit cannot be enabled while NumberEdit is active. Change the Input mode to Text first.');
@@ -286,7 +296,7 @@ export function buildWindowNumberEditManifest(source, ast) {
     const mode = readInputPresentationFromRows(rows, node.line) ?? 'plain';
     const mask = readInputMaskFromRows(rows, node.line);
     if (mode !== 'plain') {
-      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : 'PasswordEdit';
+      const label = mode === 'date' ? 'DatePicker' : mode === 'time' ? 'TimePicker' : mode === 'calendar' ? 'Calendar' : 'PasswordEdit';
       throw new Error(`Input '${node.id ?? '?'}' cannot combine NumberEdit and ${label} presentation metadata.`);
     }
     if (mask !== null) {
@@ -361,7 +371,7 @@ export function setWindowNumberEdit(source, sourceLine, enabled = true) {
   }
   const presentation = readInputPresentationFromRows(rows, sourceLine) ?? 'plain';
   if (presentation !== 'plain') {
-    throw new Error(`NumberEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : 'Password'}. Change the Input mode to Text first.`);
+    throw new Error(`NumberEdit cannot be enabled while Input mode is ${presentation === 'date' ? 'Date' : presentation === 'time' ? 'Time' : presentation === 'calendar' ? 'Calendar' : 'Password'}. Change the Input mode to Text first.`);
   }
   if (readInputMaskFromRows(rows, sourceLine) !== null) {
     throw new Error('NumberEdit cannot be enabled while MaskedEdit is active. Change the Input mode to Text first.');
@@ -481,6 +491,8 @@ function installInputPresentationStudio() {
   ensureNumberEditButton();
   ensureDatePickerButton();
   ensureTimePickerButton();
+  ensureCalendarButton();
+  ensureCalendarStyle();
   ensureInputPresentationInspector();
   ensureInputMaskInspector();
   installInputPresentationObservers();
@@ -493,6 +505,7 @@ function installInputPresentationStudio() {
       ensureNumberEditButton();
       ensureDatePickerButton();
       ensureTimePickerButton();
+      ensureCalendarButton();
       ensureInputPresentationInspector();
       ensureInputMaskInspector();
       installInputPresentationObservers();
@@ -512,6 +525,7 @@ function studioSurfaceReady() {
     document.querySelector('#addNumberEdit') &&
     document.querySelector('#addDatePicker') &&
     document.querySelector('#addTimePicker') &&
+    document.querySelector('#addCalendar') &&
     document.querySelector('#designerInspectorInputPresentationField') &&
     document.querySelector('#designerInspectorInputMaskField')
   );
@@ -622,6 +636,11 @@ async function addTimePickerFromStudio(event) {
   await addInputPreset('time');
 }
 
+async function addCalendarFromStudio(event) {
+  event?.preventDefault?.();
+  await addInputPreset('calendar');
+}
+
 async function addInputPreset(kind) {
   const code = document.querySelector('#code');
   if (!code) return;
@@ -637,6 +656,7 @@ async function addInputPreset(kind) {
     else if (kind === 'masked') next = setWindowInputMask(next, input.line, DEFAULT_MASK);
     else if (kind === 'date') next = setWindowInputPresentation(next, input.line, 'date');
     else if (kind === 'time') next = setWindowInputPresentation(next, input.line, 'time');
+    else if (kind === 'calendar') next = setWindowInputPresentation(next, input.line, 'calendar');
     else next = setWindowNumberEdit(next, input.line, true);
     setStudioSource(code, next);
     input = findDesignerInputById(await designerApi(), next, input.id) ?? input;
@@ -649,6 +669,22 @@ async function addInputPreset(kind) {
   } catch (error) {
     showInputPresentationError(error);
   }
+}
+
+function ensureCalendarButton() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  const anchor = toolbar?.querySelector('#addTimePicker') ?? toolbar?.querySelector('#addDatePicker') ?? toolbar?.querySelector('#addInput');
+  if (!toolbar || !anchor || toolbar.querySelector('#addCalendar')) return Boolean(toolbar?.querySelector('#addCalendar'));
+  const button = document.createElement('button');
+  button.id = 'addCalendar';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Calendar';
+  button.setAttribute('aria-label', 'Add Calendar');
+  button.title = 'Add a source-backed Calendar preset. It remains an Input, uses # @input-mode calendar and changed(value) stays ISO date text.';
+  anchor.insertAdjacentElement('afterend', button);
+  button.addEventListener('click', addCalendarFromStudio);
+  return true;
 }
 
 function ensureInputPresentationInspector() {
@@ -668,8 +704,9 @@ function ensureInputPresentationInspector() {
         <option value="number">Number</option>
         <option value="date">Date</option>
         <option value="time">Time</option>
+        <option value="calendar">Calendar</option>
       </select>
-      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password, Masked, Number, Date and Time are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
+      <small id="designerInspectorInputPresentationHint" class="inspector-hint">Source-backed presentation. Password, Masked, Number, Date, Time and Calendar are Studio/Web Stage 1; Current Ready native 1.10 fails closed.</small>`;
     form.appendChild(field);
     field.querySelector('#designerInspectorInputPresentation')?.addEventListener('change', applyInputPresentationInspector);
   } else {
@@ -799,6 +836,10 @@ async function applyInputPresentationInspector() {
       next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
       next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'time'));
+    } else if (select.value === 'calendar') {
+      next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
+      next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
+      next = mutateInputById(next, control.id, line => setWindowInputPresentation(next, line, 'calendar'));
     } else {
       next = mutateInputById(next, control.id, line => setWindowInputMask(next, line, null));
       next = mutateInputById(next, control.id, line => setWindowNumberEdit(next, line, false));
@@ -897,6 +938,7 @@ async function syncInputPresentationSurfaces() {
   let passwordIds;
   let dateIds;
   let timeIds;
+  let calendarIds;
   let numberIds;
   let masks;
   try {
@@ -905,6 +947,7 @@ async function syncInputPresentationSurfaces() {
     passwordIds = new Set(collectWindowPasswordInputIds(code.value, ast));
     dateIds = new Set(collectWindowDateInputIds(code.value, ast));
     timeIds = new Set(collectWindowTimeInputIds(code.value, ast));
+    calendarIds = new Set(collectWindowCalendarInputIds(code.value, ast));
     numberIds = new Set(collectWindowNumberEditInputIds(code.value, ast));
     masks = new Map(collectWindowInputMasks(code.value, ast).map(control => [control.id, control.mask]));
   } catch {
@@ -912,16 +955,18 @@ async function syncInputPresentationSurfaces() {
   }
   if (generation !== presentationGeneration) return;
 
-  for (const root of [document.querySelector('#designerCanvas'), document.querySelector('#app')]) {
+  for (const [root, interactive] of [[document.querySelector('#designerCanvas'), false], [document.querySelector('#app'), true]]) {
     for (const input of root?.querySelectorAll?.('input.patch-input') ?? []) {
       const id = String(input.placeholder ?? '');
       const numberEdit = numberIds.has(id);
       const date = dateIds.has(id);
       const time = timeIds.has(id);
+      const calendar = calendarIds.has(id);
       const password = passwordIds.has(id);
       const mask = masks.get(id) ?? null;
+      if (!calendar) unwrapStudioCalendar(input);
       input.type = numberEdit ? 'number' : date ? 'date' : time ? 'time' : password ? 'password' : 'text';
-      input.dataset.patchInputPresentation = numberEdit ? 'number' : date ? 'date' : time ? 'time' : password ? 'password' : mask ? 'masked' : 'plain';
+      input.dataset.patchInputPresentation = numberEdit ? 'number' : date ? 'date' : time ? 'time' : calendar ? 'calendar' : password ? 'password' : mask ? 'masked' : 'plain';
       input.removeAttribute('step');
       if (numberEdit) {
         clearMaskFromStudioInput(input);
@@ -934,6 +979,10 @@ async function syncInputPresentationSurfaces() {
       } else if (time) {
         clearMaskFromStudioInput(input);
         input.setAttribute('aria-label', `${id || 'Time'} time input`);
+      } else if (calendar) {
+        clearMaskFromStudioInput(input);
+        input.setAttribute('aria-label', `${id || 'Calendar'} calendar input`);
+        syncStudioCalendar(input, id, interactive);
       } else if (mask && !password) applyMaskToStudioInput(input, id, mask);
       else clearMaskFromStudioInput(input);
     }
@@ -958,6 +1007,196 @@ function applyMaskToStudioInput(input, id, mask) {
       try { input.setSelectionRange(next.length, next.length); } catch { /* input may not support selection */ }
     }, true);
   }
+}
+
+const CALENDAR_MONTHS = Object.freeze(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']);
+const CALENDAR_WEEKDAYS = Object.freeze(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+const CALENDAR_LAYOUT_PROPS = Object.freeze(['position', 'left', 'top', 'right', 'bottom', 'width', 'height', 'margin', 'maxWidth', 'minWidth', 'maxHeight', 'minHeight', 'boxSizing']);
+
+function ensureCalendarStyle() {
+  if (document.querySelector('#patchCalendarStage1Style')) return;
+  const style = document.createElement('style');
+  style.id = 'patchCalendarStage1Style';
+  style.textContent = `
+.patch-calendar-stage1{display:flex;flex-direction:column;gap:5px;width:294px;max-width:100%;padding:7px;border:1px solid var(--border-strong,#d4d4d8);border-radius:10px;background:var(--surface,#fff);color:var(--text,#18181b);box-sizing:border-box}
+.patch-calendar-stage1>.patch-input{position:static!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;width:100%!important;max-width:none!important;height:32px!important;min-height:32px!important;margin:0!important;box-sizing:border-box}
+.patch-calendar-stage1-head{display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:4px}
+.patch-calendar-stage1-title{text-align:center;font-size:12px;font-weight:750;line-height:28px;white-space:nowrap}
+.patch-calendar-stage1-nav,.patch-calendar-stage1-day{font:inherit;border:0;border-radius:6px;background:transparent;color:inherit;min-width:0;cursor:pointer}
+.patch-calendar-stage1-nav{height:28px;font-size:18px;line-height:1}
+.patch-calendar-stage1-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:100%}
+.patch-calendar-stage1-weekday{text-align:center;font-size:9px;font-weight:750;line-height:16px;opacity:.65}
+.patch-calendar-stage1-day{height:24px;padding:0;font-size:10px;font-weight:650}
+.patch-calendar-stage1-day:hover,.patch-calendar-stage1-day:focus-visible{background:color-mix(in srgb,var(--text,#18181b) 10%,transparent);outline:none}
+.patch-calendar-stage1-day[aria-pressed="true"]{background:var(--text,#18181b);color:var(--surface,#fff)}
+.patch-calendar-stage1-day:disabled{opacity:.18;cursor:default}
+#designerCanvas .patch-calendar-stage1-nav,#designerCanvas .patch-calendar-stage1-day{pointer-events:none}
+`;
+  document.head?.appendChild(style);
+}
+
+function parseCalendarIsoDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? '').trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return { year, month: month - 1, day };
+}
+
+function calendarIsoDate(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function moveCalendarLayoutToHost(input, host) {
+  if (input.dataset.patchCalendarMovedStyle) return;
+  const moved = {};
+  for (const property of CALENDAR_LAYOUT_PROPS) {
+    const value = input.style[property];
+    if (!value) continue;
+    moved[property] = value;
+    host.style[property] = value;
+    input.style[property] = '';
+  }
+  input.dataset.patchCalendarMovedStyle = JSON.stringify(moved);
+  if (input.dataset.patchControlKey) {
+    host.dataset.patchControlKey = input.dataset.patchControlKey;
+    delete input.dataset.patchControlKey;
+    host.__patchControlFingerprint = input.__patchControlFingerprint;
+  }
+  input.dataset.patchCalendarPreviousReadOnly = input.readOnly ? '1' : '0';
+}
+
+function restoreCalendarLayoutFromHost(input, host) {
+  try {
+    const moved = JSON.parse(input.dataset.patchCalendarMovedStyle || '{}');
+    for (const property of CALENDAR_LAYOUT_PROPS) {
+      input.style[property] = Object.prototype.hasOwnProperty.call(moved, property) ? moved[property] : '';
+    }
+  } catch { /* stale transient renderer metadata is safe to discard */ }
+  delete input.dataset.patchCalendarMovedStyle;
+  if (host?.dataset.patchControlKey) {
+    input.dataset.patchControlKey = host.dataset.patchControlKey;
+    input.__patchControlFingerprint = host.__patchControlFingerprint;
+  }
+  if (input.dataset.patchCalendarPreviousReadOnly !== undefined) {
+    input.readOnly = input.dataset.patchCalendarPreviousReadOnly === '1';
+    delete input.dataset.patchCalendarPreviousReadOnly;
+  }
+}
+
+function unwrapStudioCalendar(input) {
+  const host = input.closest?.('.patch-calendar-stage1');
+  if (!host) return;
+  restoreCalendarLayoutFromHost(input, host);
+  host.parentNode?.insertBefore(input, host);
+  host.remove();
+}
+
+function syncStudioCalendar(input, id, interactive) {
+  ensureCalendarStyle();
+  let host = input.closest?.('.patch-calendar-stage1');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'patch-calendar-stage1';
+    host.setAttribute('role', 'group');
+    input.parentNode?.insertBefore(host, input);
+    host.appendChild(input);
+    moveCalendarLayoutToHost(input, host);
+  }
+  host.dataset.patchCalendarId = id || '';
+  host.dataset.patchCalendarInteractive = interactive ? 'true' : 'false';
+  host.setAttribute('aria-label', `${id || 'Calendar'} calendar`);
+  input.readOnly = true;
+  const selected = parseCalendarIsoDate(input.value);
+  if (!host.dataset.patchCalendarViewYear || !host.dataset.patchCalendarViewMonth) {
+    const today = selected ?? (() => {
+      const now = new Date();
+      return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+    })();
+    host.dataset.patchCalendarViewYear = String(today.year);
+    host.dataset.patchCalendarViewMonth = String(today.month);
+  }
+  renderStudioCalendar(host, input, id, interactive);
+}
+
+function renderStudioCalendar(host, input, id, interactive) {
+  const year = Number(host.dataset.patchCalendarViewYear);
+  const month = Number(host.dataset.patchCalendarViewMonth);
+  const selected = parseCalendarIsoDate(input.value);
+  const signature = `${year}:${month}:${input.value}:${interactive ? 1 : 0}`;
+  if (host.dataset.patchCalendarSignature === signature) return;
+  host.dataset.patchCalendarSignature = signature;
+
+  for (const child of [...host.children]) if (child !== input) child.remove();
+
+  const head = document.createElement('div');
+  head.className = 'patch-calendar-stage1-head';
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.className = 'patch-calendar-stage1-nav';
+  previous.textContent = '‹';
+  previous.setAttribute('aria-label', 'Previous month');
+  previous.disabled = !interactive;
+  const title = document.createElement('div');
+  title.className = 'patch-calendar-stage1-title';
+  title.textContent = `${CALENDAR_MONTHS[month]} ${year}`;
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = 'patch-calendar-stage1-nav';
+  next.textContent = '›';
+  next.setAttribute('aria-label', 'Next month');
+  next.disabled = !interactive;
+  head.append(previous, title, next);
+
+  const grid = document.createElement('div');
+  grid.className = 'patch-calendar-stage1-grid';
+  grid.setAttribute('role', 'grid');
+  for (const weekday of CALENDAR_WEEKDAYS) {
+    const label = document.createElement('div');
+    label.className = 'patch-calendar-stage1-weekday';
+    label.textContent = weekday;
+    label.setAttribute('role', 'columnheader');
+    grid.appendChild(label);
+  }
+  const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let cell = 0; cell < 42; cell += 1) {
+    const day = cell - firstOffset + 1;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'patch-calendar-stage1-day';
+    if (day < 1 || day > daysInMonth) {
+      button.disabled = true;
+      button.setAttribute('aria-hidden', 'true');
+      grid.appendChild(button);
+      continue;
+    }
+    const iso = calendarIsoDate(year, month, day);
+    button.textContent = String(day);
+    button.setAttribute('aria-label', iso);
+    button.setAttribute('aria-pressed', selected?.year === year && selected?.month === month && selected?.day === day ? 'true' : 'false');
+    button.disabled = !interactive;
+    if (interactive) button.addEventListener('click', () => {
+      input.value = iso;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    grid.appendChild(button);
+  }
+  const navigate = delta => {
+    const target = new Date(year, month + delta, 1);
+    host.dataset.patchCalendarViewYear = String(target.getFullYear());
+    host.dataset.patchCalendarViewMonth = String(target.getMonth());
+    host.dataset.patchCalendarSignature = '';
+    renderStudioCalendar(host, input, id, interactive);
+  };
+  if (interactive) {
+    previous.addEventListener('click', () => navigate(-1));
+    next.addEventListener('click', () => navigate(1));
+  }
+  host.append(head, grid);
 }
 
 function clearMaskFromStudioInput(input) {

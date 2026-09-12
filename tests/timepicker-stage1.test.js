@@ -66,7 +66,7 @@ test('TimePicker compile metadata preserves ordinary Input and Change IR 0.10 se
   const compiled = compile(SOURCE, { name: 'Schedule', kind: 'window', entry: 'main.patch' });
   const input = compiled.ast.find(node => node.kind === 'window').body.find(node => node.control === 'input');
   assert.equal(compiled.ir.version, '0.10');
-  assert.equal(compiled.windowInputPresentation.version, '0.3');
+  assert.equal(compiled.windowInputPresentation.version, '0.4');
   assert.equal(input.control, 'input');
   assert.equal(input.inputPresentation, 'time');
 });
@@ -74,7 +74,7 @@ test('TimePicker compile metadata preserves ordinary Input and Change IR 0.10 se
 test('Standalone Window Web renders TimePicker as browser time input while changed(value) stays text', () => {
   const built = buildStandaloneWebApp(SOURCE, { name: 'Schedule', kind: 'window' });
   assert.equal(built.metadata.timePickerStage, 1);
-  assert.equal(built.metadata.timePickerVersion, '0.3');
+  assert.equal(built.metadata.timePickerVersion, '0.4');
   assert.equal(built.metadata.timePickerMode, 'source-backed-time-input');
   assert.equal(built.metadata.timePickerEventValue, 'local-time-text');
   assert.match(built.html, /control\.inputPresentation==='time'/);
