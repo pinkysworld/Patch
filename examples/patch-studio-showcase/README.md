@@ -24,6 +24,7 @@ The visual fixture should remain presentation-ready. New controls should be inte
 The Showcase is a project-v4 multi-file bundle with a real project PNG resource and currently covers:
 
 - every Component Registry 0.10 type: Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer and ImageList;
+- advanced Table columns as source-backed `# @table-columns 136:left, 174:left, 104:center`, proving per-column pixel/auto width and left/center/right alignment without changing Table row or event semantics;
 - PasswordEdit and MaskedEdit source-backed Input presentations;
 - NumberEdit as the source-backed `# @number-edit` Input presentation;
 - DatePicker as the source-backed `# @input-mode date` Input presentation with ISO date text;

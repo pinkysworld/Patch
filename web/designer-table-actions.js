@@ -1,6 +1,11 @@
 import { listDesignerControls } from '../src/designer.js';
 import { updateDesignerTableData } from '../src/designer-data.js';
 import {
+  defaultTableColumnPresentation,
+  readWindowTableColumnPresentation,
+  setWindowTableColumnPresentation
+} from '../src/table-column-presentation.js';
+import {
   duplicateTableColumn,
   duplicateTableRow,
   moveTableColumn,
@@ -137,9 +142,15 @@ function handleClick(event) {
       columnIndex: Number.isInteger(result.columnIndex) ? result.columnIndex : remembered.columnIndex
     });
     const nextData = { columns: result.columns, rows: result.rows };
-    const next = context.kind === 'nested'
+    let next = context.kind === 'nested'
       ? updateDesignerTabPageTableData(code.value, context.tabs, context.pageIndex, context.table.controlIndex, nextData)
       : updateDesignerTableData(code.value, context.table, nextData);
+    const updatedTop = context.kind === 'nested' ? listDesignerControls(next).find(item => item.windowIndex === context.tabs.windowIndex && item.controlIndex === context.tabs.controlIndex && item.type === 'tabs') : null;
+    const updated = context.kind === 'nested'
+      ? (updatedTop ? listDesignerTabPageControls(next, updatedTop, context.pageIndex).find(item => item.controlIndex === context.table.controlIndex && item.type === 'table') : null)
+      : listDesignerControls(next).find(item => item.windowIndex === context.table.windowIndex && item.controlIndex === context.table.controlIndex && item.type === 'table');
+    if (!updated) throw new Error('Updated Table could not be located after advanced column action.');
+    next = setWindowTableColumnPresentation(next, updated.line, result.presentation, result.columns.length);
     setSource(next);
   } catch (error) {
     showDesignerInspectorError(error, { document });
@@ -183,7 +194,16 @@ function readTableDraft(context) {
   const rows = sourceRows.map((_, rowIndex) => columns.map((__, cellIndex) =>
     panel.querySelector(`[${cellAttribute}="${rowIndex}:${cellIndex}"]`)?.value.trim() ?? '""'
   ));
-  return { columns, rows };
+  const presentation = readWindowTableColumnPresentation(code.value, context.table.line, columns.length) ?? defaultTableColumnPresentation(columns.length);
+  const widthAttribute = nested ? 'data-tabs-table-column-width' : 'data-table-column-width';
+  const alignAttribute = nested ? 'data-tabs-table-column-align' : 'data-table-column-align';
+  for (let index = 0; index < columns.length; index += 1) {
+    const widthInput = panel.querySelector(`[${widthAttribute}="${index}"]`);
+    const alignInput = panel.querySelector(`[${alignAttribute}="${index}"]`);
+    if (widthInput) presentation[index].width = widthInput.value.trim() ? Number(widthInput.value) : null;
+    if (alignInput) presentation[index].align = alignInput.value || 'left';
+  }
+  return { columns, rows, presentation };
 }
 
 function contextKey(context) {

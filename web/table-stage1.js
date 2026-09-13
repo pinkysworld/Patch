@@ -1,5 +1,6 @@
 import { parse } from '../src/parser.js';
 import { evaluateLoose } from '../src/expression.js';
+import { readWindowTableColumnPresentation } from '../src/table-column-presentation.js';
 import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import {
   addDesignerControl,
@@ -79,7 +80,8 @@ function tableAdapterFingerprint(node, options = {}) {
     rows: node?.rows ?? [],
     layout: node?.layout ?? null,
     interactive: options.interactive === true,
-    hasHandler: options.hasHandler === true
+    hasHandler: options.hasHandler === true,
+    columnPresentation: options.columnPresentation ?? null
   });
 }
 
@@ -131,7 +133,8 @@ function syncContainer(container, designer) {
           interactive: !designer,
           container,
           key,
-          hasHandler: Boolean(node.id && changedHandlers.has(node.id))
+          hasHandler: Boolean(node.id && changedHandlers.has(node.id)),
+          columnPresentation: readWindowTableColumnPresentation(code.value, node.line, node.columns?.length ?? 0)
         };
         const fingerprint = tableAdapterFingerprint(node, tableOptions);
         let element = existingTables.get(key) ?? null;
@@ -283,12 +286,25 @@ function createTable(node, options = {}) {
   const table = document.createElement('table');
   table.className = 'patch-table';
   if (node.id) table.setAttribute('aria-label', `${node.id} table`);
+  const presentation = options.columnPresentation ?? [];
+  if (presentation.length) {
+    const colgroup = document.createElement('colgroup');
+    for (const spec of presentation) {
+      const col = document.createElement('col');
+      if (Number.isInteger(spec?.width)) col.style.width = `${spec.width}px`;
+      colgroup.appendChild(col);
+    }
+    table.appendChild(colgroup);
+  }
   const head = document.createElement('thead');
   const headRow = document.createElement('tr');
-  for (const column of node.columns ?? []) {
+  for (let columnIndex = 0; columnIndex < (node.columns ?? []).length; columnIndex += 1) {
+    const column = node.columns[columnIndex];
     const th = document.createElement('th');
     th.scope = 'col';
     th.textContent = displayExpression(column);
+    const spec = presentation[columnIndex];
+    if (spec?.align) th.style.textAlign = spec.align;
     headRow.appendChild(th);
   }
   head.appendChild(headRow);
@@ -302,6 +318,8 @@ function createTable(node, options = {}) {
     for (let index = 0; index < (node.columns ?? []).length; index += 1) {
       const td = document.createElement('td');
       td.textContent = row[index] ?? '';
+      const spec = presentation[index];
+      if (spec?.align) td.style.textAlign = spec.align;
       tr.appendChild(td);
     }
     if (options.interactive) {

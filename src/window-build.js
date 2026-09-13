@@ -54,6 +54,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let sliders = 0;
   let progressBars = 0;
   let scrollBars = 0;
+  let advancedTableColumns = 0;
   let memos = 0;
   let paintboxes = 0;
   let imageLists = 0;
@@ -81,6 +82,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (!child?.id) return;
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId, node: child });
+    if (child.control === 'table' && Array.isArray(child.tableColumnPresentation)) advancedTableColumns += 1;
     if (child.control === 'tree') treeViews += 1;
     if (child.control === 'memo') memos += 1;
     if (child.control === 'paintbox') paintboxes += 1;
@@ -358,6 +360,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (advancedTableColumns && !options.allowAdvancedTableColumns) {
+    throw new WindowBuildError(
+      'Advanced Table columns Stage 1 is Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not encode source-backed per-column width/alignment; validation fails closed rather than silently discarding the column presentation.'
+    );
+  }
+
   if (memos && !options.allowMemo) {
     throw new WindowBuildError(
       'Memo Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no Memo contract; validation fails closed rather than lowering Memo as a single-line Input.'
@@ -395,6 +403,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     sliders,
     progressBars,
     scrollBars,
+    advancedTableColumns,
     memos,
     paintboxes,
     imageLists,

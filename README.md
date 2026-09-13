@@ -56,6 +56,7 @@ Patch Studio aims for a Delphi / Visual Basic style RAD workflow while keeping o
 - Anchors/Dock, grid snap, alignment, sizing, distribution, z-order, and Focus Order Stage 1;
 - source-backed Undo/Redo for editor and Designer changes;
 - structural editors for Table, TreeView, Tabs, and Panel;
+- advanced Table/DataGrid column presentation on Studio/Web through source-backed per-column width and alignment, with Current Ready native failing closed rather than dropping the metadata;
 - source-backed Studio/Web R4 presentations for PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, LinkLabel, CheckedListBox, ProgressBar, ScrollBar, GroupBox, ScrollBox, and SplitContainer, with unsupported Current Ready native combinations failing closed;
 - Separator Stage 1 as a source-backed Designer preset over canonical `shape line`, preserving the existing Studio/Web and current desktop-native Shape contract;
 - active-Form Designer materialization for larger projects;
