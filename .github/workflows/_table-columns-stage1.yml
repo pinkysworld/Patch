@@ -23,10 +23,12 @@ jobs:
         run: node scripts/_table-columns-harness-fix.mjs
       - name: Apply advanced Table columns Stage 1
         run: node scripts/_table-columns-stage1.mjs
+      - name: Add browser source closure
+        run: node scripts/_table-columns-site-fix.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused Table column regressions
-        run: npm test -- tests/table-columns-stage1.test.js tests/table-window.test.js tests/table-support-surface.test.js tests/table-stage1-reconciliation.test.js tests/designer-data-editors.test.js tests/designer-table-actions.test.js tests/studio-showcase.test.js
+        run: npm test -- tests/table-columns-stage1.test.js tests/table-window.test.js tests/table-support-surface.test.js tests/table-stage1-reconciliation.test.js tests/designer-data-editors.test.js tests/designer-table-actions.test.js tests/studio-showcase.test.js tests/studio-live-update.test.js
       - name: Full repository tests
         run: npm test
       - name: Example and project gates
@@ -42,7 +44,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/window-layout-policy.js \
+          git add scripts/build-site.js \
+            src/window-layout-policy.js \
             src/compiler.js \
             src/window-build.js \
             src/window-compiled.js \
