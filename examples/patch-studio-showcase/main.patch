@@ -8,6 +8,7 @@ create text theme = "Blue"
 create list features = ["Designer", "Web"]
 create number level = 60
 create number completion = 35
+create number scroll_position = 25
 create text status = "Patch Studio Showcase ready"
 create boolean can_save = true
 create boolean pinned = false

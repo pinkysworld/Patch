@@ -402,7 +402,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] Calendar Stage 1: ordinary Input plus `# @input-mode calendar`, Studio/Web inline month-grid presentation with transient month navigation and ISO date text `changed(value)`, Current Ready native unsupported/fail-closed;
 - [x] LinkLabel Stage 1: ordinary Button plus `# @button-mode link`, Studio/Web link presentation with ordinary `clicked` semantics and no implicit navigation, Current Ready native unsupported/fail-closed;
 - [x] Separator Stage 1: Designer preset over the canonical `shape line` control, source-backed with `separator_N` ids, Studio/Web and current Windows/macOS/Linux native Shape support without a new language or IR control type;
-- [ ] standalone ScrollBar where useful.
+- [x] standalone ScrollBar Stage 1: ordinary Slider plus `# @slider-mode scrollbar`, interactive Studio/Web scrollbar presentation preserving numeric `changed(value)` semantics, Current Ready native unsupported/fail-closed;
 
 ## P1 data/view controls
 

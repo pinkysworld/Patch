@@ -5,6 +5,7 @@ export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_MASKED_EDIT_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_CHECKED_LISTBOX_VERSION = '0.1';
 export const PATCH_WINDOW_WEB_PROGRESSBAR_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_SCROLLBAR_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
@@ -26,12 +27,14 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
   const maskedInputs = collectMaskedInputDescriptors(ast);
   const checkedListboxIds = collectCheckedListboxIds(ast);
   const progressBarIds = collectProgressBarIds(ast);
+  const scrollBarIds = collectScrollBarIds(ast);
   const hasPaintBoxes = Object.keys(descriptors).length > 0;
   const hasPasswordEdits = passwordInputIds.length > 0;
   const hasMaskedEdits = Object.keys(maskedInputs).length > 0;
   const hasCheckedListBoxes = checkedListboxIds.length > 0;
   const hasProgressBars = progressBarIds.length > 0;
-  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes && !hasProgressBars) return built;
+  const hasScrollBars = scrollBarIds.length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits && !hasMaskedEdits && !hasCheckedListBoxes && !hasProgressBars && !hasScrollBars) return built;
 
   let html = built.html;
   if (hasPaintBoxes) {
@@ -50,6 +53,11 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
     html = html
       .replace('</head>', `${progressBarStyle()}\n</head>`)
       .replace('</body>', `${progressBarRuntime(progressBarIds)}\n</body>`);
+  }
+  if (hasScrollBars) {
+    html = html
+      .replace('</head>', `${scrollBarStyle()}\n</head>`)
+      .replace('</body>', `${scrollBarRuntime(scrollBarIds)}\n</body>`);
   }
 
   return {
@@ -83,6 +91,12 @@ export function enhanceStandaloneWindowPaintBoxes(built) {
         progressBarStage: 1,
         progressBarVersion: PATCH_WINDOW_WEB_PROGRESSBAR_VERSION,
         progressBarMode: 'passive-number-state-presentation'
+      } : {}),
+      ...(hasScrollBars ? {
+        scrollBarStage: 1,
+        scrollBarVersion: PATCH_WINDOW_WEB_SCROLLBAR_VERSION,
+        scrollBarMode: 'interactive-slider-scrollbar-presentation',
+        scrollBarEvent: 'changed-number'
       } : {})
     }
   };
@@ -170,6 +184,14 @@ export function collectProgressBarIds(ast) {
   return ids;
 }
 
+export function collectScrollBarIds(ast) {
+  const ids = [];
+  walk(ast, node => {
+    if (node.kind === 'uiControl' && node.control === 'slider' && node.sliderPresentation === 'scrollbar' && node.id) ids.push(node.id);
+  });
+  return ids;
+}
+
 function clonePaintNodes(nodes) {
   return (nodes ?? []).map(node => {
     if (node.kind === 'drawPaint') {
@@ -201,6 +223,36 @@ function walk(nodes, visit) {
 function positiveDimension(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number >= 16 ? Math.round(number) : fallback;
+}
+
+function scrollBarStyle() {
+  return `<style data-patch-window-scrollbar>
+.patch-slider.patch-scrollbar{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-width:180px;color:inherit}.patch-slider.patch-scrollbar input[type="range"]{grid-column:1;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:#e4e4e7;appearance:none;-webkit-appearance:none}.patch-slider.patch-scrollbar input[type="range"]::-webkit-slider-thumb{width:48px;height:14px;border:1px solid #71717a;border-radius:999px;background:#a1a1aa;-webkit-appearance:none}.patch-slider.patch-scrollbar input[type="range"]::-moz-range-thumb{width:48px;height:14px;border:1px solid #71717a;border-radius:999px;background:#a1a1aa}.patch-slider.patch-scrollbar input[type="range"]::-moz-range-track{height:16px;border:0;border-radius:999px;background:#e4e4e7}.patch-slider.patch-scrollbar>.patch-slider-value,.patch-slider.patch-scrollbar>.patch-slider-range{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important}
+@media(prefers-color-scheme:dark){.patch-slider.patch-scrollbar input[type="range"]{background:#3f3f46}.patch-slider.patch-scrollbar input[type="range"]::-webkit-slider-thumb,.patch-slider.patch-scrollbar input[type="range"]::-moz-range-thumb{border-color:#a1a1aa;background:#71717a}}
+@media(forced-colors:active){.patch-slider.patch-scrollbar input[type="range"]{forced-color-adjust:auto}}
+</style>`;
+}
+
+function scrollBarRuntime(ids) {
+  const idJson = JSON.stringify(ids).replace(/</g, '\\u003c');
+  return `<script data-patch-window-scrollbar>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_SCROLLBAR_IDS=new Set(${idJson});
+  const patchScrollBarOriginalRenderControl=renderControl;
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchScrollBarOriginalRenderControl(control,windowId,controlIndex);
+    const id=String(control?.id||'');
+    if(control?.type!=='slider'||!PATCH_SCROLLBAR_IDS.has(id)||!element)return element;
+    element.classList?.add('patch-scrollbar');
+    element.dataset.patchSliderPresentation='scrollbar';
+    const input=element.querySelector?.('input[type="range"]');
+    if(input){input.setAttribute('aria-label',(id||'ScrollBar')+' scrollbar');input.setAttribute('aria-roledescription','scroll bar');}
+    return element;
+  };
+  render();
+})();
+</script>`;
 }
 
 function paintBoxStyle() {

@@ -191,6 +191,10 @@ function assertCurrentNativeSliderPresentation(nodes) {
       const name = node.id ? ` '${node.id}'` : '';
       throw new NativeGuiError(`ProgressBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no passive progress presentation contract; validation fails closed rather than lowering it as an interactive Slider.`);
     }
+    if (node?.kind === 'uiControl' && node.control === 'slider' && node.sliderPresentation === 'scrollbar') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`ScrollBar Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no standalone scrollbar presentation contract; validation fails closed rather than lowering it as an ordinary native Slider.`);
+    }
     if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
       assertCurrentNativeSliderPresentation(node.body);
     }

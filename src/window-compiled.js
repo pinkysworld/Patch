@@ -27,6 +27,7 @@ export function buildCompiledWindowArtifact(compiled) {
     allowTree: true,
     allowSlider: true,
     allowProgressBar: true,
+    allowScrollBar: true,
     allowMemo: true,
     allowPaintBox: true,
     allowImageList: true,

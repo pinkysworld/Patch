@@ -310,3 +310,9 @@ when close_calendar_lab clicked:
   close calendar_lab
   change status:
     set = "Returned from Calendar Lab"
+
+when scroll_position changed:
+  change scroll_position:
+    set = value
+  change gallery_status:
+    set = "ScrollBar position updated"
