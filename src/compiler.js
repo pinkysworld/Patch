@@ -35,6 +35,10 @@ import {
   buildWindowButtonPresentationManifest
 } from './button-presentation.js';
 import {
+  attachWindowTableColumnPresentations,
+  buildWindowTableColumnPresentationManifest
+} from './table-column-presentation.js';
+import {
   attachWindowListboxPresentations,
   buildWindowListboxPresentationManifest
 } from './input-presentation.js';
@@ -63,6 +67,7 @@ export function compile(source, options = {}) {
   const windowButtonPresentation = buildWindowButtonPresentationManifest(source, ast);
   const windowListboxPresentation = buildWindowListboxPresentationManifest(source, ast);
   const windowSliderPresentation = buildWindowSliderPresentationManifest(source, ast);
+  const windowTableColumnPresentation = buildWindowTableColumnPresentationManifest(source, ast);
   const windowPanelPresentation = buildWindowPanelPresentationManifest(source, ast);
   const windowPanelScroll = buildWindowPanelScrollManifest(source, ast);
   const windowPanelSplit = buildWindowPanelSplitManifest(source, ast);
@@ -90,6 +95,7 @@ export function compile(source, options = {}) {
   attachWindowButtonPresentations(ast, windowButtonPresentation);
   attachWindowListboxPresentations(ast, windowListboxPresentation);
   attachWindowSliderPresentations(ast, windowSliderPresentation);
+  attachWindowTableColumnPresentations(ast, windowTableColumnPresentation);
   attachWindowPanelPresentations(ast, windowPanelPresentation);
   attachWindowPanelScroll(ast, windowPanelScroll);
   attachWindowPanelSplits(ast, windowPanelSplit);
@@ -97,7 +103,7 @@ export function compile(source, options = {}) {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
     windowInputPresentation, windowInputMask, windowNumberEdit, windowButtonPresentation, windowListboxPresentation,
-    windowSliderPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit
+    windowSliderPresentation, windowTableColumnPresentation, windowPanelPresentation, windowPanelScroll, windowPanelSplit
   };
 }
 

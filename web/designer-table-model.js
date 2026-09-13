@@ -19,6 +19,7 @@ export function duplicateTableColumn(data, columnIndex) {
   const table = cloneTableData(data);
   requireIndex(columnIndex, table.columns.length, 'Table column');
   table.columns.splice(columnIndex + 1, 0, table.columns[columnIndex]);
+  table.presentation.splice(columnIndex + 1, 0, { ...table.presentation[columnIndex] });
   for (const row of table.rows) row.splice(columnIndex + 1, 0, row[columnIndex]);
   return { ...table, columnIndex: columnIndex + 1 };
 }
@@ -30,6 +31,7 @@ export function moveTableColumn(data, columnIndex, direction) {
   const target = columnIndex + delta;
   if (target < 0 || target >= table.columns.length) return { ...table, columnIndex };
   [table.columns[columnIndex], table.columns[target]] = [table.columns[target], table.columns[columnIndex]];
+  [table.presentation[columnIndex], table.presentation[target]] = [table.presentation[target], table.presentation[columnIndex]];
   for (const row of table.rows) [row[columnIndex], row[target]] = [row[target], row[columnIndex]];
   return { ...table, columnIndex: target };
 }
@@ -67,7 +69,10 @@ function cloneTableData(data) {
     if (cells.some(value => !value)) throw new Error(`Table row ${index + 1} cells cannot be empty.`);
     return cells;
   });
-  return { columns, rows };
+  const presentation = Array.isArray(data.presentation) && data.presentation.length === columns.length
+    ? data.presentation.map(spec => ({ width: spec?.width ?? null, align: spec?.align ?? 'left' }))
+    : columns.map(() => ({ width: null, align: 'left' }));
+  return { columns, rows, presentation };
 }
 
 function requireIndex(index, length, label) {

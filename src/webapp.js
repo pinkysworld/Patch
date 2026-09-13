@@ -76,6 +76,7 @@ function hasListBackedListbox(ast) {
 function addReadOnlyWindowTables(built) {
   const hasTable = (built.compiled?.ast ?? []).some(windowNode => windowNode.kind === 'window' && containsTable(windowNode.body));
   if (!hasTable) return built;
+  const advancedTableColumns = (built.compiled?.ast ?? []).some(windowNode => windowNode.kind === 'window' && containsAdvancedTableColumns(windowNode.body));
   let html = built.html;
   const modelNeedles = [
     "options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],value:",
@@ -85,7 +86,7 @@ function addReadOnlyWindowTables(built) {
   if (!modelNeedle) throw new Error('Standalone Window table model hook is unavailable.');
   const modelReplacement = modelNeedle.replace(
     'value:',
-    "columns:Array.isArray(node.columns)?node.columns.map(uiOption):[],rows:Array.isArray(node.rows)?node.rows.map(row=>row.map(uiOption)):[],value:"
+    "columns:Array.isArray(node.columns)?node.columns.map(uiOption):[],rows:Array.isArray(node.rows)?node.rows.map(row=>row.map(uiOption)):[],columnPresentation:Array.isArray(node.tableColumnPresentation)?node.tableColumnPresentation.map(spec=>({width:spec.width??null,align:spec.align||'left'})):[],value:"
   );
   html = html.replace(modelNeedle, modelReplacement);
 
@@ -99,7 +100,7 @@ function addReadOnlyWindowTables(built) {
   html = html.replace(renderNeedle, renderReplacement);
 
   const tabsNeedle = 'function renderTabs(control,windowId,controlIndex){';
-  const tableRenderer = "function renderTable(control){const wrap=document.createElement('div');wrap.className='patch-table-wrap';const table=document.createElement('table');table.className='patch-table';const head=document.createElement('thead');const headRow=document.createElement('tr');for(const column of control.columns??[]){const th=document.createElement('th');th.scope='col';th.textContent=column;headRow.appendChild(th);}head.appendChild(headRow);const body=document.createElement('tbody');const key=control.id||'';const selected=tableSelections.get(key)??-1;for(let rowIndex=0;rowIndex<(control.rows??[]).length;rowIndex+=1){const row=control.rows[rowIndex];const tr=document.createElement('tr');tr.tabIndex=0;tr.setAttribute('aria-selected',rowIndex===selected?'true':'false');if(rowIndex===selected)tr.className='patch-table-selected';const selectRow=()=>{tableSelections.set(key,rowIndex);const hasHandler=events.some(handler=>handler.control===control.id&&handler.event==='changed');if(hasHandler)safeTrigger(control.id,'changed',{value:[...row]});else render();};tr.addEventListener('click',selectRow);tr.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow();}});for(let index=0;index<(control.columns??[]).length;index+=1){const td=document.createElement('td');td.textContent=row[index]??'';tr.appendChild(td);}body.appendChild(tr);}table.append(head,body);wrap.appendChild(table);return wrap;}\n";
+  const tableRenderer = "function renderTable(control){const wrap=document.createElement('div');wrap.className='patch-table-wrap';const table=document.createElement('table');table.className='patch-table';const presentation=Array.isArray(control.columnPresentation)?control.columnPresentation:[];if(presentation.length){const colgroup=document.createElement('colgroup');for(const spec of presentation){const col=document.createElement('col');if(Number.isInteger(spec?.width))col.style.width=spec.width+'px';colgroup.appendChild(col);}table.appendChild(colgroup);}const head=document.createElement('thead');const headRow=document.createElement('tr');for(let columnIndex=0;columnIndex<(control.columns??[]).length;columnIndex+=1){const column=control.columns[columnIndex];const th=document.createElement('th');th.scope='col';th.textContent=column;const spec=presentation[columnIndex];if(spec?.align)th.style.textAlign=spec.align;headRow.appendChild(th);}head.appendChild(headRow);const body=document.createElement('tbody');const key=control.id||'';const selected=tableSelections.get(key)??-1;for(let rowIndex=0;rowIndex<(control.rows??[]).length;rowIndex+=1){const row=control.rows[rowIndex];const tr=document.createElement('tr');tr.tabIndex=0;tr.setAttribute('aria-selected',rowIndex===selected?'true':'false');if(rowIndex===selected)tr.className='patch-table-selected';const selectRow=()=>{tableSelections.set(key,rowIndex);const hasHandler=events.some(handler=>handler.control===control.id&&handler.event==='changed');if(hasHandler)safeTrigger(control.id,'changed',{value:[...row]});else render();};tr.addEventListener('click',selectRow);tr.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow();}});for(let index=0;index<(control.columns??[]).length;index+=1){const td=document.createElement('td');td.textContent=row[index]??'';const spec=presentation[index];if(spec?.align)td.style.textAlign=spec.align;tr.appendChild(td);}body.appendChild(tr);}table.append(head,body);wrap.appendChild(table);return wrap;}\n";
   if (!html.includes(tabsNeedle)) throw new Error('Standalone Window table insertion hook is unavailable.');
   html = html.replace(tabsNeedle, tableRenderer + tabsNeedle);
 
@@ -112,7 +113,7 @@ function addReadOnlyWindowTables(built) {
   return {
     ...built,
     html,
-    metadata: { ...built.metadata, tableStage: 2, tableMode: 'transient-row-selection' }
+    metadata: { ...built.metadata, tableStage: 2, tableMode: 'transient-row-selection', ...(advancedTableColumns ? { tableColumnPresentationStage: 1, tableColumnPresentationVersion: '0.1', tableColumnPresentationMode: 'source-backed-width-alignment' } : {}) }
   };
 }
 
@@ -120,6 +121,15 @@ function containsTable(nodes) {
   for (const node of nodes ?? []) {
     if (node.kind === 'uiControl' && node.control === 'table') return true;
     if (node.kind === 'tabs' && (node.body ?? []).some(page => containsTable(page.body))) return true;
+  }
+  return false;
+}
+
+function containsAdvancedTableColumns(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'table' && Array.isArray(node.tableColumnPresentation)) return true;
+    if (node.kind === 'tabs' && (node.body ?? []).some(page => containsAdvancedTableColumns(page.body))) return true;
+    if (node.kind === 'uiControl' && Array.isArray(node.body) && containsAdvancedTableColumns(node.body)) return true;
   }
   return false;
 }

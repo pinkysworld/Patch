@@ -28,6 +28,7 @@ export function buildCompiledWindowArtifact(compiled) {
     allowSlider: true,
     allowProgressBar: true,
     allowScrollBar: true,
+    allowAdvancedTableColumns: true,
     allowMemo: true,
     allowPaintBox: true,
     allowImageList: true,

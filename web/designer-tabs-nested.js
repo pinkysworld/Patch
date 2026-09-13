@@ -22,6 +22,11 @@ import {
   clearDesignerInspectorError,
   showDesignerInspectorError
 } from './designer-selection.js';
+import {
+  defaultTableColumnPresentation,
+  readWindowTableColumnPresentation,
+  setWindowTableColumnPresentation
+} from '../src/table-column-presentation.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -121,11 +126,12 @@ function renderStructureEditor(structure, treePath) {
 function renderNestedTableEditor(control) {
   const columns = control.columns ?? [];
   const rows = control.rows ?? [];
+  const presentation = readWindowTableColumnPresentation(code.value, control.line, columns.length) ?? defaultTableColumnPresentation(columns.length);
   return `<div class="designer-tabs-structure-editor" data-tabs-structure-editor="table" data-structure-control-index="${control.controlIndex}">
     <div class="designer-data-editor-head"><strong>Nested Table data</strong><span>${columns.length} column${columns.length === 1 ? '' : 's'} · ${rows.length} row${rows.length === 1 ? '' : 's'}</span></div>
     <div class="designer-table-editor" style="--table-columns:${Math.max(1, columns.length)}">
       <div class="designer-table-editor-row designer-table-editor-columns">
-        ${columns.map((column, index) => `<label>Column ${index + 1}<input data-tabs-table-column="${index}" spellcheck="false" value="${escapeAttr(column)}"></label>`).join('')}
+        ${columns.map((column, index) => `<div class="designer-table-column-card"><label>Column ${index + 1}<input data-tabs-table-column="${index}" spellcheck="false" value="${escapeAttr(column)}"></label><label>Width px <input data-tabs-table-column-width="${index}" type="number" min="40" max="2000" placeholder="auto" value="${presentation[index]?.width ?? ''}"></label><label>Align <select data-tabs-table-column-align="${index}"><option value="left"${presentation[index]?.align === 'left' ? ' selected' : ''}>Left</option><option value="center"${presentation[index]?.align === 'center' ? ' selected' : ''}>Center</option><option value="right"${presentation[index]?.align === 'right' ? ' selected' : ''}>Right</option></select></label></div>`).join('')}
       </div>
       ${rows.map((row, rowIndex) => `<div class="designer-table-editor-row" data-tabs-table-row="${rowIndex}">
         ${row.map((cell, cellIndex) => `<input aria-label="Nested row ${rowIndex + 1} cell ${cellIndex + 1}" data-tabs-table-cell="${rowIndex}:${cellIndex}" spellcheck="false" value="${escapeAttr(cell)}">`).join('')}
@@ -139,7 +145,7 @@ function renderNestedTableEditor(control) {
       <button type="button" class="secondary" data-tabs-table-action="add-row">+ Row</button>
       <button type="button" class="secondary" data-tabs-close-structure>Close</button>
     </div>
-    <p class="inspector-hint">Cells are Patch expressions. Applying rewrites only this nested <code>table</code>/<code>row</code> source block.</p>
+    <p class="inspector-hint">Cells are Patch expressions. Width/alignment use the same source-backed <code># @table-columns</code> presentation contract as top-level Tables.</p>
   </div>`;
 }
 
@@ -228,10 +234,10 @@ function handleClick(event) {
     event.preventDefault();
     if (tableAction === 'apply') applyNestedTableMutation(data => data);
     if (tableAction === 'add-row') applyNestedTableMutation(data => ({ ...data, rows: [...data.rows, data.columns.map(() => '""')] }));
-    if (tableAction === 'add-column') applyNestedTableMutation(data => ({ columns: [...data.columns, JSON.stringify(`Column ${data.columns.length + 1}`)], rows: data.rows.map(row => [...row, '""']) }));
+    if (tableAction === 'add-column') applyNestedTableMutation(data => ({ columns: [...data.columns, JSON.stringify(`Column ${data.columns.length + 1}`)], rows: data.rows.map(row => [...row, '""']), presentation: [...data.presentation, { width: null, align: 'left' }] }));
     if (tableAction === 'remove-column') applyNestedTableMutation(data => {
       if (data.columns.length <= 1) throw new Error('A Table needs at least one column.');
-      return { columns: data.columns.slice(0, -1), rows: data.rows.map(row => row.slice(0, -1)) };
+      return { columns: data.columns.slice(0, -1), rows: data.rows.map(row => row.slice(0, -1)), presentation: data.presentation.slice(0, -1) };
     });
     return;
   }
@@ -254,7 +260,13 @@ function applyNestedTableMutation(transform) {
   try {
     const draft = readNestedTableDraft(structure.control);
     const next = transform(draft);
-    setSource(updateDesignerTabPageTableData(code.value, structure.tabs, structure.pageIndex, structure.control.controlIndex, next));
+    let source = updateDesignerTabPageTableData(code.value, structure.tabs, structure.pageIndex, structure.control.controlIndex, next);
+    const updatedTabs = listDesignerControls(source).find(item => item.windowIndex === structure.tabs.windowIndex && item.controlIndex === structure.tabs.controlIndex && item.type === 'tabs');
+    const updated = updatedTabs ? listDesignerTabPageControls(source, updatedTabs, structure.pageIndex).find(item => item.controlIndex === structure.control.controlIndex && item.type === 'table') : null;
+    if (!updated) throw new Error('Updated nested Table could not be located after source rewrite.');
+    const presentation = Array.isArray(next.presentation) && next.presentation.length === next.columns.length ? next.presentation : defaultTableColumnPresentation(next.columns.length);
+    source = setWindowTableColumnPresentation(source, updated.line, presentation, next.columns.length);
+    setSource(source);
   } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
@@ -263,7 +275,13 @@ function readNestedTableDraft(control) {
   const rows = (control.rows ?? []).map((_, rowIndex) => columns.map((__, cellIndex) =>
     panel.querySelector(`[data-tabs-table-cell="${rowIndex}:${cellIndex}"]`)?.value.trim() ?? '""'
   ));
-  return { columns, rows };
+  const presentation = columns.map((_, index) => {
+    const rawWidth = panel.querySelector(`[data-tabs-table-column-width=\"${index}\"]`)?.value.trim() ?? '';
+    const width = rawWidth ? Number(rawWidth) : null;
+    const align = panel.querySelector(`[data-tabs-table-column-align=\"${index}\"]`)?.value ?? 'left';
+    return { width, align };
+  });
+  return { columns, rows, presentation };
 }
 
 function applyNestedTreeAction(action) {
