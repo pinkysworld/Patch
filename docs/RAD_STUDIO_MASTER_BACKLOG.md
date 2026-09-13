@@ -1,6 +1,6 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-09-06**
+Status synchronized: **2026-09-13**
 
 This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the now-completed native Window-icon implementation/promotion sequence and can close with the Current Ready v1.10 promotion. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
@@ -406,7 +406,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 
 ## P1 data/view controls
 
-- [ ] advanced Table/DataGrid columns;
+- [x] advanced Table/DataGrid columns Stage 1: source-backed per-column width/alignment on Studio/Web, structural Designer editing preserves metadata, Current Ready native fails closed;
 - [ ] TreeView icons/richer node metadata;
 - [ ] ListView icon/detail modes;
 - [ ] Header control;

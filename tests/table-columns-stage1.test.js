@@ -100,3 +100,21 @@ test('Patch Studio Table editor exposes width and alignment without a second sta
   assert.match(table, /columnPresentation/);
   assert.match(table, /colgroup/);
 });
+
+
+test('canonical Showcase visibly exercises advanced Table columns and documents the target boundary', () => {
+  const forms = fs.readFileSync('examples/patch-studio-showcase/forms.patch', 'utf8');
+  const showcaseReadme = fs.readFileSync('examples/patch-studio-showcase/README.md', 'utf8');
+  const rootReadme = fs.readFileSync('README.md', 'utf8');
+  const authoring = fs.readFileSync('docs/STUDIO_AUTHORING_SURFACE.md', 'utf8');
+  const backlog = fs.readFileSync('docs/RAD_STUDIO_MASTER_BACKLOG.md', 'utf8');
+  const examples = fs.readFileSync('web/examples.html', 'utf8');
+  assert.match(forms, /# @table-columns 136:left, 174:left, 104:center\n  table "Control", "Contract", "Surface" as gallery_table/);
+  assert.match(showcaseReadme, /advanced Table columns as source-backed/);
+  assert.match(rootReadme, /advanced Table\/DataGrid column presentation/);
+  assert.match(authoring, /Advanced Table columns Stage 1 is presentation metadata only/);
+  assert.match(authoring, /Current Ready Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10 fails closed/);
+  assert.match(backlog, /\[x\] advanced Table\/DataGrid columns Stage 1/);
+  assert.match(examples, /current source-backed R4 presets and advanced Table columns/);
+  assert.match(examples, /# @slider-mode progress/);
+});

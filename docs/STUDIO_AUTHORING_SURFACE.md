@@ -96,7 +96,10 @@ Top-level and nested Tables share the same structural authoring semantics:
 - Duplicate Column;
 - row/column selection remains IDE state only;
 - moving a column always moves its header and the corresponding cell in every row together;
-- invalid row widths and invalid structures fail closed.
+- invalid row widths and invalid structures fail closed;
+- source-backed per-column width (`auto` or 40-2000 px) and alignment (`left`, `center`, `right`) through `# @table-columns ...`.
+
+Advanced Table columns Stage 1 is presentation metadata only. It does not change Table syntax, row data, transient `changed(value)` selection, persistent application state or Change IR. Studio and Standalone Web render the widths/alignment; Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 fails closed when the directive is present rather than silently discarding it. Column add/remove/reorder/duplicate operations keep the presentation entries structurally aligned with their columns.
 
 ## TreeView
 
@@ -180,7 +183,7 @@ The Current Ready desktop consumer contract is Native GUI IR **1.9**, sealed pay
 
 Payload v17/runtime v1.8 remains an explicit compatibility path in the Offline Compiler. Earlier versioned contracts, including the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, remain compatibility/reproducibility evidence rather than current targets.
 
-Memo/TextArea, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, CheckedListBox, ProgressBar, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
+Memo/TextArea, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, CheckedListBox, ProgressBar, advanced Table columns, GroupBox, ScrollBox, SplitContainer and positioned Panel-child Stage-2 semantics do not silently widen Native GUI IR 1.9. Unsupported selected-contract features fail closed until a new explicit native contract is implemented, released, digest-verified and promoted.
 
 The current Ready/offline Windows, macOS and Linux path uses the stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 

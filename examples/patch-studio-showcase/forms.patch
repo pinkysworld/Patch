@@ -8,6 +8,7 @@ window "Component Gallery" as components size 1080, 760:
   # @locked
   shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 122 size 660, 300
   text "Data & component contracts" at 44, 140 size 300, 26
+  # @table-columns 136:left, 174:left, 104:center
   table "Control", "Contract", "Surface" as gallery_table at 44, 178 size 414, 222:
     row "Memo", "changed(value)", "Studio/Web"
     row "PasswordEdit", "Input presentation", "Studio/Web"
