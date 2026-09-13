@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Stabilize helper anchors
+        run: node scripts/_table-columns-harness-fix.mjs
       - name: Apply advanced Table columns Stage 1
         run: node scripts/_table-columns-stage1.mjs
       - name: Syntax gate
