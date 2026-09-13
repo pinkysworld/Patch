@@ -1,0 +1,51 @@
+name: Table Columns Showcase Polish
+
+on:
+  push:
+    branches:
+      - rad/table-columns-stage1
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rad/table-columns-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply Showcase and docs polish
+        run: node scripts/_table-columns-polish.mjs
+      - name: Syntax gate
+        run: npm run check:syntax
+      - name: Focused Table and Showcase gates
+        run: npm test -- tests/table-columns-stage1.test.js tests/studio-showcase.test.js tests/studio-showcase-loader.test.js tests/studio-authoring-surface.test.js tests/docs-current-studio-surface.test.js tests/studio-live-update.test.js
+      - name: Full repository tests
+        run: npm test
+      - name: Product gates
+        run: |
+          npm run check
+          npm run check:project
+          npm run build:site
+          npm run check:site
+      - name: Commit verified Showcase and docs changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md \
+            docs/STUDIO_AUTHORING_SURFACE.md \
+            docs/RAD_STUDIO_MASTER_BACKLOG.md \
+            examples/patch-studio-showcase/forms.patch \
+            examples/patch-studio-showcase/README.md \
+            examples/patch-studio-showcase.patchproject \
+            web/studio-showcase-project.js \
+            web/examples.html \
+            tests/table-columns-stage1.test.js
+          git commit -m "RAD: showcase advanced Table columns Stage 1 [skip ci]"
+          git push origin HEAD:rad/table-columns-stage1
