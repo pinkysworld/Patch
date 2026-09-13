@@ -21,7 +21,7 @@ const SOURCE = `window "Data" as main:
     row "Grace", "Review", "95"
 
 when people changed:
-  print value
+  show value
 `;
 
 test('advanced Table column presentation has a small deterministic 0.1 source contract', () => {
@@ -97,6 +97,6 @@ test('Patch Studio Table editor exposes width and alignment without a second sta
   assert.match(editor, /readWindowTableColumnPresentation/);
   assert.match(editor, /setWindowTableColumnPresentation/);
   assert.match(table, /readWindowTableColumnPresentation/);
-  assert.match(table, /tableColumnPresentation/);
+  assert.match(table, /columnPresentation/);
   assert.match(table, /colgroup/);
 });
