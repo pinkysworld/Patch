@@ -33,7 +33,8 @@ test('Standalone TreeView runtime embeds hierarchy, accessibility roles and full
   const built = buildStandaloneWindowWebApp(compile(SOURCE, { name: 'TreeWeb', kind: 'window' }), 'Tree Web');
   for (const marker of [
     'function uiTreeNodes(nodes)',
-    "type:node.control,id:node.id,text:node.textExpr?uiText(node.textExpr):'',options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[]",
+    'function uiTreeNodesWithImages(nodes,lists=new Map())',
+    "type:node.control,id:node.id,text:node.textExpr?uiText(node.textExpr):'',options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodesWithImages(node.treeNodes,lists):[]",
     "root.setAttribute('role','tree')",
     "item.setAttribute('role','treeitem')",
     "group.setAttribute('role','group')",
