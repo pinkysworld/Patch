@@ -113,7 +113,8 @@ test('Studio and Standalone Web render TreeView node icons without changing chan
   assert.match(built.html, /patch-tree-node-image/);
   assert.match(built.html, /imageSource/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:selectedPath\}\)/);
-  assert.match(built.html, /data:image\/png;base64/);
+  assert.match(built.html, /patchPictureSource/);
+  assert.match(built.html, /"icons\.folder":\{"mediaType":"image\/png","data":"iVBOR/);
 
   const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
   assert.match(renderer, /patch-tree-node-image/);
