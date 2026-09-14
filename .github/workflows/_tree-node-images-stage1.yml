@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Stabilize and validate helper scripts
+        run: |
+          node scripts/_tree-node-images-harness-fix.mjs
+          node --check scripts/_tree-node-images-stage1.mjs
+          node --check scripts/_tree-node-images-web.mjs
       - name: Apply TreeView node image Stage 1
         run: |
           node scripts/_tree-node-images-stage1.mjs
