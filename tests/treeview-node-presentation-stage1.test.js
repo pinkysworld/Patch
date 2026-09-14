@@ -35,9 +35,11 @@ when files changed:
     set = value
 `;
 
+const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=';
+const PIXEL_SHA256 = '98884e721ec2f605f3788f2bc39a61de305ff4f4fcaf26b6f4eabeebcd6c0fb4';
 const RESOURCES = [
-  { id: 'icons.folder', mediaType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=' },
-  { id: 'icons.file', mediaType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=' }
+  { id: 'icons.folder', path: 'assets/tree-folder.png', mediaType: 'image/png', size: 68, sha256: PIXEL_SHA256, data: PIXEL },
+  { id: 'icons.file', path: 'assets/tree-file.png', mediaType: 'image/png', size: 68, sha256: PIXEL_SHA256, data: PIXEL }
 ];
 
 test('TreeView node presentation 0.1 has deterministic optional ImageList.item syntax', () => {
