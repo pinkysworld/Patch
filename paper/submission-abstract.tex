@@ -1,0 +1,11 @@
+\textbf{Context.} Mutable programs often need more than the current value of a location. Auditing, undo, replay, provenance, and authorization mechanisms may also need to know what kind of state change occurred and, for numeric updates, how large it was. In conventional systems this information is commonly reconstructed around ordinary writes.
+
+\textbf{Inquiry.} This paper asks whether modeled persistent mutation can instead use a small semantic change interface as the ordinary commit route, and whether the same representation can support useful authority contracts without claiming expressiveness unavailable in richer effect, capability, or verification systems.
+
+\textbf{Approach.} Patch represents modeled post-creation mutation using structured Change operations. The paper defines a compact semantic core, derives target-, operation-, and magnitude-aware signatures and capabilities, mechanizes selected fragments in Lean 4, and checks selected production executions through independent reconstruction of transitions, effects, and invocation frames.
+
+\textbf{Knowledge.} The formal development establishes signature/capability soundness, sound integer range analysis for the stated expression fragment, and refinement of selected finite exact call trees. A controlled ablation shows that operation or magnitude information changes four of eight authority decisions relative to a target-only projection.
+
+\textbf{Grounding.} The evaluation also exercises two internally authored application cases and a frozen 15-site public-code stress test. Five inspected sites are application-owned single-target fits, seven have a single-target shape but commit through foreign persistence APIs, and three are multi-target bundles.
+
+\textbf{Importance.} The results support a deliberately scoped architectural claim: reusing one semantic mutation representation can connect state commit, history, and restricted authority reasoning while making the limits of the formal and implementation boundary explicit.
