@@ -24,10 +24,12 @@ jobs:
           node scripts/_tree-node-images-harness-fix.mjs
           node --check scripts/_tree-node-images-stage1.mjs
           node --check scripts/_tree-node-images-web.mjs
+          node --check scripts/_tree-node-images-product-fix.mjs
       - name: Apply TreeView node image Stage 1
         run: |
           node scripts/_tree-node-images-stage1.mjs
           node scripts/_tree-node-images-web.mjs
+          node scripts/_tree-node-images-product-fix.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused TreeView and ImageList regressions
@@ -45,7 +47,7 @@ jobs:
       - name: Commit verified product changes
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name "github-actions[bot]]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/parser.js src/compiler.js src/interpreter.js src/designer.js src/designer-data.js src/designer-tabs-nested.js src/window-build.js src/window-compiled.js src/window-webapp.js src/webapp.js web/studio-window-renderer.js web/style.css web/designer-data-editor.js web/designer-tabs-nested.js web/designer-structural-keyboard.js
           git commit -m "RAD: add TreeView node images Stage 1 [skip ci]"
