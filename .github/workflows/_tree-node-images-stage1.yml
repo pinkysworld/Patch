@@ -1,0 +1,47 @@
+name: TreeView Node Images Stage 1 Helper
+
+on:
+  push:
+    branches:
+      - rad/treeview-node-metadata-stage1
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rad/treeview-node-metadata-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply TreeView node image Stage 1
+        run: |
+          node scripts/_tree-node-images-stage1.mjs
+          node scripts/_tree-node-images-web.mjs
+      - name: Syntax gate
+        run: npm run check:syntax
+      - name: Focused TreeView and ImageList regressions
+        run: npm test -- tests/treeview-node-presentation-stage1.test.js tests/treeview-stage1.test.js tests/treeview-standalone-web.test.js tests/button-imagelist-consumer.test.js tests/designer-data-editors.test.js tests/designer-tabs-nested.test.js tests/window-artifact-target-neutral.test.js
+      - name: Full repository tests
+        run: npm test
+      - name: Project and example gates
+        run: |
+          npm run check
+          npm run check:project
+      - name: Public site gate
+        run: |
+          npm run build:site
+          npm run check:site
+      - name: Commit verified product changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/parser.js src/compiler.js src/interpreter.js src/designer.js src/designer-data.js src/designer-tabs-nested.js src/window-build.js src/window-compiled.js src/window-webapp.js src/webapp.js web/studio-window-renderer.js web/style.css web/designer-data-editor.js web/designer-tabs-nested.js web/designer-structural-keyboard.js
+          git commit -m "RAD: add TreeView node images Stage 1 [skip ci]"
+          git push origin HEAD:rad/treeview-node-metadata-stage1
