@@ -30,7 +30,19 @@ jobs:
       - name: Focused TreeView regressions
         run: npm test -- tests/treeview-icons-stage1.test.js tests/treeview-stage1.test.js tests/treeview-standalone-web.test.js tests/designer-data-editors.test.js tests/designer-tree-actions.test.js tests/imagelist-stage1.test.js tests/button-imagelist-consumer.test.js
       - name: Full repository tests
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test > /tmp/treeview-full-suite.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "===== concise failing test report ====="
+            grep -E -A45 -B3 "(✖ failing tests:|test at .*|AssertionError|Error:)" /tmp/treeview-full-suite.log | tail -n 500 || true
+            echo "===== final summary ====="
+            tail -n 80 /tmp/treeview-full-suite.log
+            exit "$status"
+          fi
+          tail -n 40 /tmp/treeview-full-suite.log
       - name: Public site gate
         run: |
           npm run build:site
