@@ -35,4 +35,32 @@ replaceOne(
   'Standalone TreeView existing model hook'
 );
 
+replaceOne(
+  'src/parser.js',
+  `      nodes.push({
+        labelExpr: parsed.labelExpr,
+        imageListId: parsed.imageListId,
+        imageItem: parsed.imageItem,
+        children,
+        line: child.line
+      });`,
+  `      const imageMeta = parsed.imageListId && parsed.imageItem
+        ? { imageListId: parsed.imageListId, imageItem: parsed.imageItem }
+        : {};
+      nodes.push({
+        labelExpr: parsed.labelExpr,
+        ...imageMeta,
+        children,
+        line: child.line
+      });`,
+  'plain TreeView AST compatibility'
+);
+
+replaceOne(
+  'scripts/build-site.js',
+  "'interpreter.js','parser.js','picture-control.js','picture-source.js','button-image.js','window-icon.js'",
+  "'interpreter.js','parser.js','picture-control.js','picture-source.js','button-image.js','tree-node-image.js','window-icon.js'",
+  'public site TreeView icon module closure'
+);
+
 console.log('TreeView icons compatibility fixes applied.');
