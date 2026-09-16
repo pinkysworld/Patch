@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Stabilize helper quoting
+        run: node scripts/_treeview-icons-harness-fix.mjs
       - name: Apply TreeView icons Stage 1 core
         run: node scripts/_treeview-icons-stage1.mjs
       - name: Syntax gate
