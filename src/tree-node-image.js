@@ -33,16 +33,19 @@ export function parseTreeNodeImageBinding(value) {
 
 export function parsePatchTreeNodeDeclaration(value) {
   const source = String(value ?? '').trim();
-  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?\s*$/i);
+  const match = source.match(/^node\s+(.+)$/i);
   if (!match) {
     throw new PatchTreeNodeImageError(
       'TreeView node syntax is node <label> or node <label> image ImageList.item.',
       'TREE_NODE_SOURCE_SYNTAX'
     );
   }
-  const labelExpr = String(match[1] ?? '').trim();
+  const body = String(match[1] ?? '').trim();
+  const imageIndex = findUnquotedImageClause(body);
+  const labelExpr = (imageIndex >= 0 ? body.slice(0, imageIndex) : body).trim();
   if (!labelExpr) throw new PatchTreeNodeImageError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
-  const binding = match[2] ? parseTreeNodeImageBinding(match[2]) : null;
+  const bindingText = imageIndex >= 0 ? body.slice(imageIndex + 7).trim() : '';
+  const binding = imageIndex >= 0 ? parseTreeNodeImageBinding(bindingText) : null;
   return Object.freeze({
     labelExpr,
     imageListId: binding?.imageListId ?? null,
@@ -103,4 +106,27 @@ export function walkTreeNodes(nodes, visit) {
     visit(node);
     walkTreeNodes(node.children, visit);
   }
+}
+
+function findUnquotedImageClause(text) {
+  let quote = null;
+  let escaped = false;
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (char === '\\') { escaped = true; continue; }
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") { quote = char; continue; }
+    if (char === '(' || char === '[') { depth += 1; continue; }
+    if (char === ')' || char === ']') { depth = Math.max(0, depth - 1); continue; }
+    if (depth !== 0 || index === 0 || !/\s/.test(text[index - 1] ?? '')) continue;
+    if (text.slice(index, index + 5).toLowerCase() !== 'image') continue;
+    if (!/\s/.test(text[index + 5] ?? '')) continue;
+    return index - 1;
+  }
+  return -1;
 }
