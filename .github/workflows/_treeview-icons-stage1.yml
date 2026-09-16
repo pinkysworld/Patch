@@ -23,6 +23,8 @@ jobs:
         run: node scripts/_treeview-icons-harness-fix.mjs
       - name: Apply TreeView icons Stage 1 core
         run: node scripts/_treeview-icons-stage1.mjs
+      - name: Preserve existing TreeView compatibility
+        run: node scripts/_treeview-icons-core-fix.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused TreeView regressions
