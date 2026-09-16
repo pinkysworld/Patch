@@ -25,9 +25,11 @@ when files changed:
   show value
 `;
 
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=';
+const PNG_SHA256 = 'd126d616641d42ac8b0a07ec302c9fa1ec049f86200931a0a60c8f3080284b77';
 const RESOURCES = [
-  { id: 'icons.folder', mediaType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=' },
-  { id: 'icons.file', mediaType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=' }
+  { id: 'icons.folder', path: 'assets/tree-folder.png', mediaType: 'image/png', size: 68, sha256: PNG_SHA256, data: PNG },
+  { id: 'icons.file', path: 'assets/tree-file.png', mediaType: 'image/png', size: 68, sha256: PNG_SHA256, data: PNG }
 ];
 
 test('TreeView node image syntax is local, deterministic and versioned', () => {
@@ -37,6 +39,9 @@ test('TreeView node image syntax is local, deterministic and versioned', () => {
   });
   assert.deepEqual(parsePatchTreeNodeDeclaration('node "plain"'), {
     labelExpr: '"plain"', imageListId: null, imageItem: null
+  });
+  assert.deepEqual(parsePatchTreeNodeDeclaration('node "text with image inside"'), {
+    labelExpr: '"text with image inside"', imageListId: null, imageItem: null
   });
   assert.equal(formatPatchTreeNodeDeclaration({ labelExpr: '"src"', imageListId: 'tree_images', imageItem: 'folder' }), 'node "src" image tree_images.folder');
   assert.throws(() => parsePatchTreeNodeDeclaration('node "src" image missing-binding'), /ImageList\.item/);
