@@ -1,0 +1,41 @@
+name: TreeView Icons Stage 1 Helper
+
+on:
+  push:
+    branches:
+      - rad/treeview-icons-stage1
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rad/treeview-icons-stage1
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply TreeView icons Stage 1 core
+        run: node scripts/_treeview-icons-stage1.mjs
+      - name: Syntax gate
+        run: npm run check:syntax
+      - name: Focused TreeView regressions
+        run: npm test -- tests/treeview-icons-stage1.test.js tests/treeview-stage1.test.js tests/treeview-standalone-web.test.js tests/designer-data-editors.test.js tests/designer-tree-actions.test.js tests/imagelist-stage1.test.js tests/button-imagelist-consumer.test.js
+      - name: Full repository tests
+        run: npm test
+      - name: Public site gate
+        run: |
+          npm run build:site
+          npm run check:site
+      - name: Commit verified core
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/tree-node-image.js src/parser.js src/designer-data.js src/designer.js src/designer-tabs-nested.js src/interpreter.js src/window-build.js src/window-webapp.js src/window-compiled.js src/webapp.js web/studio-window-renderer.js tests/treeview-icons-stage1.test.js
+          git commit -m "RAD: add TreeView icons Stage 1 core [skip ci]"
+          git push origin HEAD:rad/treeview-icons-stage1
