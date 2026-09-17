@@ -28,7 +28,20 @@ jobs:
       - name: Focused TreeView regressions
         run: npm test -- tests/treeview-node-icons-stage1.test.js tests/treeview-stage1.test.js tests/treeview-standalone-web.test.js tests/designer-data-editors.test.js tests/designer-tree-duplicate.test.js tests/studio-window-renderer.test.js tests/studio-showcase.test.js
       - name: Full repository tests
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test > /tmp/full-test.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "===== concise full-suite failure summary ====="
+            grep -E "^(✖|not ok|# Subtest:)|failing tests:|AssertionError|Error:|ERR_ASSERTION|ERR_TEST_FAILURE" /tmp/full-test.log | tail -n 180 || true
+            echo "===== tail ====="
+            tail -n 120 /tmp/full-test.log
+          else
+            tail -n 40 /tmp/full-test.log
+          fi
+          exit "$code"
       - name: Example and project gates
         run: |
           npm run check
