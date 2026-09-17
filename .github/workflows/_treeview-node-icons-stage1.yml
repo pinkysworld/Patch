@@ -21,6 +21,8 @@ jobs:
           node-version: 24
       - name: Apply TreeView node icons Stage 1
         run: node scripts/_treeview-node-icons-stage1.mjs
+      - name: Apply TreeView compatibility fixes
+        run: node scripts/_treeview-node-icons-fix.mjs
       - name: Syntax gate
         run: npm run check:syntax
       - name: Focused TreeView regressions
@@ -40,6 +42,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/parser.js src/compiler.js src/designer-data.js src/designer-tabs-nested.js src/designer.js src/interpreter.js src/window-build.js src/window-webapp.js src/window-compiled.js src/webapp.js web/studio-window-renderer.js web/style.css web/designer-data-editor.js web/designer-tabs-nested.js src/tree-node-image.js tests/treeview-node-icons-stage1.test.js
+          git add src/parser.js src/compiler.js src/designer-data.js src/designer-tabs-nested.js src/designer.js src/interpreter.js src/window-build.js src/window-webapp.js src/window-compiled.js src/webapp.js web/studio-window-renderer.js web/style.css web/designer-data-editor.js web/designer-tabs-nested.js src/tree-node-image.js tests/treeview-node-icons-stage1.test.js tests/treeview-standalone-web.test.js
           git commit -m "RAD: add TreeView node icons Stage 1 [skip ci]"
           git push origin HEAD:rad/treeview-node-icons-stage1
