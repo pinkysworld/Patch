@@ -226,10 +226,14 @@ function lowerNode(node) {
 function lowerTreeNodes(nodes) {
   return (nodes ?? []).map(node => ({
     labelExpr: node.labelExpr,
+    imageListId: node.imageListId ?? null,
+    imageItem: node.imageItem ?? null,
     line: node.line ?? null,
     children: lowerTreeNodes(node.children)
   }));
 }
+
+function hasTreeNodeImages(nodes) { return (nodes ?? []).some(node => (node.imageListId && node.imageItem) || hasTreeNodeImages(node.children)); }
 
 function op(code, node, fields = {}) { return { code, line: node.line ?? null, ...fields }; }
 
@@ -250,7 +254,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'openFileDialog' || node.kind === 'saveFileDialog') caps.add('ui.file-dialog');
     if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'uiControl' && node.control === 'table') caps.add('ui.table');
-    if (node.kind === 'uiControl' && node.control === 'tree') caps.add('ui.tree');
+    if (node.kind === 'uiControl' && node.control === 'tree') { caps.add('ui.tree'); if (hasTreeNodeImages(node.treeNodes)) caps.add('ui.tree-node-image'); }
     if (node.kind === 'uiControl' && node.control === 'slider') caps.add('ui.slider');
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');

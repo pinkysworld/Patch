@@ -1,5 +1,6 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
+import { formatPatchTreeNodeDeclaration, normalizeTreeNodeImageBinding, parseTreeNodeImageBinding } from './tree-node-image.js';
 
 export function updateDesignerTreeNodes(source, selector, treeNodes) {
   const control = requireControl(source, selector, 'tree');
@@ -124,6 +125,15 @@ export function renameTreeNode(nodes, path, labelExpr) {
   return { nodes: next, path: [...path] };
 }
 
+export function setTreeNodeImage(nodes, path, value) {
+  const next = normalizeTreeNodes(nodes);
+  const target = treeNodeAt(next, path);
+  const binding = parseTreeNodeImageBinding(value);
+  target.imageListId = binding?.imageListId ?? null;
+  target.imageItem = binding?.imageItem ?? null;
+  return { nodes: next, path: [...path] };
+}
+
 export function removeTreeNode(nodes, path) {
   const next = normalizeTreeNodes(nodes);
   const { siblings, index } = treeLocation(next, path);
@@ -184,7 +194,7 @@ export function treeNodeAt(nodes, path) {
 export function flattenTreeNodes(nodes, path = [], out = []) {
   (nodes ?? []).forEach((node, index) => {
     const nextPath = [...path, index];
-    out.push({ path: nextPath, depth: nextPath.length - 1, labelExpr: node.labelExpr });
+    out.push({ path: nextPath, depth: nextPath.length - 1, labelExpr: node.labelExpr, imageListId: node.imageListId ?? null, imageItem: node.imageItem ?? null });
     flattenTreeNodes(node.children, nextPath, out);
   });
   return out;
@@ -278,8 +288,11 @@ function normalizeTreeNodes(nodes) {
   if (!Array.isArray(nodes)) throw new Error('TreeView nodes must be an array.');
   return nodes.map(node => {
     if (!node || typeof node !== 'object') throw new Error('TreeView node is invalid.');
+    const binding = normalizeTreeNodeImageBinding(node);
     return {
       labelExpr: normalizeExpression(node.labelExpr, 'Tree node label'),
+      imageListId: binding.imageListId,
+      imageItem: binding.imageItem,
       children: normalizeTreeNodes(node.children ?? [])
     };
   });
@@ -305,7 +318,7 @@ function normalizeExpression(value, label) {
 }
 
 function makeTreeNode(labelExpr) {
-  return { labelExpr: normalizeExpression(labelExpr, 'Tree node label'), children: [] };
+  return { labelExpr: normalizeExpression(labelExpr, 'Tree node label'), imageListId: null, imageItem: null, children: [] };
 }
 
 function treeLocation(nodes, path) {
@@ -333,7 +346,7 @@ function parentFallbackPath(nodes, path) {
 
 function renderTreeNodes(nodes, indent, depth = 0, out = []) {
   for (const node of nodes) {
-    out.push(`${indent}${'  '.repeat(depth)}node ${node.labelExpr}`);
+    out.push(`${indent}${'  '.repeat(depth)}${formatPatchTreeNodeDeclaration(node)}`);
     renderTreeNodes(node.children, indent, depth + 1, out);
   }
   return out;

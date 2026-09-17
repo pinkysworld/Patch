@@ -32,8 +32,8 @@ test('Standalone Window Web v0.9 opts into TreeView without opening the generic 
 test('Standalone TreeView runtime embeds hierarchy, accessibility roles and full-path changed dispatch', () => {
   const built = buildStandaloneWindowWebApp(compile(SOURCE, { name: 'TreeWeb', kind: 'window' }), 'Tree Web');
   for (const marker of [
-    'function uiTreeNodes(nodes)',
-    "type:node.control,id:node.id,text:node.textExpr?uiText(node.textExpr):'',options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[]",
+    'function uiTreeNodes(nodes,lists)',
+    "type:node.control,id:node.id,text:node.textExpr?uiText(node.textExpr):'',options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes,lists):[]",
     "root.setAttribute('role','tree')",
     "item.setAttribute('role','treeitem')",
     "group.setAttribute('role','group')",

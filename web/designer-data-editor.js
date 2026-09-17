@@ -13,6 +13,7 @@ import {
   removeTreeNode,
   renameDesignerTabPage,
   renameTreeNode,
+  setTreeNodeImage,
   treeNodeAt,
   updateDesignerTableData,
   updateDesignerTreeNodes
@@ -110,6 +111,7 @@ function renderTreeEditor(control) {
       ${flat.map(item => `<button type="button" class="designer-tree-node${samePath(item.path, path) ? ' active' : ''}" data-tree-path="${item.path.join('.')}" role="option" aria-selected="${samePath(item.path, path)}" style="--tree-depth:${item.depth}">${escapeHtml(displayExpr(item.labelExpr))}</button>`).join('')}
     </div>
     <label class="inspector-field">Node label expression <input id="designerTreeNodeLabel" spellcheck="false" value="${escapeAttr(selected?.labelExpr ?? '')}"></label>
+    <label class="inspector-field">Node image <input id="designerTreeNodeImage" spellcheck="false" placeholder="ImageList.item" value="${escapeAttr(selected?.imageListId && selected?.imageItem ? `${selected.imageListId}.${selected.imageItem}` : '')}"></label>
     <div class="designer-data-actions">
       <button type="button" class="secondary" data-tree-action="add-root">+ Root</button>
       <button type="button" class="secondary" data-tree-action="add-child" ${path ? '' : 'disabled'}>+ Child</button>
@@ -232,7 +234,10 @@ function applyTreeAction(action) {
     let result;
     if (action === 'add-root') result = addTreeRoot(control.treeNodes);
     else if (action === 'add-child') result = addTreeChild(control.treeNodes, path);
-    else if (action === 'rename') result = renameTreeNode(control.treeNodes, path, panel.querySelector('#designerTreeNodeLabel')?.value ?? '');
+    else if (action === 'rename') {
+      result = renameTreeNode(control.treeNodes, path, panel.querySelector('#designerTreeNodeLabel')?.value ?? '');
+      result = setTreeNodeImage(result.nodes, result.path, panel.querySelector('#designerTreeNodeImage')?.value ?? '');
+    }
     else if (action === 'up' || action === 'down') result = moveTreeNode(control.treeNodes, path, action);
     else if (action === 'indent') result = indentTreeNode(control.treeNodes, path);
     else if (action === 'outdent') result = outdentTreeNode(control.treeNodes, path);

@@ -24,7 +24,7 @@ export function buildCompiledWindowArtifact(compiled) {
   // pretending that a target-neutral artifact selected a legacy runtime.
   // The selected build target performs the real fail-closed capability check.
   validateWindowRuntimeSupport(compiled, {
-    allowTree: true,
+    allowTree: true, allowTreeNodeImages: true,
     allowSlider: true,
     allowProgressBar: true,
     allowScrollBar: true,
