@@ -88,7 +88,7 @@ export function normalizeStructuralKeyboard(panel) {
     if (shortcuts) listbox.setAttribute('aria-keyshortcuts', shortcuts);
   }
 
-  for (const input of panel.querySelectorAll?.('.designer-table-editor input, #designerTreeNodeLabel, #designerTabPageTitle, [data-tabs-tree-label]') ?? []) {
+  for (const input of panel.querySelectorAll?.('.designer-table-editor input, #designerTreeNodeLabel, #designerTreeNodeImage, #designerTabPageTitle, [data-tabs-tree-label], [data-tabs-tree-image]') ?? []) {
     input.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
   }
 
@@ -110,12 +110,12 @@ function handleCommitShortcut(panel, event) {
   } else if (target.matches('[data-table-column], [data-table-cell]')) {
     action = panel.querySelector('[data-table-action="apply"]');
     focusSelector = attributeSelector(target, ['data-table-column', 'data-table-cell']);
-  } else if (target.matches('[data-tabs-tree-label]')) {
+  } else if (target.matches('[data-tabs-tree-label], [data-tabs-tree-image]')) {
     action = target.closest('[data-tabs-structure-editor="tree"]')?.querySelector('[data-tabs-tree-action="rename"]');
-    focusSelector = '[data-tabs-tree-label]';
-  } else if (target.id === 'designerTreeNodeLabel') {
+    focusSelector = target.matches('[data-tabs-tree-image]') ? '[data-tabs-tree-image]' : '[data-tabs-tree-label]';
+  } else if (target.id === 'designerTreeNodeLabel' || target.id === 'designerTreeNodeImage') {
     action = panel.querySelector('[data-tree-action="rename"]');
-    focusSelector = '#designerTreeNodeLabel';
+    focusSelector = target.id === 'designerTreeNodeImage' ? '#designerTreeNodeImage' : '#designerTreeNodeLabel';
   } else if (target.id === 'designerTabPageTitle') {
     action = panel.querySelector('[data-tabs-action="rename"]');
     focusSelector = '#designerTabPageTitle';

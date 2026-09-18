@@ -1,5 +1,6 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
+import { formatPatchTreeNodeDeclaration, parseTreeNodeImageBinding } from './tree-node-presentation.js';
 
 export function updateDesignerTreeNodes(source, selector, treeNodes) {
   const control = requireControl(source, selector, 'tree');
@@ -124,6 +125,22 @@ export function renameTreeNode(nodes, path, labelExpr) {
   return { nodes: next, path: [...path] };
 }
 
+export function setTreeNodeImage(nodes, path, value) {
+  const next = normalizeTreeNodes(nodes);
+  const target = treeNodeAt(next, path);
+  const binding = typeof value === 'string'
+    ? parseTreeNodeImageBinding(value)
+    : parseTreeNodeImageBinding(value?.imageListId || value?.imageItem ? String(value?.imageListId ?? '') + '.' + String(value?.imageItem ?? '') : '');
+  if (binding) {
+    target.imageListId = binding.imageListId;
+    target.imageItem = binding.imageItem;
+  } else {
+    delete target.imageListId;
+    delete target.imageItem;
+  }
+  return { nodes: next, path: [...path] };
+}
+
 export function removeTreeNode(nodes, path) {
   const next = normalizeTreeNodes(nodes);
   const { siblings, index } = treeLocation(next, path);
@@ -184,7 +201,12 @@ export function treeNodeAt(nodes, path) {
 export function flattenTreeNodes(nodes, path = [], out = []) {
   (nodes ?? []).forEach((node, index) => {
     const nextPath = [...path, index];
-    out.push({ path: nextPath, depth: nextPath.length - 1, labelExpr: node.labelExpr });
+    out.push({
+      path: nextPath,
+      depth: nextPath.length - 1,
+      labelExpr: node.labelExpr,
+      ...(node.imageListId && node.imageItem ? { imageListId: node.imageListId, imageItem: node.imageItem } : {})
+    });
     flattenTreeNodes(node.children, nextPath, out);
   });
   return out;
@@ -278,8 +300,10 @@ function normalizeTreeNodes(nodes) {
   if (!Array.isArray(nodes)) throw new Error('TreeView nodes must be an array.');
   return nodes.map(node => {
     if (!node || typeof node !== 'object') throw new Error('TreeView node is invalid.');
+    const binding = parseTreeNodeImageBinding(node.imageListId || node.imageItem ? String(node.imageListId ?? '') + '.' + String(node.imageItem ?? '') : '');
     return {
       labelExpr: normalizeExpression(node.labelExpr, 'Tree node label'),
+      ...(binding ? { imageListId: binding.imageListId, imageItem: binding.imageItem } : {}),
       children: normalizeTreeNodes(node.children ?? [])
     };
   });
@@ -333,7 +357,7 @@ function parentFallbackPath(nodes, path) {
 
 function renderTreeNodes(nodes, indent, depth = 0, out = []) {
   for (const node of nodes) {
-    out.push(`${indent}${'  '.repeat(depth)}node ${node.labelExpr}`);
+    out.push(`${indent}${'  '.repeat(depth)}${formatPatchTreeNodeDeclaration(node)}`);
     renderTreeNodes(node.children, indent, depth + 1, out);
   }
   return out;

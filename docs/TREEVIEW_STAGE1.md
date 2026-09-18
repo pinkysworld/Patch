@@ -54,10 +54,31 @@ Stage 1 is supported by:
 - the standalone single-file Window Web runtime **0.9**, using the same accessibility roles and full-path `changed` value;
 - the transient Window-event adapter.
 
-Stage 1 deliberately remains fail-closed for Window targets that have not opted into a versioned TreeView runtime contract. The standalone Window Web generator opts in explicitly; native desktop builds and sealed Ready/offline apps remain fail-closed.
+The original Stage 1 boundary was opt-in and fail-closed. Baseline TreeView was later promoted through versioned native contracts and is part of the current desktop line. New TreeView presentation metadata still needs its own explicit target support and must fail closed where that metadata is not transported.
 
-The Designer displays the interpreter preview but does not expose TreeView source-rewrite controls in Stage 1. TreeView hierarchy is edited in Patch source until a later source-safe Designer contract is defined.
+The current Designer now exposes source-backed structural TreeView editing. Add, rename, reorder, indent, outdent, delete and subtree workflows rewrite the canonical `tree`/`node` source rather than maintaining a second hidden model.
 
 ## Next slice
 
-A later TreeView runtime slice can define a versioned Native GUI IR/payload contract and platform consumers for Win32, AppKit and GTK. Those later steps should preserve the browser Stage 1 rule that UI selection is transient and persistent state changes only through Patch `change`.
+The baseline native TreeView runtime slice has since shipped. Future TreeView native work should extend only explicitly versioned presentation metadata, while preserving the Stage 1 rule that UI selection is transient and persistent state changes only through Patch `change`.
+
+
+## Node image presentation 0.1
+
+The R4 TreeView icon slice adds optional ImageList-backed node presentation without changing selection semantics:
+
+```patch
+imagelist as tree_icons size 16, 16:
+  image folder from "patch-resource:icons.folder"
+  image file from "patch-resource:icons.file"
+
+tree as files:
+  node "src" image tree_icons.folder
+    node "parser.js" image tree_icons.file
+```
+
+The binding is source-backed metadata. Studio App Preview and Standalone Window Web render the referenced project resource at the ImageList logical size. The structural Properties editors preserve the binding through rename, reorder, indent, outdent and duplication workflows and allow it to be edited as `ImageList.item`.
+
+A node click still emits exactly the same transient root-to-node text-list path through `changed(value)`. Icons add no persistent state and no second mutation channel.
+
+The Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 contract does not transport per-node ImageList bindings. Native validation therefore fails closed when this metadata is present rather than dropping the icon silently. A future native contract can add that transport explicitly.
