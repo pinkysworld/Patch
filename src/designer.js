@@ -624,10 +624,14 @@ function formatNumber(value) {
 }
 
 function cloneTreeNodes(nodes = []) {
-  return (nodes ?? []).map(node => ({
-    labelExpr: node.labelExpr,
-    children: cloneTreeNodes(node.children)
-  }));
+  return (nodes ?? []).map(node => {
+    const cloned = { labelExpr: node.labelExpr, children: cloneTreeNodes(node.children) };
+    if (node.imageListId && node.imageItem) {
+      cloned.imageListId = node.imageListId;
+      cloned.imageItem = node.imageItem;
+    }
+    return cloned;
+  });
 }
 
 function nextId(lines, base) {

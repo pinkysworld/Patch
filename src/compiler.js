@@ -224,11 +224,18 @@ function lowerNode(node) {
 }
 
 function lowerTreeNodes(nodes) {
-  return (nodes ?? []).map(node => ({
-    labelExpr: node.labelExpr,
-    line: node.line ?? null,
-    children: lowerTreeNodes(node.children)
-  }));
+  return (nodes ?? []).map(node => {
+    const lowered = {
+      labelExpr: node.labelExpr,
+      line: node.line ?? null,
+      children: lowerTreeNodes(node.children)
+    };
+    if (node.imageListId && node.imageItem) {
+      lowered.imageListId = node.imageListId;
+      lowered.imageItem = node.imageItem;
+    }
+    return lowered;
+  });
 }
 
 function op(code, node, fields = {}) { return { code, line: node.line ?? null, ...fields }; }

@@ -630,7 +630,20 @@ function createTreeElement(control, context) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'patch-tree-node';
-      button.textContent = node.text;
+      if (node.imageSource) {
+        const img = document.createElement('img');
+        img.className = 'patch-tree-node-image';
+        img.alt = '';
+        img.width = node.imageWidth || 16;
+        img.height = node.imageHeight || 16;
+        try {
+          img.src = pictureResourceDataUri(node.imageSource, getStudioProjectResources());
+        } catch {
+          img.src = node.imageSource;
+        }
+        button.appendChild(img);
+      }
+      button.append(node.text);
       button.dataset.patchTreePath = JSON.stringify(selectedPath);
       button.setAttribute('aria-label', selectedPath.join(' / '));
       button.setAttribute('aria-selected', selected ? 'true' : 'false');

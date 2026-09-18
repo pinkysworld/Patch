@@ -3,6 +3,7 @@ import { parsePatchShapeDeclaration } from './shape-source.js';
 import { parsePatchButtonDeclaration } from './button-image.js';
 import { parsePatchWindowDeclaration } from './window-icon.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
+import { parsePatchTreeNodeDeclaration } from './tree-node-presentation.js';
 import {
   PATCH_IMAGELIST_MAX_ITEMS,
   normalizeImageListItemName,
@@ -152,11 +153,20 @@ export function parse(source) {
       const child = lines[i];
       if (child.indent < nodeIndent) break;
       if (child.indent > nodeIndent) throw new PatchSyntaxError('Tree nodes must use consistent indentation under their parent.', child.line);
-      const match = child.text.match(/^node\s+(.+)$/);
-      if (!match) throw new PatchSyntaxError('A tree can only contain nodes like node "src".', child.line);
+      let parsed;
+      try {
+        parsed = parsePatchTreeNodeDeclaration(child.text);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), child.line);
+      }
       i += 1;
       const children = i < lines.length && lines[i].indent > nodeIndent ? treeNodesAt(lines[i].indent) : [];
-      nodes.push({ labelExpr:match[1], children, line:child.line });
+      const node = { labelExpr: parsed.labelExpr, children, line: child.line };
+      if (parsed.imageListId && parsed.imageItem) {
+        node.imageListId = parsed.imageListId;
+        node.imageItem = parsed.imageItem;
+      }
+      nodes.push(node);
     }
     return nodes;
   }

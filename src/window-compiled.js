@@ -25,6 +25,7 @@ export function buildCompiledWindowArtifact(compiled) {
   // The selected build target performs the real fail-closed capability check.
   validateWindowRuntimeSupport(compiled, {
     allowTree: true,
+    allowTreeNodeImages: true,
     allowSlider: true,
     allowProgressBar: true,
     allowScrollBar: true,

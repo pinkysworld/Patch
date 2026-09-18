@@ -223,7 +223,7 @@ export class PatchInterpreter {
           id:node.id,
           text:node.textExpr?this.uiText(node.textExpr):'',
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
-          nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes):[],
+          nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes,lists):[],
           source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
           buttonPresentation:node.control==='button'?(node.buttonPresentation??'plain'):null,
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
@@ -279,7 +279,24 @@ export class PatchInterpreter {
     }
     return items;
   }
-  uiTreeNodes(nodes){ return (nodes??[]).map(node=>({text:this.uiText(node.labelExpr),children:this.uiTreeNodes(node.children)})); }
+  uiTreeNodes(nodes,lists=new Map()){
+    return (nodes??[]).map(node=>{
+      const list=node.imageListId?lists.get(node.imageListId):null;
+      const image=node.imageListId&&node.imageItem?(list?.items??[]).find(item=>item.name===node.imageItem):null;
+      const children=this.uiTreeNodes(node.children,lists);
+      const text=this.uiText(node.labelExpr);
+      if(!image)return{text,children};
+      return {
+        text,
+        imageListId:node.imageListId,
+        imageItem:node.imageItem,
+        imageSource:this.uiText(image.sourceExpr),
+        imageWidth:Number(list?.logicalWidth)||16,
+        imageHeight:Number(list?.logicalHeight)||16,
+        children
+      };
+    });
+  }
   uiText(expr){
     let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
     return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>this.state.has(name)?formatValue(this.state.get(name)):`{${name}}`);

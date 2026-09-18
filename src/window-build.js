@@ -1,5 +1,6 @@
 import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
 import { resolveButtonImageBinding } from './button-image.js';
+import { countTreeNodeImages, resolveTreeNodeImageBinding, visitTreeNodeImages } from './tree-node-presentation.js';
 import { hasWindowIcon } from './window-icon.js';
 
 export class WindowBuildError extends Error {}
@@ -51,6 +52,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuEnabledBindings = 0;
   let menuCheckedBindings = 0;
   let treeViews = 0;
+  let treeNodeImages = 0;
   let sliders = 0;
   let progressBars = 0;
   let scrollBars = 0;
@@ -83,7 +85,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'table' && Array.isArray(child.tableColumnPresentation)) advancedTableColumns += 1;
-    if (child.control === 'tree') treeViews += 1;
+    if (child.control === 'tree') { treeViews += 1; treeNodeImages += countTreeNodeImages(child.treeNodes); }
     if (child.control === 'memo') memos += 1;
     if (child.control === 'paintbox') paintboxes += 1;
     if (child.control === 'imagelist') {
@@ -230,10 +232,18 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   walk(compiled?.ast);
 
   for (const control of controls.values()) {
+    const lists = imageListsByForm.get(control.formId) ?? new Map();
+    if (control.type === 'tree') {
+      try {
+        visitTreeNodeImages(control.node?.treeNodes, node => resolveTreeNodeImageBinding(lists, node, node.line));
+      } catch (error) {
+        throw new WindowBuildError(error?.message ?? String(error));
+      }
+    }
     if (control.type !== 'button' || !control.node?.imageListId || !control.node?.imageItem) continue;
     try {
       resolveButtonImageBinding(
-        imageListsByForm.get(control.formId) ?? new Map(),
+        lists,
         { imageListId: control.node.imageListId, imageItem: control.node.imageItem },
         control.node.line
       );
@@ -342,6 +352,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (treeNodeImages && !options.allowTreeNodeImages) {
+    throw new WindowBuildError(
+      'TreeView node images Stage 1 are Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport ImageList bindings on TreeView nodes; validation fails closed rather than silently discarding node icons.'
+    );
+  }
+
   if (sliders && !options.allowSlider) {
     throw new WindowBuildError(
       'Slider is not enabled for this Window target. Select a Slider-capable browser target or enable its versioned Slider runtime contract; validation fails closed otherwise.'
@@ -400,6 +416,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     namedForms: forms.size,
     controls: controls.size,
     treeViews,
+    treeNodeImages,
     sliders,
     progressBars,
     scrollBars,

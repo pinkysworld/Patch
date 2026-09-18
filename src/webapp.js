@@ -79,7 +79,7 @@ function addReadOnlyWindowTables(built) {
   const advancedTableColumns = (built.compiled?.ast ?? []).some(windowNode => windowNode.kind === 'window' && containsAdvancedTableColumns(windowNode.body));
   let html = built.html;
   const modelNeedles = [
-    "options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],value:",
+    "options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodesWithImages(node.treeNodes,lists):[],value:",
     "options:Array.isArray(node.options)?node.options.map(uiOption):[],value:"
   ];
   const modelNeedle = modelNeedles.find(needle => html.includes(needle));
@@ -138,19 +138,21 @@ function addStandaloneWindowPictures(built, resources = []) {
   const ast = built?.compiled?.ast ?? [];
   const pictures = hasPicture(ast);
   const buttonImages = hasButtonImage(ast);
+  const treeNodeImages = hasTreeNodeImage(ast);
   const windowIcons = collectWindowIcons(ast);
   const paintImages = hasPaintImage(ast);
-  if (!pictures && !buttonImages && !windowIcons.length && !paintImages) return built;
+  if (!pictures && !buttonImages && !treeNodeImages && !windowIcons.length && !paintImages) return built;
   const normalized = validateStudioResources(resources);
   if (pictures) validateStaticPictureReferences(ast, normalized);
   if (buttonImages) validateStaticButtonImageReferences(ast, normalized);
+  if (treeNodeImages) validateStaticTreeNodeImageReferences(ast, normalized);
   if (windowIcons.length) validateStaticWindowIconReferences(ast, normalized);
   if (paintImages) validateStaticPaintImageReferences(ast, normalized);
   const table = Object.fromEntries(normalized.map(resource => [resource.id, { mediaType: resource.mediaType, data: resource.data }]));
   const resourceJson = JSON.stringify(table).replace(/</g, '\\u003c');
   let html = String(built.html ?? '');
 
-  const modelNeedle = "nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],";
+  const modelNeedle = "nodes:node.control==='tree'?uiTreeNodesWithImages(node.treeNodes,lists):[],";
   if (pictures) {
     if (!html.includes(modelNeedle)) throw new Error('Standalone Window Picture model hook is unavailable.');
     html = html.replace(modelNeedle, `${modelNeedle}source:node.control==='picture'&&node.sourceExpr?uiText(node.sourceExpr):'',fit:node.control==='picture'?(node.fit||'contain'):'contain',center:node.control==='picture'?node.center!==false:true,opacity:node.control==='picture'&&Number.isFinite(Number(node.opacity))?Number(node.opacity):1,description:node.control==='picture'?(node.description||''):'',`);
@@ -197,6 +199,12 @@ function addStandaloneWindowPictures(built, resources = []) {
         buttonImageStage: 1,
         buttonImageResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
         buttonImageResourceCount: collectButtonImageResourceIds(ast).length
+      } : {}),
+      ...(treeNodeImages ? {
+        treeNodePresentationStage: 1,
+        treeNodePresentationVersion: '0.1',
+        treeNodePresentationMode: 'source-backed-imagelist-binding',
+        treeNodeImageResourceCount: collectTreeNodeImageResourceIds(ast).length
       } : {}),
       ...(windowIcons.length ? {
         windowIconStage: 1,
@@ -260,6 +268,34 @@ function hasButtonImage(nodes) {
   return found;
 }
 
+function hasTreeNodeImage(nodes) {
+  let found = false;
+  walkPictureNodes(nodes, node => {
+    if (node.kind !== 'uiControl' || node.control !== 'tree') return;
+    walkTreeNodeImages(node.treeNodes, () => { found = true; });
+  });
+  return found;
+}
+
+function collectTreeNodeImageResourceIds(ast) {
+  const ids = [];
+  const windows = (ast ?? []).filter(node => node.kind === 'window');
+  for (const windowNode of windows) {
+    const lists = new Map();
+    for (const child of windowNode.body ?? []) {
+      if (child.kind === 'uiControl' && child.control === 'imagelist' && child.id) lists.set(child.id, child);
+    }
+    walkPictureNodes([windowNode], node => {
+      if (node.kind !== 'uiControl' || node.control !== 'tree') return;
+      walkTreeNodeImages(node.treeNodes, treeNode => {
+        const item = (lists.get(treeNode.imageListId)?.items ?? []).find(entry => entry.name === treeNode.imageItem);
+        if (item?.resourceId) ids.push(item.resourceId);
+      });
+    });
+  }
+  return ids;
+}
+
 function collectButtonImageResourceIds(ast) {
   const ids = [];
   walkPictureNodes(ast, node => {
@@ -291,6 +327,36 @@ function validateStaticButtonImageReferences(ast, resources) {
         throw new Error(`line ${node.line ?? '?'}: Button '${node.id ?? 'unnamed'}' image ${node.imageListId}.${node.imageItem} references missing project resource '${id}'.`);
       }
     });
+  }
+}
+
+function validateStaticTreeNodeImageReferences(ast, resources) {
+  const ids = new Set(resources.map(resource => resource.id));
+  const windows = (ast ?? []).filter(node => node.kind === 'window');
+  for (const windowNode of windows) {
+    const lists = new Map();
+    for (const child of windowNode.body ?? []) {
+      if (child.kind === 'uiControl' && child.control === 'imagelist' && child.id) lists.set(child.id, child);
+    }
+    walkPictureNodes([windowNode], node => {
+      if (node.kind !== 'uiControl' || node.control !== 'tree') return;
+      walkTreeNodeImages(node.treeNodes, treeNode => {
+        const item = (lists.get(treeNode.imageListId)?.items ?? []).find(entry => entry.name === treeNode.imageItem);
+        const source = quotedPictureValue(item?.sourceExpr);
+        if (!source?.startsWith(PICTURE_RESOURCE_PREFIX)) return;
+        const id = source.slice(PICTURE_RESOURCE_PREFIX.length);
+        if (!ids.has(id)) {
+          throw new Error(`line ${treeNode.line ?? '?'}: TreeView node image ${treeNode.imageListId}.${treeNode.imageItem} references missing project resource '${id}'.`);
+        }
+      });
+    });
+  }
+}
+
+function walkTreeNodeImages(nodes, visit) {
+  for (const node of nodes ?? []) {
+    if (node?.imageListId && node?.imageItem) visit(node);
+    walkTreeNodeImages(node?.children, visit);
   }
 }
 
