@@ -88,7 +88,7 @@ export function normalizeStructuralKeyboard(panel) {
     if (shortcuts) listbox.setAttribute('aria-keyshortcuts', shortcuts);
   }
 
-  for (const input of panel.querySelectorAll?.('.designer-table-editor input, #designerTreeNodeLabel, #designerTreeNodeImage, #designerTabPageTitle, [data-tabs-tree-label], [data-tabs-tree-image]') ?? []) {
+  for (const input of panel.querySelectorAll?.('.designer-table-editor input, #designerTreeNodeLabel, #designerTreeNodeImage, #designerTreeNodeHint, #designerTabPageTitle, [data-tabs-tree-label], [data-tabs-tree-image], [data-tabs-tree-hint]') ?? []) {
     input.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
   }
 
@@ -110,12 +110,12 @@ function handleCommitShortcut(panel, event) {
   } else if (target.matches('[data-table-column], [data-table-cell]')) {
     action = panel.querySelector('[data-table-action="apply"]');
     focusSelector = attributeSelector(target, ['data-table-column', 'data-table-cell']);
-  } else if (target.matches('[data-tabs-tree-label], [data-tabs-tree-image]')) {
+  } else if (target.matches('[data-tabs-tree-label], [data-tabs-tree-image], [data-tabs-tree-hint]')) {
     action = target.closest('[data-tabs-structure-editor="tree"]')?.querySelector('[data-tabs-tree-action="rename"]');
-    focusSelector = target.matches('[data-tabs-tree-image]') ? '[data-tabs-tree-image]' : '[data-tabs-tree-label]';
-  } else if (target.id === 'designerTreeNodeLabel' || target.id === 'designerTreeNodeImage') {
+    focusSelector = target.matches('[data-tabs-tree-image]') ? '[data-tabs-tree-image]' : target.matches('[data-tabs-tree-hint]') ? '[data-tabs-tree-hint]' : '[data-tabs-tree-label]';
+  } else if (target.id === 'designerTreeNodeLabel' || target.id === 'designerTreeNodeImage' || target.id === 'designerTreeNodeHint') {
     action = panel.querySelector('[data-tree-action="rename"]');
-    focusSelector = target.id === 'designerTreeNodeImage' ? '#designerTreeNodeImage' : '#designerTreeNodeLabel';
+    focusSelector = target.id === 'designerTreeNodeImage' ? '#designerTreeNodeImage' : target.id === 'designerTreeNodeHint' ? '#designerTreeNodeHint' : '#designerTreeNodeLabel';
   } else if (target.id === 'designerTabPageTitle') {
     action = panel.querySelector('[data-tabs-action="rename"]');
     focusSelector = '#designerTabPageTitle';

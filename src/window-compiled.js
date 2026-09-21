@@ -26,6 +26,7 @@ export function buildCompiledWindowArtifact(compiled) {
   validateWindowRuntimeSupport(compiled, {
     allowTree: true,
     allowTreeNodeImages: true,
+    allowTreeNodeHints: true,
     allowSlider: true,
     allowProgressBar: true,
     allowScrollBar: true,

@@ -166,6 +166,7 @@ export function parse(source) {
         node.imageListId = parsed.imageListId;
         node.imageItem = parsed.imageItem;
       }
+      if (parsed.hint) node.hint = parsed.hint;
       nodes.push(node);
     }
     return nodes;

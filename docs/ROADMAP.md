@@ -178,7 +178,7 @@ Implemented R4 Stage 1 surfaces:
 Next component/project priorities:
 
 - [x] TreeView node ImageList bindings on Studio/Web with source-backed Designer editing and explicit Current Ready native fail-closed behavior
-- [ ] richer TreeView metadata beyond icons, ListView modes and remaining Table view metadata
+- [ ] richer TreeView metadata beyond icons: tooltip/hint Stage 2 is complete; node state presentation, ListView modes and remaining Table view metadata remain
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands
 - [ ] nonvisual standard dialogs

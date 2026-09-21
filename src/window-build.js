@@ -1,6 +1,6 @@
 import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
 import { resolveButtonImageBinding } from './button-image.js';
-import { countTreeNodeImages, resolveTreeNodeImageBinding, visitTreeNodeImages } from './tree-node-presentation.js';
+import { countTreeNodeHints, countTreeNodeImages, resolveTreeNodeImageBinding, visitTreeNodeImages } from './tree-node-presentation.js';
 import { hasWindowIcon } from './window-icon.js';
 
 export class WindowBuildError extends Error {}
@@ -53,6 +53,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuCheckedBindings = 0;
   let treeViews = 0;
   let treeNodeImages = 0;
+  let treeNodeHints = 0;
   let sliders = 0;
   let progressBars = 0;
   let scrollBars = 0;
@@ -85,7 +86,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'table' && Array.isArray(child.tableColumnPresentation)) advancedTableColumns += 1;
-    if (child.control === 'tree') { treeViews += 1; treeNodeImages += countTreeNodeImages(child.treeNodes); }
+    if (child.control === 'tree') { treeViews += 1; treeNodeImages += countTreeNodeImages(child.treeNodes); treeNodeHints += countTreeNodeHints(child.treeNodes); }
     if (child.control === 'memo') memos += 1;
     if (child.control === 'paintbox') paintboxes += 1;
     if (child.control === 'imagelist') {
@@ -358,6 +359,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (treeNodeHints && !options.allowTreeNodeHints) {
+    throw new WindowBuildError(
+      'TreeView node hints Stage 2 are Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport per-node tooltip metadata; validation fails closed rather than silently discarding hints.'
+    );
+  }
+
   if (sliders && !options.allowSlider) {
     throw new WindowBuildError(
       'Slider is not enabled for this Window target. Select a Slider-capable browser target or enable its versioned Slider runtime contract; validation fails closed otherwise.'
@@ -417,6 +424,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls: controls.size,
     treeViews,
     treeNodeImages,
+    treeNodeHints,
     sliders,
     progressBars,
     scrollBars,

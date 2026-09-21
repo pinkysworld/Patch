@@ -16,7 +16,7 @@ function cloneNode(node) {
   const labelExpr = String(node.labelExpr ?? '').trim();
   if (!labelExpr) throw new Error('TreeView node label cannot be empty.');
   const children = Array.isArray(node.children) ? node.children.map(cloneNode) : [];
-  return { labelExpr, ...(node.imageListId && node.imageItem ? { imageListId: String(node.imageListId), imageItem: String(node.imageItem) } : {}), children };
+  return { labelExpr, ...(node.imageListId && node.imageItem ? { imageListId: String(node.imageListId), imageItem: String(node.imageItem) } : {}), ...(String(node.hint ?? '').trim() ? { hint: String(node.hint).trim() } : {}), children };
 }
 
 function treeLocation(nodes, path) {
