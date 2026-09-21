@@ -630,6 +630,10 @@ function createTreeElement(control, context) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'patch-tree-node';
+      if (node.hint) {
+        button.title = node.hint;
+        button.dataset.patchTreeHint = 'true';
+      }
       if (node.imageSource) {
         const img = document.createElement('img');
         img.className = 'patch-tree-node-image';
