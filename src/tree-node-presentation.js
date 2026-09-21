@@ -1,6 +1,7 @@
 import { normalizeImageListId, normalizeImageListItemName } from './imagelist-control.js';
 
 export const PATCH_TREE_NODE_PRESENTATION_VERSION = '0.1';
+export const PATCH_TREE_NODE_HINT_VERSION = '0.1';
 
 export class PatchTreeNodePresentationError extends Error {
   constructor(message, code = 'TREE_NODE_PRESENTATION_INVALID') {
@@ -42,22 +43,56 @@ export function formatTreeNodeImageBinding(input) {
   return `${binding.imageListId}.${binding.imageItem}`;
 }
 
+export function normalizeTreeNodeHint(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
+export function parseTreeNodeHintLiteral(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const source = String(value).trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new PatchTreeNodePresentationError(
+      'TreeView node hint must be a quoted text literal such as hint "Open source folder".',
+      'TREE_NODE_HINT_SYNTAX'
+    );
+  }
+  if (typeof parsed !== 'string' || !parsed.trim()) {
+    throw new PatchTreeNodePresentationError(
+      'TreeView node hint must be non-empty quoted text.',
+      'TREE_NODE_HINT'
+    );
+  }
+  return parsed;
+}
+
+export function formatTreeNodeHint(value) {
+  const hint = normalizeTreeNodeHint(value);
+  return hint ? JSON.stringify(hint) : '';
+}
+
 export function parsePatchTreeNodeDeclaration(value) {
   const source = String(value ?? '').trim();
-  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?\s*$/i);
+  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?(?:\s+hint\s+("(?:\\.|[^"\\])*"))?\s*$/i);
   if (!match) {
     throw new PatchTreeNodePresentationError(
-      'TreeView node syntax is node <label> or node <label> image list.item.',
+      'TreeView node syntax is node <label> [image list.item] [hint "text"].',
       'TREE_NODE_SOURCE_SYNTAX'
     );
   }
   const labelExpr = String(match[1] ?? '').trim();
   if (!labelExpr) throw new PatchTreeNodePresentationError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
   const binding = parseTreeNodeImageBinding(match[2]);
+  const hint = parseTreeNodeHintLiteral(match[3]);
   return Object.freeze({
     labelExpr,
     imageListId: binding?.imageListId ?? null,
-    imageItem: binding?.imageItem ?? null
+    imageItem: binding?.imageItem ?? null,
+    ...(hint ? { hint } : {})
   });
 }
 
@@ -65,11 +100,16 @@ export function formatPatchTreeNodeDeclaration(input = {}) {
   const labelExpr = String(input.labelExpr ?? '').trim();
   if (!labelExpr) throw new PatchTreeNodePresentationError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
   const image = formatTreeNodeImageBinding(input);
-  return image ? `node ${labelExpr} image ${image}` : `node ${labelExpr}`;
+  const hint = formatTreeNodeHint(input.hint);
+  return `node ${labelExpr}${image ? ` image ${image}` : ''}${hint ? ` hint ${hint}` : ''}`;
 }
 
 export function treeNodeHasImage(node) {
   return Boolean(node?.imageListId && node?.imageItem);
+}
+
+export function treeNodeHasHint(node) {
+  return Boolean(normalizeTreeNodeHint(node?.hint));
 }
 
 export function countTreeNodeImages(nodes) {
@@ -77,6 +117,15 @@ export function countTreeNodeImages(nodes) {
   for (const node of nodes ?? []) {
     if (treeNodeHasImage(node)) count += 1;
     count += countTreeNodeImages(node.children);
+  }
+  return count;
+}
+
+export function countTreeNodeHints(nodes) {
+  let count = 0;
+  for (const node of nodes ?? []) {
+    if (treeNodeHasHint(node)) count += 1;
+    count += countTreeNodeHints(node.children);
   }
   return count;
 }
