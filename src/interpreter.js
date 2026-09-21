@@ -285,16 +285,16 @@ export class PatchInterpreter {
       const image=node.imageListId&&node.imageItem?(list?.items??[]).find(item=>item.name===node.imageItem):null;
       const children=this.uiTreeNodes(node.children,lists);
       const text=this.uiText(node.labelExpr);
-      if(!image)return{text,children};
-      return {
-        text,
-        imageListId:node.imageListId,
-        imageItem:node.imageItem,
-        imageSource:this.uiText(image.sourceExpr),
-        imageWidth:Number(list?.logicalWidth)||16,
-        imageHeight:Number(list?.logicalHeight)||16,
-        children
-      };
+      const item={text,children};
+      if(node.hint)item.hint=String(node.hint);
+      if(image){
+        item.imageListId=node.imageListId;
+        item.imageItem=node.imageItem;
+        item.imageSource=this.uiText(image.sourceExpr);
+        item.imageWidth=Number(list?.logicalWidth)||16;
+        item.imageHeight=Number(list?.logicalHeight)||16;
+      }
+      return item;
     });
   }
   uiText(expr){
