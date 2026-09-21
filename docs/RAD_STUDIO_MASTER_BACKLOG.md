@@ -408,7 +408,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 
 - [x] advanced Table/DataGrid columns Stage 1: source-backed per-column width/alignment on Studio/Web, structural Designer editing preserves metadata, Current Ready native fails closed;
 - [x] TreeView node icons Stage 1: optional source-backed `image ImageList.item` metadata, Studio/Web rendering, structural Designer preservation/editing and Current Ready native fail-closed;
-- [ ] richer TreeView node metadata beyond icons (for example hints/state presentation);
+- [ ] richer TreeView node metadata beyond icons: source-backed tooltip/hint Stage 2 is complete on Studio/Web with Current Ready native fail-closed; node state presentation remains;
 - [ ] ListView icon/detail modes;
 - [ ] Header control;
 - [ ] property-driven sorting/filtering hooks.
