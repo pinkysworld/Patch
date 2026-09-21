@@ -82,3 +82,20 @@ The binding is source-backed metadata. Studio App Preview and Standalone Window 
 A node click still emits exactly the same transient root-to-node text-list path through `changed(value)`. Icons add no persistent state and no second mutation channel.
 
 The Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 contract does not transport per-node ImageList bindings. Native validation therefore fails closed when this metadata is present rather than dropping the icon silently. A future native contract can add that transport explicitly.
+
+## Node hint presentation 0.1
+
+The next R4 TreeView presentation slice adds optional source-backed tooltip metadata:
+
+```patch
+tree as files:
+  node "src" hint "Source folder"
+    node "parser.js" hint "Parser implementation"
+```
+
+Hints are static quoted text attached to a node declaration. Studio App Preview and Standalone Window Web expose the text through the browser tooltip while keeping the node's accessible selection name and root-to-node `changed(value)` path based only on node labels.
+
+The structural Properties editors expose a Node hint field for top-level and nested TreeViews. Rename, reorder, indent, outdent and subtree duplication preserve the hint because it is part of the canonical source-backed node metadata.
+
+Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 does not transport per-node tooltip metadata. Native validation therefore fails closed when hints are present. State presentation remains a later TreeView metadata slice.
+
