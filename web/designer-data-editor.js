@@ -13,6 +13,7 @@ import {
   removeTreeNode,
   renameDesignerTabPage,
   renameTreeNode,
+  setTreeNodeHint,
   setTreeNodeImage,
   treeNodeAt,
   updateDesignerTableData,
@@ -112,6 +113,7 @@ function renderTreeEditor(control) {
     </div>
     <label class="inspector-field">Node label expression <input id="designerTreeNodeLabel" spellcheck="false" value="${escapeAttr(selected?.labelExpr ?? '')}"></label>
     <label class="inspector-field">Node image <input id="designerTreeNodeImage" spellcheck="false" placeholder="tree_icons.folder" value="${escapeAttr(selected?.imageListId && selected?.imageItem ? `${selected.imageListId}.${selected.imageItem}` : '')}"></label>
+    <label class="inspector-field">Node hint <input id="designerTreeNodeHint" spellcheck="false" placeholder="Shown as a tooltip" value="${escapeAttr(selected?.hint ?? '')}"></label>
     <div class="designer-data-actions">
       <button type="button" class="secondary" data-tree-action="add-root">+ Root</button>
       <button type="button" class="secondary" data-tree-action="add-child" ${path ? '' : 'disabled'}>+ Child</button>
@@ -122,7 +124,7 @@ function renderTreeEditor(control) {
       <button type="button" class="secondary" data-tree-action="outdent" ${path ? '' : 'disabled'}>Outdent</button>
       <button type="button" class="danger" data-tree-action="delete" ${path ? '' : 'disabled'}>Delete node</button>
     </div>
-    <p class="inspector-hint designer-keyboard-hint">Keyboard: ↑/↓ or Home/End selects nodes; Ctrl/Cmd+↑/↓ reorders; Ctrl/Cmd+←/→ outdents/indents; Ctrl/Cmd+Enter focuses the label. Ctrl/Cmd+Enter in the label or image field applies the selected node source metadata.</p>`;
+    <p class="inspector-hint designer-keyboard-hint">Keyboard: ↑/↓ or Home/End selects nodes; Ctrl/Cmd+↑/↓ reorders; Ctrl/Cmd+←/→ outdents/indents; Ctrl/Cmd+Enter focuses the label. Ctrl/Cmd+Enter in the label, image or hint field applies the selected node source metadata.</p>`;
 }
 
 function renderTableEditor(control) {
@@ -234,7 +236,7 @@ function applyTreeAction(action) {
     let result;
     if (action === 'add-root') result = addTreeRoot(control.treeNodes);
     else if (action === 'add-child') result = addTreeChild(control.treeNodes, path);
-    else if (action === 'rename') { result = renameTreeNode(control.treeNodes, path, panel.querySelector('#designerTreeNodeLabel')?.value ?? ''); result = setTreeNodeImage(result.nodes, result.path, panel.querySelector('#designerTreeNodeImage')?.value ?? ''); }
+    else if (action === 'rename') { result = renameTreeNode(control.treeNodes, path, panel.querySelector('#designerTreeNodeLabel')?.value ?? ''); result = setTreeNodeImage(result.nodes, result.path, panel.querySelector('#designerTreeNodeImage')?.value ?? ''); result = setTreeNodeHint(result.nodes, result.path, panel.querySelector('#designerTreeNodeHint')?.value ?? ''); }
     else if (action === 'up' || action === 'down') result = moveTreeNode(control.treeNodes, path, action);
     else if (action === 'indent') result = indentTreeNode(control.treeNodes, path);
     else if (action === 'outdent') result = outdentTreeNode(control.treeNodes, path);
