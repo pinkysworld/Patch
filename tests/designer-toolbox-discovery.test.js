@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { DESIGNER_TOOL_CATALOG, groupedDesignerTools } from '../web/designer-toolbox.js';
 
 test('Designer control picker exposes every existing top-level toolbox control exactly once', () => {
-  const expected = ['addText','addButton','addInput','addMemo','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer','addImagelist'];
+  const expected = ['addText','addButton','addInput','addMemo','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addListview','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer','addImagelist'];
   assert.deepEqual(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId), expected);
   assert.equal(new Set(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId)).size, expected.length);
 });
@@ -14,7 +14,7 @@ test('Designer control picker groups controls by user-facing purpose', () => {
   assert.deepEqual(groups.map(group => group.group), ['Basic','Choices','Data','Containers','Graphics','Chrome','Nonvisual']);
   assert.deepEqual(groups.find(group => group.group === 'Basic').tools.map(tool => tool.label), ['Text','Button','Input','Memo','Checkbox']);
   assert.deepEqual(groups.find(group => group.group === 'Choices').tools.map(tool => tool.label), ['Radio group','ComboBox','ListBox','Slider']);
-  assert.deepEqual(groups.find(group => group.group === 'Data').tools.map(tool => tool.label), ['Table','TreeView']);
+  assert.deepEqual(groups.find(group => group.group === 'Data').tools.map(tool => tool.label), ['Table','ListView','TreeView']);
   assert.deepEqual(groups.find(group => group.group === 'Containers').tools.map(tool => tool.label), ['Tabs','Panel']);
   assert.deepEqual(groups.find(group => group.group === 'Graphics').tools.map(tool => tool.label), ['Picture','Shape','PaintBox']);
   assert.deepEqual(groups.find(group => group.group === 'Chrome').tools.map(tool => tool.label), ['StatusBar']);
@@ -28,6 +28,8 @@ test('Designer picker still activates controls through source-backed toolbox but
   const imagelist = fs.readFileSync('web/designer-imagelist.js', 'utf8');
   assert.match(source, /button\.click\(\)/);
   assert.match(forms, /\['#addMemo', 'memo'\]/);
+  assert.match(source, /addDesignerControl\(code\.value, 'listview'/);
+  assert.match(source, /id = 'addListview'/);
   assert.match(source, /addDesignerControl\(code\.value, 'picture'/);
   assert.match(source, /designerInspectorPictureSource/);
   assert.match(source, /addDesignerControl\(code\.value, 'statusbar'/);
@@ -73,6 +75,7 @@ test('desktop Designer rail gives classic RAD and R1 components stable source-ba
   assert.match(toolboxCss, /#designer #addTimer \{ top: 593px !important; \}/);
   assert.match(toolboxCss, /#designer #addTimer::before \{ content: "◷"; \}/);
   assert.match(imageListCss, /#designer #addImagelist \{ top: 627px !important; \}/);
+  assert.match(toolboxCss, /#designer #addListview \{ top: 661px !important; \}/);
   assert.match(imageListCss, /#designer #addImagelist::before \{ content: "▤"; \}/);
 });
 
@@ -89,6 +92,7 @@ test('public Studio and offline PWA package Designer toolbox discovery assets', 
   assert.match(buildSite, /'designer-imagelist\.js'/);
   assert.match(buildSite, /'designer-imagelist\.css'/);
   assert.match(buildSite, /'imagelist-control\.js'/);
+  assert.match(buildSite, /'listview-control\.js'/);
   assert.match(buildSite, /'button-image\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.css'/);
@@ -96,5 +100,6 @@ test('public Studio and offline PWA package Designer toolbox discovery assets', 
   assert.match(sw, /'\.\/designer-imagelist\.js'/);
   assert.match(sw, /'\.\/designer-imagelist\.css'/);
   assert.match(sw, /'\.\.\/src\/imagelist-control\.js'/);
+  assert.match(sw, /'\.\.\/src\/listview-control\.js'/);
   assert.match(sw, /'\.\.\/src\/button-image\.js'/);
 });
