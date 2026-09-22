@@ -1,6 +1,7 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
 import { formatPatchTreeNodeDeclaration, normalizeTreeNodeHint, normalizeTreeNodeState, parseTreeNodeImageBinding } from './tree-node-presentation.js';
+import { formatPatchListViewItemDeclaration, normalizeListViewItems, normalizeListViewMode } from './listview-control.js';
 
 export function updateDesignerTreeNodes(source, selector, treeNodes) {
   const control = requireControl(source, selector, 'tree');
@@ -13,6 +14,21 @@ export function updateDesignerTreeNodes(source, selector, treeNodes) {
   const childIndent = `${indentOf(lines[lineIndex])}  `;
   const rendered = renderTreeNodes(nodes, childIndent);
   lines.splice(lineIndex + 1, end - lineIndex - 1, ...rendered);
+  return validateAndPreserve(source, lines);
+}
+
+export function updateDesignerListViewData(source, selector, changes = {}) {
+  const control = requireControl(source, selector, 'listview');
+  const mode = normalizeListViewMode(Object.hasOwn(changes, 'mode') ? changes.mode : control.mode);
+  const items = normalizeListViewItems(Object.hasOwn(changes, 'items') ? changes.items : (control.items ?? []));
+
+  const lines = normalizeLines(source);
+  const lineIndex = control.line - 1;
+  const end = controlBlockEnd(lines, lineIndex);
+  const indent = indentOf(lines[lineIndex]);
+  const childIndent = `${indent}  `;
+  lines[lineIndex] = `${indent}${formatListViewHeader(control, mode)}`;
+  lines.splice(lineIndex + 1, end - lineIndex - 1, ...items.map(item => `${childIndent}${formatPatchListViewItemDeclaration(item)}`));
   return validateAndPreserve(source, lines);
 }
 
@@ -240,7 +256,7 @@ function requireControl(source, selector, type) {
     item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex
   );
   if (!control || control.type !== type) {
-    const label = type === 'tree' ? 'TreeView' : type === 'tabs' ? 'Tabs' : 'Table';
+    const label = type === 'tree' ? 'TreeView' : type === 'listview' ? 'ListView' : type === 'tabs' ? 'Tabs' : 'Table';
     throw new Error(`Designer selection is not a ${label}.`);
   }
   return control;
@@ -331,6 +347,14 @@ function normalizeTreeNodes(nodes) {
       children: normalizeTreeNodes(node.children ?? [])
     };
   });
+}
+
+function formatListViewHeader(control, mode) {
+  const core = `listview ${normalizeListViewMode(mode)} as ${control.id}`;
+  if ([control.x, control.y, control.width, control.height].every(Number.isInteger)) {
+    return `${core} at ${control.x}, ${control.y} size ${control.width}, ${control.height}:`;
+  }
+  return `${core}:`;
 }
 
 function normalizeRows(rows, width) {
