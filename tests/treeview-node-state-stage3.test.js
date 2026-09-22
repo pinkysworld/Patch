@@ -45,6 +45,11 @@ test('TreeView node state syntax is bounded, deterministic and composable', () =
     imageItem: null,
     state: 'success'
   });
+  assert.deepEqual(parsePatchTreeNodeDeclaration('node "state warning"'), {
+    labelExpr: '"state warning"',
+    imageListId: null,
+    imageItem: null
+  });
   assert.deepEqual(parsePatchTreeNodeDeclaration('node "src" image tree_icons.folder hint "Source folder" state warning'), {
     labelExpr: '"src"',
     imageListId: 'tree_icons',
