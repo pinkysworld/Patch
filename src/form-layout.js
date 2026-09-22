@@ -11,6 +11,7 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   listbox: Object.freeze({ width: 220, height: 120 }),
   slider: Object.freeze({ width: 260, height: 44 }),
   table: Object.freeze({ width: 400, height: 180 }),
+  listview: Object.freeze({ width: 360, height: 180 }),
   tree: Object.freeze({ width: 300, height: 220 }),
   tabs: Object.freeze({ width: 420, height: 240 }),
   panel: Object.freeze({ width: 280, height: 160 }),
