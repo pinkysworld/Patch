@@ -224,6 +224,8 @@ export class PatchInterpreter {
           text:node.textExpr?this.uiText(node.textExpr):'',
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
           nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes,lists):[],
+          listViewMode:node.control==='listview'?(node.mode??'details'):null,
+          listViewItems:node.control==='listview'?this.uiListViewItems(node.items,lists):[],
           source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
           buttonPresentation:node.control==='button'?(node.buttonPresentation??'plain'):null,
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
@@ -278,6 +280,24 @@ export class PatchInterpreter {
       }
     }
     return items;
+  }
+  uiListViewItems(items,lists=new Map()){
+    return (items??[]).map(item=>{
+      const list=item.imageListId?lists.get(item.imageListId):null;
+      const image=item.imageListId&&item.imageItem?(list?.items??[]).find(entry=>entry.name===item.imageItem):null;
+      const model={
+        label:this.uiText(item.labelExpr),
+        detail:item.detail?String(item.detail):''
+      };
+      if(image){
+        model.imageListId=item.imageListId;
+        model.imageItem=item.imageItem;
+        model.imageSource=this.uiText(image.sourceExpr);
+        model.imageWidth=Number(list?.logicalWidth)||16;
+        model.imageHeight=Number(list?.logicalHeight)||16;
+      }
+      return model;
+    });
   }
   uiTreeNodes(nodes,lists=new Map()){
     return (nodes??[]).map(node=>{
