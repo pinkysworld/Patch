@@ -110,6 +110,22 @@ when files changed:
     <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Native GUI IR 1.2 introduced TreeView; the current IR 1.9 / payload v19 / runtime v1.10 line preserves that hierarchy while composing later Slider, Chrome, Shape, PaintBox, Button/ImageList and application-icon support.</p>
   </section>
 
+  <section class="page-section" data-listview-language-support="icons-details-v1">
+    <h2>ListView separates item identity from presentation</h2>
+    <p>ListView Stage 1 is a top-level Studio/Web Data control with explicit <code>icons</code> and <code>details</code> modes. Each item keeps one label expression as its event identity while optional ImageList and detail metadata affect presentation only.</p>
+    <pre class="page-code">create text selected = ""
+window "Files" as main size 640, 420:
+  imagelist as file_icons size 16, 16:
+    image file from "patch-resource:icons.file"
+  listview details as files at 24, 56 size 360, 220:
+    item "README.md" image file_icons.file detail "Documentation"
+    item "main.patch" image file_icons.file detail "Patch source"
+when files changed:
+  change selected:
+    set = value</pre>
+    <p>Selecting <code>README.md</code> emits the text <code>README.md</code>. It never emits the detail string or image binding. Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 has no ListView Stage 1 transport and therefore fails closed.</p>
+  </section>
+
   <section class="page-section">
     <h2>Graphics stay source-backed</h2>
     <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Current Ready support remains explicit: Picture has bounded native PNG/JPEG support under <code>native-picture-formats/1.0</code>; Shape and PaintBox have native Ready support; PaintBox includes bounded PNG/JPEG <code>draw image</code>; Buttons may bind <code>image list.item</code> on Web and native Windows/macOS/Linux; Forms may declare <code>icon</code> under <code>window-icon/1.0</code> for Studio/Web and native application/Form icon packaging.</p>
