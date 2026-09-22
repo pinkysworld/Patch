@@ -5,6 +5,7 @@ import { applyPatchPictureProportional } from './picture-control.js';
 import { formatPatchPictureDeclaration } from './picture-source.js';
 import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
 import { formatPatchWindowDeclaration, normalizeWindowIconExpression } from './window-icon.js';
+import { formatPatchListViewItemDeclaration, normalizeListViewItems, normalizeListViewMode } from './listview-control.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -167,6 +168,16 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
+  if (type === 'listview') {
+    const id = nextId(lines, 'listview');
+    lines.splice(insertAt, 0,
+      `${childIndent}${formatListViewControl(id, 'details', layout)}`,
+      `${childIndent}  item "Item 1" detail "Detail 1"`,
+      `${childIndent}  item "Item 2" detail "Detail 2"`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   if (type === 'tree') {
     const id = nextId(lines, 'tree');
     lines.splice(insertAt, 0,
@@ -214,6 +225,15 @@ export function listDesignerControlsFromAst(ast) {
       if (child.kind === 'uiControl' && child.control === 'table') {
         item.columns = Array.isArray(child.columns) ? [...child.columns] : [];
         item.rows = Array.isArray(child.rows) ? child.rows.map(row => [...row]) : [];
+      }
+      if (child.kind === 'uiControl' && child.control === 'listview') {
+        item.mode = child.mode ?? 'details';
+        item.items = (child.items ?? []).map(entry => ({
+          labelExpr: entry.labelExpr,
+          ...(entry.imageListId && entry.imageItem ? { imageListId: entry.imageListId, imageItem: entry.imageItem } : {}),
+          ...(entry.detail ? { detail: entry.detail } : {}),
+          line: entry.line ?? null
+        }));
       }
       if (child.kind === 'uiControl' && child.control === 'tree') {
         item.treeNodes = cloneTreeNodes(child.treeNodes);
@@ -326,6 +346,16 @@ export function updateDesignerControl(source, selector, changes = {}) {
     timerInterval = timerIntervalNumber(Object.hasOwn(changes, 'interval') ? changes.interval : control.interval);
   }
 
+  if (control.type === 'listview') {
+    const mode = normalizeListViewMode(Object.hasOwn(changes, 'mode') ? changes.mode : control.mode);
+    if (Object.hasOwn(changes, 'items')) normalizeListViewItems(changes.items);
+    const layout = normalizeControlLayout(control, changes);
+    const indent = indentOf(lines[lineIndex]);
+    lines[lineIndex] = `${indent}${formatListViewControl(nextId, mode, layout)}`;
+    if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+    return preserveTrailingNewline(source, lines.join('\n'));
+  }
+
   if (control.type === 'picture') {
     const layout = normalizeControlLayout(control, changes);
     const indent = indentOf(lines[lineIndex]);
@@ -360,7 +390,7 @@ export function removeDesignerControl(source, selector) {
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
   const directiveIndex = designerMetadataStartBefore(lines, lineIndex);
-  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree' || control.type === 'imagelist') {
+  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'listview' || control.type === 'tree' || control.type === 'imagelist') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -575,6 +605,12 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
 
 function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
+  if (!layout) return `${core}:`;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function formatListViewControl(id, mode, layout) {
+  const core = `listview ${normalizeListViewMode(mode)} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
 }
