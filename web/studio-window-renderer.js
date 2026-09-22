@@ -18,7 +18,7 @@ function runtimeWindowFingerprint(model) {
 }
 
 const RUNTIME_CORE_CONTROL_TYPES = new Set([
-  'tabs', 'panel', 'text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
+  'tabs', 'panel', 'text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'listview', 'slider', 'picture', 'tree'
 ]);
 
 function runtimeControlFingerprint(control) {
@@ -536,6 +536,8 @@ function createControlElement(control, context) {
         }
       });
     }
+  } else if (control.type === 'listview') {
+    el = createListViewElement(control, context);
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
@@ -559,6 +561,63 @@ function applyPanelChildLayout(element, layout) {
     boxSizing: 'border-box'
   });
   element.dataset.patchPanelChildLayout = 'relative';
+}
+
+function createListViewElement(control, context) {
+  const root = document.createElement('div');
+  root.className = 'patch-listview';
+  root.dataset.patchListviewMode = control.listViewMode || 'details';
+  root.setAttribute('role', 'listbox');
+  const key = runtimeControlKey(control, context);
+  const remembered = getRuntimeSelection(context.container, 'listview', key);
+  let selected = typeof remembered === 'string' ? remembered : '';
+
+  const selectItem = (button, label, emit) => {
+    selected = label;
+    setRuntimeSelection(context.container, 'listview', key, label);
+    for (const current of root.querySelectorAll('.patch-listview-item')) {
+      current.setAttribute('aria-selected', current === button ? 'true' : 'false');
+    }
+    if (emit) context.dispatch(control.id, 'changed', { value: label });
+  };
+
+  for (const item of control.listViewItems ?? []) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'patch-listview-item';
+    button.setAttribute('role', 'option');
+    button.setAttribute('aria-selected', item.label === selected ? 'true' : 'false');
+    if (item.imageSource) {
+      const img = document.createElement('img');
+      img.className = 'patch-listview-image';
+      img.alt = '';
+      img.width = item.imageWidth || 16;
+      img.height = item.imageHeight || 16;
+      try {
+        img.src = pictureResourceDataUri(item.imageSource, getStudioProjectResources());
+      } catch {
+        img.src = item.imageSource;
+      }
+      button.appendChild(img);
+    }
+    const copy = document.createElement('span');
+    copy.className = 'patch-listview-copy';
+    const label = document.createElement('span');
+    label.className = 'patch-listview-label';
+    label.textContent = item.label;
+    copy.appendChild(label);
+    if (item.detail) {
+      const detail = document.createElement('span');
+      detail.className = 'patch-listview-detail';
+      detail.textContent = item.detail;
+      copy.appendChild(detail);
+    }
+    button.appendChild(copy);
+    if (context.interactive) button.addEventListener('click', () => selectItem(button, item.label, true));
+    else button.disabled = true;
+    root.appendChild(button);
+  }
+  return root;
 }
 
 function createPanelElement(control, context) {
