@@ -9,7 +9,7 @@ Patch Studio currently tracks:
 - Patch package **0.2.0-beta.36**;
 - Change IR **0.10**;
 - Studio project bundle **v4**;
-- Component Registry **0.10**;
+- Component Registry **0.11**;
 - Current Ready Native GUI IR **1.9**;
 - Current Ready sealed payload **v19**;
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
@@ -53,7 +53,7 @@ The searchable Component Palette is driven from the canonical registry, not an i
 
 - Basic: Text, Button, Input, Checkbox
 - Choices: Radio group, ComboBox, ListBox, Slider
-- Data: Table, TreeView
+- Data: Table, ListView, TreeView
 - Containers: Tabs, Panel
 - Graphics: Picture, Shape, PaintBox
 - Chrome: StatusBar
@@ -65,11 +65,11 @@ The searchable Component Palette is driven from the canonical registry, not an i
 
 Properties and Events share the source-backed Object Inspector. Current behavior includes object selection, component-specific property editing, Create handler, Open handler and default event navigation. Handlers are ordinary visible `when ...:` blocks.
 
-Current event families include Button/Picture `OnClick`, Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/TreeView `OnChange`, Timer `OnTick` and PaintBox `OnPaint`. ImageList exposes no event in Stage 1.
+Current event families include Button/Picture `OnClick`, Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/ListView/TreeView `OnChange`, Timer `OnTick` and PaintBox `OnPaint`. ImageList exposes no event in Stage 1.
 
-Table, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations. Nested Table and TreeView editors use the same source-backed semantics.
+Table, ListView, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations. Nested Table and TreeView editors use the same source-backed semantics.
 
-**Table: text-list for the selected row.** The selected Table row is a transient event value in Studio App Preview, Standalone Web and supported native paths. TreeView likewise exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
+**Data selection contracts.** Table exposes the selected row as a transient text-list. ListView Stage 1 exposes only the selected item label as transient text, regardless of icons/details mode. TreeView exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
 
 ## Layout and Form Designer operations
 
