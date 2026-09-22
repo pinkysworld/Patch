@@ -155,7 +155,10 @@ test('Designer creates edits and removes ListView as one source-backed block', (
   assert.match(edited, /listview icons as listview_1/);
   assert.match(edited, /item "Folder" detail "Source folder"/);
   assert.match(edited, /item "File" image icons\.file detail "Document"/);
-  assert.throws(() => compile(edited, { kind: 'window' }), /ImageList 'icons'.*not defined/i);
+  assert.throws(
+    () => validateWindowRuntimeSupport(compile(edited, { kind: 'window' }), { allowListView: true, allowImageList: true }),
+    /ImageList 'icons'.*not defined/i
+  );
 
   const removed = removeDesignerControl(added, control);
   assert.doesNotMatch(removed, /listview|item "Item/);
