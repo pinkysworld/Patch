@@ -12,7 +12,7 @@ It complements, rather than replaces, `examples/workshop-desk.patch`:
 The Showcase uses four focused Forms with a consistent card/dashboard layout:
 
 - **Patch Studio Showcase** is the primary dashboard. It groups account inputs, preferences/state, secondary semantics and project actions into distinct visual regions with consistent spacing.
-- **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
+- **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. It includes a real ListView details-mode fixture backed by the Gallery ImageList, proving that item icons/details stay presentation-only while selection emits the item label. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
 - **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.
 - **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.
 - **Calendar Lab** gives the inline Calendar Stage 1 presentation enough room to behave like a real date-selection surface instead of crowding the dashboard.
@@ -23,7 +23,7 @@ The visual fixture should remain presentation-ready. New controls should be inte
 
 The Showcase is a project-v4 multi-file bundle with a real project PNG resource and currently covers:
 
-- every Component Registry 0.10 type: Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer and ImageList;
+- every Component Registry 0.11 type: Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, ListView, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer and ImageList;
 - advanced Table columns as source-backed `# @table-columns 136:left, 174:left, 104:center`, proving per-column pixel/auto width and left/center/right alignment without changing Table row or event semantics;
 - PasswordEdit and MaskedEdit source-backed Input presentations;
 - NumberEdit as the source-backed `# @number-edit` Input presentation;
