@@ -66,6 +66,7 @@ export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeInputPresentation(compiled?.ast);
   assertCurrentNativeButtonPresentation(compiled?.ast);
   assertCurrentNativeListboxPresentation(compiled?.ast);
+  assertCurrentNativeListView(compiled?.ast);
   assertCurrentNativeSliderPresentation(compiled?.ast);
   assertCurrentNativePanelPresentation(compiled?.ast);
   assertCurrentNativePanelScroll(compiled?.ast);
@@ -181,6 +182,21 @@ function assertCurrentNativeListboxPresentation(nodes) {
     }
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativeListboxPresentation(page.body);
+    }
+  }
+}
+
+function assertCurrentNativeListView(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'listview') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`ListView Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no ListView icon/detail transport or consumer contract; validation fails closed rather than lowering it as ListBox or Table.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativeListView(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativeListView(page.body);
     }
   }
 }
