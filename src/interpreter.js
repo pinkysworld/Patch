@@ -287,6 +287,7 @@ export class PatchInterpreter {
       const text=this.uiText(node.labelExpr);
       const item={text,children};
       if(node.hint)item.hint=String(node.hint);
+      if(node.state)item.state=String(node.state);
       if(image){
         item.imageListId=node.imageListId;
         item.imageItem=node.imageItem;
