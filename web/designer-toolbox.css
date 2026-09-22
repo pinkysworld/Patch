@@ -171,6 +171,8 @@
 #designer #addStatusbar::before { content: "▰"; }
 #designer #addTimer { top: 593px !important; }
 #designer #addTimer::before { content: "◷"; }
+#designer #addListview { top: 661px !important; }
+#designer #addListview::before { content: "☷"; font-size: 17px; }
 
 /* Form Designer layout 0.3: use the existing source-backed tool buttons as a
    compact two-column component rail. This removes the 600+ px vertical tool
@@ -232,6 +234,7 @@
   #designer #addStatusbar { left: 45px; top: 321px !important; }
   #designer #addTimer { left: 9px; top: 355px !important; }
   #designer #addImagelist { left: 45px; top: 355px !important; }
+  #designer #addListview { left: 9px; top: 389px !important; }
 
   /* Short separators communicate categories without consuming toolbar space. */
   #designer.designer-view::after {
