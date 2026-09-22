@@ -16,7 +16,8 @@ export const PATCH_WINDOW_EVENTS_VERSION = '0.9';
  * `create list` carries the selected options as a transient text list. Table
  * `changed` carries the selected row as a transient list of display strings.
  * TreeView `changed` carries the root-to-node path as a non-empty transient
- * text list.
+ * text list. ListView `changed` carries only the selected item label as text;
+ * icon and detail fields remain presentation metadata.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -48,7 +49,7 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
         throw new PatchRuntimeError(`The 'changed' action for slider '${control}' needs a value from ${min} to ${max}.`);
       }
     }
-    if (['input', 'combo', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
+    if (['input', 'combo', 'radio', 'listview'].includes(controlType) && typeof payload.value !== 'string') {
       throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
     }
     if (controlType === 'listbox') {
