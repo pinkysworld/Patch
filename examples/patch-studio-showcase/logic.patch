@@ -131,7 +131,7 @@ when menu_pinned clicked:
     set = "Pinned menu state changed explicitly"
 
 when menu_about clicked:
-  dialog "Patch Studio Showcase", "A polished Project-v4 workspace for Component Registry 0.10 and current Studio/Web RAD features."
+  dialog "Patch Studio Showcase", "A polished Project-v4 workspace for Component Registry 0.11 and current Studio/Web RAD features."
 
 when about_button clicked:
   dialog "About", "Patch Studio Showcase combines a dashboard, Component Gallery and Dialog Lab while keeping persistent state changes explicit."
@@ -194,6 +194,10 @@ when gallery_picture clicked:
 when gallery_resource_button clicked:
   change gallery_status:
     set = "ImageList-backed Button clicked"
+
+when gallery_list changed:
+  change gallery_status:
+    set = value
 
 when gallery_update clicked:
   change gallery_status:
