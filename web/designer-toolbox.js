@@ -95,6 +95,7 @@ function install() {
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
   installPictureButton();
+  installListViewButton();
   installTimerButton();
   installStatusBarButton();
   installNonvisualTray();
@@ -189,6 +190,23 @@ function installPictureButton() {
   }, { capture: true });
 }
 
+function installListViewButton() {
+  if (!toolbar || toolbar.querySelector('#addListview')) return;
+  const button = doc.createElement('button');
+  button.id = 'addListview';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ ListView';
+  button.setAttribute('aria-label', 'Add ListView');
+  button.title = 'Add a source-backed ListView to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addListViewFromToolbox();
+  }, { capture: true });
+}
+
 function installTimerButton() {
   if (!toolbar || toolbar.querySelector('#addTimer')) return;
   const button = doc.createElement('button');
@@ -234,6 +252,23 @@ function addPictureFromToolbox() {
     setSource(next);
     if (picture) {
       rememberDesignerSelection(canvas, designerSelectionForControl(picture, 'core'), { reason: 'add-picture' });
+    }
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
+function addListViewFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const next = addDesignerControl(code.value, 'listview', { windowIndex });
+    const listview = listDesignerControls(next)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'listview')
+      .at(-1) ?? null;
+    setSource(next);
+    if (listview) {
+      rememberDesignerSelection(canvas, designerSelectionForControl(listview, 'core'), { reason: 'add-listview' });
     }
   } catch (error) {
     showToolError(error);
