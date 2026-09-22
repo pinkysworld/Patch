@@ -13,7 +13,7 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 - current sealed native GUI payload: **v19**
 - current token-free Ready/offline runtime: **v1.10** on Windows, macOS and Linux
 - Studio project format: **multi-file/resource bundle v4**
-- Component Registry: **0.10**
+- Component Registry: **0.11**
 - Offline Studio manifest: **v1**, rolling channel **`offline-studio-v0.2`**
 - Offline Compiler rolling channel: **`offline-compiler-v0.2`**
 - formal runtime-correspondence milestone: **beta.32**
@@ -173,13 +173,14 @@ Implemented R4 Stage 1 surfaces:
 - [x] GroupBox as source-backed Panel presentation via `# @panel-mode group`, Studio/Web supported and Current Ready native fail-closed
 - [x] ScrollBox as block-local Panel behavior via `# @panel-scroll auto`, with transient scroll offset, Studio/Web overflow support and Current Ready native fail-closed
 - [x] SplitContainer as block-local two-pane Panel behavior via `# @panel-split ...` plus `# @panel-split-break`, with source-backed initial ratio, transient runtime divider resizing and Current Ready native fail-closed
-- [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.10 Studio/Web surface, including current R4 presentation presets, and is explicitly loadable in hosted and Offline Studio
+- [x] canonical Project-v4 Patch Studio Showcase covers the complete current Registry 0.11 Studio/Web surface, including current R4 presentation presets, and is explicitly loadable in hosted and Offline Studio
 
 Next component/project priorities:
 
 - [x] TreeView node ImageList bindings on Studio/Web with source-backed Designer editing and explicit Current Ready native fail-closed behavior
 - [x] richer TreeView metadata beyond icons: tooltip/hint Stage 2 and bounded state-tone Stage 3 are complete on Studio/Web with Current Ready native fail-closed behavior
-- [ ] ListView modes and remaining Table view metadata
+- [x] ListView icons/details Stage 1 on Studio/Web with source-backed item metadata, label-only changed(value), Designer editing and Current Ready native fail-closed behavior
+- [ ] remaining Table view metadata
 - [ ] ToolBar / ToolButton / PopupMenu
 - [ ] ActionList-style reusable commands
 - [ ] nonvisual standard dialogs
@@ -299,4 +300,4 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
 - **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
-- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, Offline Studio Stage 2 host-build integration, Registry 0.10, hosted/offline Project-v4 Showcase loading, and R4 Memo/PasswordEdit/MaskedEdit/CheckedListBox/ProgressBar/GroupBox/ScrollBox Stage 1 with explicit native fail-closed boundaries
+- **current:** R0 architecture hardening, Resource Manager drag-to-Form, Panel Stage 2 source/Web foundation, Offline Studio Stage 2 host-build integration, Registry 0.11, hosted/offline Project-v4 Showcase loading, and R4 Memo/PasswordEdit/MaskedEdit/CheckedListBox/ProgressBar/GroupBox/ScrollBox Stage 1 with explicit native fail-closed boundaries
