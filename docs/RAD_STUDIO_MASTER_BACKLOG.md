@@ -37,9 +37,9 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Change IR **0.10**;
 - Current Ready Native GUI IR **1.9**, payload **v19**, runtime **v1.10**;
 - Studio project/resource bundle **v4**;
-- Component Registry **0.10**;
+- Component Registry **0.11**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
-- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar presentation contracts;
+- Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, ListView, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar presentation contracts;
 - source-backed Anchors/Dock, independent TabOrder, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Layers/Object Tree, Lock Controls and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
@@ -409,7 +409,7 @@ Stage-1 controls may be checked here while still having an explicit native fail-
 - [x] advanced Table/DataGrid columns Stage 1: source-backed per-column width/alignment on Studio/Web, structural Designer editing preserves metadata, Current Ready native fails closed;
 - [x] TreeView node icons Stage 1: optional source-backed `image ImageList.item` metadata, Studio/Web rendering, structural Designer preservation/editing and Current Ready native fail-closed;
 - [x] richer TreeView node metadata beyond icons: source-backed tooltip/hint Stage 2 plus bounded state-tone Stage 3 (`muted|info|success|warning|danger`) on Studio/Web, structural Designer preservation/editing and Current Ready native fail-closed;
-- [ ] ListView icon/detail modes;
+- [x] ListView Stage 1 icon/detail modes: first-class top-level `listview icons|details` source blocks, optional ImageList-backed item images and quoted details, Studio/Web rendering, structural Designer editing, label-only transient `changed(value)`, Registry 0.11 and Current Ready native fail-closed;
 - [ ] Header control;
 - [ ] property-driven sorting/filtering hooks.
 
