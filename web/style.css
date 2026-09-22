@@ -508,3 +508,16 @@ details[open] summary::after { content: "−"; }
 .patch-tree-node:hover,.patch-tree-node:focus-visible{background:var(--soft)}
 .patch-tree-node:focus-visible{outline:2px solid color-mix(in srgb,var(--text) 32%,transparent);outline-offset:1px}
 .patch-tree-node:disabled{opacity:1;cursor:default}
+.patch-listview{width:min(100%,560px);min-height:96px;margin:0;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle);overflow:auto}
+.patch-listview[data-patch-listview-mode="icons"]{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;align-content:start}
+.patch-listview[data-patch-listview-mode="details"]{display:flex;flex-direction:column;gap:4px}
+.patch-listview-item{min-width:0;min-height:42px;padding:7px 9px;border-radius:8px;background:transparent;color:inherit;font:inherit;display:flex;align-items:center;gap:8px;text-align:left}
+.patch-listview[data-patch-listview-mode="icons"] .patch-listview-item{min-height:86px;flex-direction:column;justify-content:center;text-align:center}
+.patch-listview-item:hover,.patch-listview-item:focus-visible{background:var(--soft)}
+.patch-listview-item[aria-selected="true"]{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--text) 40%,transparent)}
+.patch-listview-image{width:24px;height:24px;object-fit:contain;flex:0 0 auto}
+.patch-listview[data-patch-listview-mode="icons"] .patch-listview-image{width:32px;height:32px}
+.patch-listview-copy{min-width:0;display:flex;flex-direction:column;gap:1px}
+.patch-listview-label{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.patch-listview-detail{font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.patch-listview-item:disabled{opacity:1;cursor:default}
