@@ -92,6 +92,9 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
   assert.match(forms, /row "GroupBox", "Panel presentation", "Studio\/Web"/);
   assert.match(forms, /row "ScrollBox", "Panel auto-scroll", "Studio\/Web"/);
   assert.match(forms, /row "SplitContainer", "Two-pane Panel", "Studio\/Web"/);
+  assert.match(forms, /row "ListView", "icons\/details \+ changed\(value\)", "Studio\/Web"/);
+  assert.match(forms, /listview details as gallery_list at 380, 498 size 280, 148:/);
+  assert.match(forms, /item "Showcase logo" image gallery_images\.mark detail "Project-v4 PNG resource"/);
   assert.match(forms, /button "Split Lab" as gallery_split/);
   assert.match(forms, /button "Calendar Lab" as gallery_calendar/);
   assert.match(forms, /# @button-mode link\n    button "LinkLabel action" as gallery_link/);
@@ -132,6 +135,8 @@ test('Patch Studio Showcase intentionally tracks the complete current Component 
   assert.match(composition.source, /# @panel-scroll auto/);
   assert.match(composition.source, /# @panel-split vertical 42/);
   assert.match(composition.source, /# @panel-split-break/);
+  assert.match(composition.source, /listview details as gallery_list/);
+  assert.match(composition.source, /when gallery_list changed:\n  change gallery_status:\n    set = value/);
   assert.match(composition.source, /# @taborder 0/);
   assert.match(composition.source, /# @locked/);
   assert.match(composition.source, /# @layout anchor right bottom/);
@@ -219,6 +224,9 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.splitContainerStage, 1);
   assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');
   assert.equal(built.metadata.splitContainerResizeState, 'transient-runtime-only');
+  assert.equal(built.metadata.listViewStage, 1);
+  assert.deepEqual(built.metadata.listViewModes, ['icons', 'details']);
+  assert.equal(built.metadata.listViewEventValue, 'selected-label-text');
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /dataset\.patchInputPresentation='date'/);
@@ -237,6 +245,8 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.match(built.html, /patchPanelScrollExtent/);
   assert.match(built.html, /patch-splitcontainer/);
   assert.match(built.html, /patch-split-divider/);
+  assert.match(built.html, /patch-listview/);
+  assert.match(built.html, /patch-listview-detail/);
   assert.match(built.html, /role','separator/);
   assert.match(built.html, /rel="icon"/);
   assert.match(built.html, /data:image\/png;base64/);
