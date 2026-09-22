@@ -41,7 +41,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   # @locked
   picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 44, 36 size 56, 56
   text "Patch Studio Showcase" at 120, 34 size 430, 34
-  text "A polished Project-v4 workspace for the complete Registry 0.10 Studio/Web surface." at 120, 68 size 660, 24
+  text "A polished Project-v4 workspace for the complete Registry 0.11 Studio/Web surface." at 120, 68 size 660, 24
   text "{status}" at 824, 42 size 300, 42
 
   imagelist as showcase_images size 20, 20:
