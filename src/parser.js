@@ -4,6 +4,7 @@ import { parsePatchButtonDeclaration } from './button-image.js';
 import { parsePatchWindowDeclaration } from './window-icon.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
 import { parsePatchTreeNodeDeclaration } from './tree-node-presentation.js';
+import { normalizeListViewMode, parsePatchListViewItemDeclaration } from './listview-control.js';
 import {
   PATCH_IMAGELIST_MAX_ITEMS,
   normalizeImageListItemName,
@@ -94,6 +95,32 @@ export function parse(source) {
     if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
     return uiControl(fields, null);
   }
+  function listViewControlNode(row, indent, modeText, id, xText, yText, widthText, heightText) {
+    let mode;
+    try {
+      mode = normalizeListViewMode(modeText);
+    } catch (error) {
+      throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+    }
+    if (i >= lines.length || lines[i].indent <= indent) throw new PatchSyntaxError('A ListView needs at least one indented item.', row.line);
+    const itemIndent = lines[i].indent;
+    const items = [];
+    while (i < lines.length && lines[i].indent >= itemIndent) {
+      const child = lines[i];
+      if (child.indent !== itemIndent) throw new PatchSyntaxError('ListView items must use one consistent indentation level.', child.line);
+      let item;
+      try {
+        item = parsePatchListViewItemDeclaration(child.text);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), child.line);
+      }
+      items.push({ ...item, line: child.line });
+      i += 1;
+    }
+    const fields = { control:'listview', textExpr:null, mode, items, id, line:row.line };
+    if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
+    return uiControl(fields, null);
+  }
   function imageListNode(row, indent, id, widthText, heightText) {
     let size;
     try {
@@ -141,8 +168,8 @@ export function parse(source) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
       if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls.', child.line);
-      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox', 'memo'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView, PaintBox or Memo.', child.line);
+      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'listview', 'paintbox', 'memo'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView, ListView, PaintBox or Memo.', child.line);
       }
     }
     return uiControl({ control: 'panel', textExpr: null, id, body, line: row.line }, layout);
@@ -250,6 +277,9 @@ export function parse(source) {
     }
     if ((m = row.text.match(/^tree\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       return treeControlNode(row, indent, m[1], m[2], m[3], m[4], m[5]);
+    }
+    if ((m = row.text.match(/^listview\s+(icons|details)\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/i))) {
+      return listViewControlNode(row, indent, m[1], m[2], m[3], m[4], m[5], m[6]);
     }
     if ((m = row.text.match(/^table\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       return tableNode(row, indent, m[1], m[2], m[3], m[4], m[5], m[6]);
