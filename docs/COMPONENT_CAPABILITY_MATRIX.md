@@ -1,6 +1,6 @@
 # Component capability matrix
 
-Generated from `src/component-registry.js` registry **0.10**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
+Generated from `src/component-registry.js` registry **0.11**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
 
 Current product contract: Change IR **0.10**, Native GUI IR **1.9**, sealed payload **v19**, runtime **v1.10** (`native-gui-1.9/payload-19/runtime-1.10`).
 
@@ -24,6 +24,7 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `listbox` | ListBox | Choices | visual | supported | supported | supported | supported | supported | unsupported | id, options, x, y, width, height | changed |
 | `slider` | Slider | Choices | visual | supported | supported | supported | supported | supported | unsupported | id, min, max, step, x, y, width, height | changed |
 | `table` | Table | Data | visual | supported | supported | supported | supported | supported | unsupported | id, columns, rows, x, y, width, height | changed |
+| `listview` | ListView | Data | visual | supported | supported | unsupported | unsupported | unsupported | unsupported | id, mode, items, x, y, width, height | changed |
 | `tree` | TreeView | Data | visual | supported | supported | supported | supported | supported | unsupported | id, treeNodes, x, y, width, height | changed |
 | `tabs` | Tabs | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, pages, x, y, width, height | — |
 | `panel` | Panel | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, children, x, y, width, height | — |
