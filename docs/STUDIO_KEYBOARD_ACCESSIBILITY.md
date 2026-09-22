@@ -20,7 +20,7 @@ When focus is on a TreeView node option:
 
 - `Ctrl/Cmd + ArrowUp` / `ArrowDown`: move the node up/down;
 - `Ctrl/Cmd + ArrowLeft` / `ArrowRight`: outdent/indent the node;
-- `Ctrl/Cmd + Enter`: focus the node-label expression field.
+- `Ctrl/Cmd + Enter`: focus the node-label expression field; the label, image, hint and state metadata fields all support Ctrl/Cmd+Enter to apply the selected node rewrite.
 
 When focus is on a Tabs page option:
 
