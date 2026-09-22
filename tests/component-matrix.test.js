@@ -62,14 +62,14 @@ test('checked-in capability matrix markdown matches registry generation', () => 
   assert.match(generated, /`imagelist`/);
   assert.match(generated, /`paintbox`/);
   assert.match(generated, /`listview`/);
-  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\\.11/);
+  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\.11/);
 });
 
 test('patch components CLI prints the registry matrix and JSON envelope', () => {
   const cli = path.join(root, 'src', 'cli-entry.js');
   const text = spawnSync(process.execPath, [cli, 'components'], { encoding: 'utf8' });
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, /Patch components {2}registry 0\\.11/);
+  assert.match(text.stdout, /Patch components {2}registry 0\.11/);
   assert.match(text.stdout, /memo/);
   assert.match(text.stdout, /imagelist/);
   assert.match(text.stdout, /supported/);
