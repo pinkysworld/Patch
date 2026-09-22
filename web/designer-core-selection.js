@@ -45,6 +45,7 @@ const CORE_TOOL_TYPES = new Map([
   ['addRadio', 'radio'],
   ['addCombo', 'combo'],
   ['addListbox', 'listbox'],
+  ['addListview', 'listview'],
   ['addSlider', 'slider'],
   ['addTabs', 'tabs']
 ]);
@@ -587,6 +588,7 @@ function displayControlType(type) {
   if (type === 'tree') return 'TreeView';
   if (type === 'combo') return 'ComboBox';
   if (type === 'listbox') return 'ListBox';
+  if (type === 'listview') return 'ListView';
   if (type === 'tabs') return 'Tabs';
   if (type === 'table') return 'Table';
   if (type === 'slider') return 'Slider';
@@ -598,6 +600,7 @@ function inspectorLocation(control) {
   let suffix = '';
   if (control.type === 'tree') suffix = ` · ${countTreeNodes(control.treeNodes)} nodes`;
   if (control.type === 'table') suffix = ` · ${(control.columns ?? []).length} columns · ${(control.rows ?? []).length} rows`;
+  if (control.type === 'listview') suffix = ` · ${control.mode ?? 'details'} · ${(control.items ?? []).length} items`;
   if (control.type === 'slider') suffix = ` · ${control.min}..${control.max} · step ${control.step}`;
   return `Window ${control.windowIndex + 1} · control ${control.controlIndex + 1} · line ${control.line}${suffix}`;
 }
