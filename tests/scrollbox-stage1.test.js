@@ -31,7 +31,7 @@ const SOURCE = `window "Scrollable details" as main size 640, 420:
 test('ScrollBox Stage 1 is a versioned Panel behavior without an IR or Registry bump', () => {
   assert.equal(PATCH_PANEL_SCROLL_VERSION, '0.1');
   assert.equal(PATCH_WINDOW_PANEL_SCROLL_VERSION, '0.1');
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.10');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.11');
   const compiled = compile(SOURCE, { name: 'ScrollBoxStage1', kind: 'window', entry: 'main.patch' });
   assert.equal(compiled.ir.version, '0.10');
   assert.equal(compiled.windowPanelScroll.version, '0.1');
