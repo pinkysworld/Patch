@@ -88,7 +88,7 @@ export function normalizeStructuralKeyboard(panel) {
     if (shortcuts) listbox.setAttribute('aria-keyshortcuts', shortcuts);
   }
 
-  for (const input of panel.querySelectorAll?.('.designer-table-editor input, #designerTreeNodeLabel, #designerTreeNodeImage, #designerTreeNodeHint, #designerTreeNodeState, #designerTabPageTitle, [data-tabs-tree-label], [data-tabs-tree-image], [data-tabs-tree-hint], [data-tabs-tree-state]') ?? []) {
+  for (const input of panel.querySelectorAll?.('.designer-table-editor input, .designer-listview-editor input, [data-listview-mode], #designerTreeNodeLabel, #designerTreeNodeImage, #designerTreeNodeHint, #designerTreeNodeState, #designerTabPageTitle, [data-tabs-tree-label], [data-tabs-tree-image], [data-tabs-tree-hint], [data-tabs-tree-state]') ?? []) {
     input.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
   }
 
@@ -104,7 +104,13 @@ function handleCommitShortcut(panel, event) {
 
   let action = null;
   let focusSelector = null;
-  if (target.matches('[data-tabs-table-column], [data-tabs-table-cell]')) {
+  if (target.matches('[data-listview-label], [data-listview-image], [data-listview-detail], [data-listview-mode]')) {
+    action = panel.querySelector('[data-listview-action="apply"]');
+    if (target.matches('[data-listview-mode]')) focusSelector = '[data-listview-mode]';
+    else if (target.matches('[data-listview-image]')) focusSelector = attributeSelector(target, ['data-listview-image']);
+    else if (target.matches('[data-listview-detail]')) focusSelector = attributeSelector(target, ['data-listview-detail']);
+    else focusSelector = attributeSelector(target, ['data-listview-label']);
+  } else if (target.matches('[data-tabs-table-column], [data-tabs-table-cell]')) {
     action = target.closest('[data-tabs-structure-editor="table"]')?.querySelector('[data-tabs-table-action="apply"]');
     focusSelector = attributeSelector(target, ['data-tabs-table-column', 'data-tabs-table-cell']);
   } else if (target.matches('[data-table-column], [data-table-cell]')) {
