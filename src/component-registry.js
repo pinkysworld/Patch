@@ -13,6 +13,7 @@ const EVENT_BY_TYPE = Object.freeze({
   listbox: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   slider: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   table: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  listview: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   tree: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }])
 });
 
@@ -48,6 +49,12 @@ const PROPERTY_BY_TYPE = Object.freeze({
     ...COMMON_LAYOUT_PROPERTIES
   ]),
   table: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'columns', kind: 'expression-list' }), Object.freeze({ name: 'rows', kind: 'table-rows' }), ...COMMON_LAYOUT_PROPERTIES]),
+  listview: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'mode', kind: 'enum', values: Object.freeze(['icons', 'details']) }),
+    Object.freeze({ name: 'items', kind: 'listview-items' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   tree: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'treeNodes', kind: 'tree' }), ...COMMON_LAYOUT_PROPERTIES]),
   tabs: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'pages', kind: 'tabs' }), ...COMMON_LAYOUT_PROPERTIES]),
   panel: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'children', kind: 'controls' }), ...COMMON_LAYOUT_PROPERTIES]),
@@ -126,11 +133,21 @@ const IMAGELIST_STAGE1_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
+const LISTVIEW_STAGE1_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
 const TARGETS_BY_TYPE = Object.freeze({
   memo: MEMO_STAGE1_TARGETS,
   shape: SHAPE_STAGE1_TARGETS,
   paintbox: PAINTBOX_STAGE1_TARGETS,
-  imagelist: IMAGELIST_STAGE1_TARGETS
+  imagelist: IMAGELIST_STAGE1_TARGETS,
+  listview: LISTVIEW_STAGE1_TARGETS
 });
 
 const COMPONENTS = [
@@ -144,6 +161,7 @@ const COMPONENTS = [
   ['listbox', 'ListBox', 'Choices', true],
   ['slider', 'Slider', 'Choices', true],
   ['table', 'Table', 'Data', true],
+  ['listview', 'ListView', 'Data', true],
   ['tree', 'TreeView', 'Data', true],
   ['tabs', 'Tabs', 'Containers', true],
   ['panel', 'Panel', 'Containers', true],
@@ -155,7 +173,7 @@ const COMPONENTS = [
   ['imagelist', 'ImageList', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.10';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.11';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
