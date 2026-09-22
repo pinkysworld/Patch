@@ -498,7 +498,7 @@ details[open] summary::after { content: "−"; }
 .patch-tree li{margin:2px 0}
 .patch-tree-node{min-height:28px;padding:4px 8px;border-radius:7px;background:transparent;color:inherit;font:inherit;text-align:left;display:inline-flex;align-items:center;gap:6px}
 .patch-tree-node-image{width:16px;height:16px;object-fit:contain;flex:0 0 auto;border:0}
-.patch-tree-node-state{display:inline-flex;align-items:center;margin-left:2px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;line-height:1.5;text-transform:uppercase;letter-spacing:.03em;background:var(--soft);color:var(--text-muted)}
+.patch-tree-node-state{display:inline-flex;align-items:center;margin-left:2px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;line-height:1.5;text-transform:uppercase;letter-spacing:.03em;background:var(--soft);color:var(--muted)}
 .patch-tree-node[data-patch-tree-state="muted"] .patch-tree-node-state{opacity:.72}
 .patch-tree-node[data-patch-tree-state="info"] .patch-tree-node-state{background:#dbeafe;color:#1d4ed8}
 .patch-tree-node[data-patch-tree-state="success"] .patch-tree-node-state{background:#dcfce7;color:#166534}
