@@ -78,7 +78,7 @@ test('patch components CLI prints the registry matrix and JSON envelope', () => 
   assert.equal(json.status, 0, json.stderr);
   const report = JSON.parse(json.stdout);
   assert.equal(report.schema, 'patch-components');
-  assert.equal(report.registryVersion, '0.10');
+  assert.equal(report.registryVersion, '0.11');
   assert.equal(report.components.find(component => component.type === 'memo')?.targets.windows, 'unsupported');
   assert.equal(report.components.find(component => component.type === 'listview')?.targets.windows, 'unsupported');
   assert.equal(report.components.at(-1).type, 'imagelist');
