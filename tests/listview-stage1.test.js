@@ -73,7 +73,7 @@ test('compiler and interpreter keep ListView mode and presentation metadata whil
   const ir = compiled.ir.instructions.find(node => node.code === 'WINDOW').body.find(node => node.code === 'UI_CONTROL' && node.control === 'listview');
   assert.equal(ir.mode, 'icons');
   assert.equal(ir.items[1].detail, 'Documentation');
-  assert.ok(compiled.runtimeCapabilities.includes('ui.listview'));
+  assert.ok(compiled.ir.capabilities.includes('ui.listview'));
 
   const result = new PatchInterpreter().run(SOURCE);
   const model = result.ui[0].controls.find(control => control.type === 'listview');
