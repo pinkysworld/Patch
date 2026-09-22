@@ -40,6 +40,12 @@ test('capability matrix is generated from the canonical registry rather than a s
   assert.equal(imagelist.targets.macos, 'supported');
   assert.equal(imagelist.targets.linux, 'supported');
   assert.equal(imagelist.targets.freebsd, 'unsupported');
+  const listview = matrix.components.find(component => component.type === 'listview');
+  assert.equal(listview.targets.studio, 'supported');
+  assert.equal(listview.targets.web, 'supported');
+  assert.equal(listview.targets.windows, 'unsupported');
+  assert.equal(listview.targets.macos, 'unsupported');
+  assert.equal(listview.targets.linux, 'unsupported');
   const shape = matrix.components.find(component => component.type === 'shape');
   assert.equal(shape.targets.web, 'supported');
   assert.equal(shape.targets.windows, 'supported');
@@ -55,14 +61,15 @@ test('checked-in capability matrix markdown matches registry generation', () => 
   assert.match(generated, /`memo`/);
   assert.match(generated, /`imagelist`/);
   assert.match(generated, /`paintbox`/);
-  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\.10/);
+  assert.match(generated, /`listview`/);
+  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\\.11/);
 });
 
 test('patch components CLI prints the registry matrix and JSON envelope', () => {
   const cli = path.join(root, 'src', 'cli-entry.js');
   const text = spawnSync(process.execPath, [cli, 'components'], { encoding: 'utf8' });
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, /Patch components {2}registry 0\.10/);
+  assert.match(text.stdout, /Patch components {2}registry 0\\.11/);
   assert.match(text.stdout, /memo/);
   assert.match(text.stdout, /imagelist/);
   assert.match(text.stdout, /supported/);
@@ -73,5 +80,6 @@ test('patch components CLI prints the registry matrix and JSON envelope', () => 
   assert.equal(report.schema, 'patch-components');
   assert.equal(report.registryVersion, '0.10');
   assert.equal(report.components.find(component => component.type === 'memo')?.targets.windows, 'unsupported');
+  assert.equal(report.components.find(component => component.type === 'listview')?.targets.windows, 'unsupported');
   assert.equal(report.components.at(-1).type, 'imagelist');
 });
