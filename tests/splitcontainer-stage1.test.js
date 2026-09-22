@@ -39,7 +39,7 @@ function panelOf(compiled) {
 test('SplitContainer Stage 1 is a versioned flat Panel contract without IR or Registry bump', () => {
   assert.equal(PATCH_PANEL_SPLIT_VERSION, '0.1');
   assert.equal(PATCH_WINDOW_PANEL_SPLIT_VERSION, '0.1');
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.10');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.11');
   const compiled = compile(SOURCE, { name: 'SplitStage1', kind: 'window', entry: 'main.patch' });
   assert.equal(compiled.ir.version, '0.10');
   assert.equal(compiled.windowPanelSplit.version, '0.1');
