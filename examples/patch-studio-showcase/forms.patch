@@ -2,7 +2,7 @@ window "Component Gallery" as components size 1080, 760:
   # @locked
   shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 20 opacity 1 at 24, 18 size 1032, 84
   text "Component Gallery" at 44, 36 size 360, 32
-  text "Registry 0.10 · source-backed controls, graphics and resources" at 44, 68 size 560, 22
+  text "Registry 0.11 · source-backed controls, graphics and resources" at 44, 68 size 560, 22
   text "{gallery_status}" at 700, 42 size 324, 38
 
   # @locked
@@ -25,10 +25,11 @@ window "Component Gallery" as components size 1080, 760:
     row "GroupBox", "Panel presentation", "Studio/Web"
     row "ScrollBox", "Panel auto-scroll", "Studio/Web"
     row "SplitContainer", "Two-pane Panel", "Studio/Web"
+    row "ListView", "icons/details + changed(value)", "Studio/Web"
     row "TreeView", "changed(value)", "Ready"
 
   tree as gallery_tree at 476, 178 size 188, 222:
-    node "Registry 0.10"
+    node "Registry 0.11"
       node "Basic"
         node "Text"
         node "Button"
@@ -44,6 +45,7 @@ window "Component Gallery" as components size 1080, 760:
         node "ScrollBar"
       node "Data"
         node "Table"
+        node "ListView"
         node "TreeView"
       node "Containers"
         node "Tabs"
@@ -82,7 +84,10 @@ window "Component Gallery" as components size 1080, 760:
   imagelist as gallery_images size 24, 24:
     image mark from "patch-resource:showcase.logo"
   button "Resource button" as gallery_resource_button image gallery_images.mark at 172, 508 size 190, 42
-  text "One project-v4 PNG is reused for the Window icon, Picture, ImageList/Button and PaintBox draw image." at 172, 564 size 472, 54
+  text "One project-v4 PNG is reused across Picture, ImageList/Button, ListView and PaintBox." at 172, 564 size 190, 54
+  listview details as gallery_list at 380, 498 size 280, 148:
+    item "Showcase logo" image gallery_images.mark detail "Project-v4 PNG resource"
+    item "ImageList consumer" image gallery_images.mark detail "ListView details mode"
 
   # @panel-mode group
   panel as gallery_panel at 708, 446 size 348, 220:
