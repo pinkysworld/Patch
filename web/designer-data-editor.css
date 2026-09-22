@@ -79,6 +79,38 @@
   min-height: 28px;
   padding: 4px 8px;
 }
+.designer-listview-editor {
+  display: grid;
+  gap: 6px;
+  max-height: 300px;
+  overflow: auto;
+}
+.designer-listview-item {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.4fr) minmax(110px, 1fr) minmax(150px, 1.4fr) auto;
+  gap: 6px;
+  align-items: end;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.designer-listview-item label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.designer-listview-item input,
+.designer-data-editor [data-listview-mode] {
+  width: 100%;
+  min-width: 0;
+}
+.designer-listview-item input:focus-visible,
+.designer-data-editor [data-listview-mode]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
 .designer-table-editor {
   display: grid;
   gap: 6px;
@@ -202,6 +234,7 @@
   }
 }
 @media (max-width: 760px) {
+  .designer-listview-item { grid-template-columns: 1fr; }
   .designer-data-actions button { flex: 1 1 auto; }
   .designer-table-editor { max-height: 240px; }
   .designer-tabs-control-add { grid-template-columns: 1fr; }
