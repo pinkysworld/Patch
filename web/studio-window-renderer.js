@@ -634,6 +634,10 @@ function createTreeElement(control, context) {
         button.title = node.hint;
         button.dataset.patchTreeHint = 'true';
       }
+      if (node.state) {
+        button.dataset.patchTreeState = node.state;
+        button.setAttribute('aria-description', `Node state: ${node.state}`);
+      }
       if (node.imageSource) {
         const img = document.createElement('img');
         img.className = 'patch-tree-node-image';
@@ -648,6 +652,13 @@ function createTreeElement(control, context) {
         button.appendChild(img);
       }
       button.append(node.text);
+      if (node.state) {
+        const stateBadge = document.createElement('span');
+        stateBadge.className = 'patch-tree-node-state';
+        stateBadge.setAttribute('aria-hidden', 'true');
+        stateBadge.textContent = node.state;
+        button.appendChild(stateBadge);
+      }
       button.dataset.patchTreePath = JSON.stringify(selectedPath);
       button.setAttribute('aria-label', selectedPath.join(' / '));
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
