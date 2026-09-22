@@ -1,6 +1,7 @@
 import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
 import { resolveButtonImageBinding } from './button-image.js';
 import { countTreeNodeHints, countTreeNodeImages, countTreeNodeStates, resolveTreeNodeImageBinding, visitTreeNodeImages } from './tree-node-presentation.js';
+import { resolveListViewItemImageBinding, visitListViewItemImages } from './listview-control.js';
 import { hasWindowIcon } from './window-icon.js';
 
 export class WindowBuildError extends Error {}
@@ -55,6 +56,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let treeNodeImages = 0;
   let treeNodeHints = 0;
   let treeNodeStates = 0;
+  let listViews = 0;
   let sliders = 0;
   let progressBars = 0;
   let scrollBars = 0;
@@ -88,6 +90,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'table' && Array.isArray(child.tableColumnPresentation)) advancedTableColumns += 1;
     if (child.control === 'tree') { treeViews += 1; treeNodeImages += countTreeNodeImages(child.treeNodes); treeNodeHints += countTreeNodeHints(child.treeNodes); treeNodeStates += countTreeNodeStates(child.treeNodes); }
+    if (child.control === 'listview') listViews += 1;
     if (child.control === 'memo') memos += 1;
     if (child.control === 'paintbox') paintboxes += 1;
     if (child.control === 'imagelist') {
@@ -242,6 +245,13 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         throw new WindowBuildError(error?.message ?? String(error));
       }
     }
+    if (control.type === 'listview') {
+      try {
+        visitListViewItemImages(control.node?.items, item => resolveListViewItemImageBinding(lists, item, item.line));
+      } catch (error) {
+        throw new WindowBuildError(error?.message ?? String(error));
+      }
+    }
     if (control.type !== 'button' || !control.node?.imageListId || !control.node?.imageItem) continue;
     try {
       resolveButtonImageBinding(
@@ -296,6 +306,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: TreeView '${event.control}' exposes only 'changed' for transient node-path selection, not '${event.event}'.`
       );
     }
+    if (controlType === 'listview' && event.event !== 'changed') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: ListView '${event.control}' exposes only 'changed' for transient item-label selection, not '${event.event}'.`
+      );
+    }
     if (controlType === 'slider' && control.node?.sliderPresentation === 'progress') {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: ProgressBar '${event.control}' is passive and exposes no Patch events in ProgressBar Stage 1. Change its matching number state explicitly instead.`
@@ -330,10 +345,10 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       ((controlType === 'button' || controlType === 'menuItem' || controlType === 'picture') && event.event === 'clicked') ||
       (controlType === 'timer' && event.event === 'ticked') ||
       (controlType === 'paintbox' && event.event === 'paint') ||
-      ((controlType === 'input' || controlType === 'memo' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'memo' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'listview' || controlType === 'slider') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs/memos/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs/memos/checkboxes/combos/listboxes/radios/tables/trees/listviews/sliders. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -369,6 +384,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   if (treeNodeStates && !options.allowTreeNodeStates) {
     throw new WindowBuildError(
       'TreeView node state presentation Stage 3 is Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport per-node state-tone metadata; validation fails closed rather than silently discarding state presentation.'
+    );
+  }
+
+  if (listViews && !options.allowListView) {
+    throw new WindowBuildError(
+      'ListView Stage 1 is Studio/Web only. Current Ready native GUI 1.9/19/1.10 has no ListView icon/detail transport or consumer contract; validation fails closed rather than lowering it as ListBox or Table.'
     );
   }
 
@@ -433,6 +454,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     treeNodeImages,
     treeNodeHints,
     treeNodeStates,
+    listViews,
     sliders,
     progressBars,
     scrollBars,
