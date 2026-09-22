@@ -28,6 +28,7 @@ export function buildCompiledWindowArtifact(compiled) {
     allowTreeNodeImages: true,
     allowTreeNodeHints: true,
     allowTreeNodeStates: true,
+    allowListView: true,
     allowSlider: true,
     allowProgressBar: true,
     allowScrollBar: true,
