@@ -10,14 +10,30 @@ import {
 } from '../src/component-registry.js';
 
 test('component registry exposes the current source-backed Designer families plus RAD controls', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.10');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.11');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
     'text', 'button', 'input', 'memo', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
-    'table', 'tree', 'tabs', 'panel',
+    'table', 'listview', 'tree', 'tabs', 'panel',
     'picture', 'shape', 'paintbox', 'statusbar', 'timer', 'imagelist'
   ]);
   assert.equal(new Set(PATCH_COMPONENTS.map(component => component.buttonId)).size, PATCH_COMPONENTS.length);
+});
+
+test('ListView Stage 1 is a first-class Data control with bounded Studio/Web modes', () => {
+  const listview = patchComponent('listview');
+  assert.equal(listview.type, 'listview');
+  assert.equal(listview.label, 'ListView');
+  assert.equal(listview.category, 'Data');
+  assert.equal(listview.buttonId, 'addListview');
+  assert.equal(listview.visual, true);
+  assert.deepEqual(listview.defaultSize, { width: 360, height: 180 });
+  assert.deepEqual(listview.properties.map(property => property.name), ['id', 'mode', 'items', 'x', 'y', 'width', 'height']);
+  assert.deepEqual(listview.events, [{ name: 'changed', label: 'OnChange', value: true }]);
+  assert.deepEqual(listview.targetSupport, {
+    studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+  });
+  assert.equal(patchComponentForButton('addListview')?.type, 'listview');
 });
 
 test('Memo Stage 1 is a source-backed multiline Web control with explicit native boundary', () => {
