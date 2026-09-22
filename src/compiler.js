@@ -157,6 +157,15 @@ function lowerNode(node) {
       if (Array.isArray(node.options)) fields.options = [...node.options];
       if (Array.isArray(node.columns)) fields.columns = [...node.columns];
       if (Array.isArray(node.rows)) fields.rows = node.rows.map(row => [...row]);
+      if (node.control === 'listview') {
+        fields.mode = node.mode;
+        fields.items = (node.items ?? []).map(item => ({
+          labelExpr: item.labelExpr,
+          ...(item.imageListId && item.imageItem ? { imageListId: item.imageListId, imageItem: item.imageItem } : {}),
+          ...(item.detail ? { detail: item.detail } : {}),
+          line: item.line ?? null
+        }));
+      }
       if (Array.isArray(node.treeNodes)) fields.treeNodes = lowerTreeNodes(node.treeNodes);
       if (node.control === 'slider') {
         fields.min = node.min;
@@ -260,6 +269,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'uiControl' && node.control === 'table') caps.add('ui.table');
     if (node.kind === 'uiControl' && node.control === 'tree') caps.add('ui.tree');
+    if (node.kind === 'uiControl' && node.control === 'listview') caps.add('ui.listview');
     if (node.kind === 'uiControl' && node.control === 'slider') caps.add('ui.slider');
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
