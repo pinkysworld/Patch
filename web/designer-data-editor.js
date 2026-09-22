@@ -17,6 +17,7 @@ import {
   setTreeNodeImage,
   setTreeNodeState,
   treeNodeAt,
+  updateDesignerListViewData,
   updateDesignerTableData,
   updateDesignerTreeNodes
 } from '../src/designer-data.js';
@@ -81,13 +82,14 @@ function scheduleSync() {
 function syncPanel() {
   if (!panel || !code || !canvas) return;
   const selected = selectedControl();
-  if (!selected || !['tree', 'table', 'tabs'].includes(selected.type)) {
+  if (!selected || !['tree', 'table', 'listview', 'tabs'].includes(selected.type)) {
     hidePanel();
     return;
   }
   panel.hidden = false;
   if (selected.type === 'tree') renderTreeEditor(selected);
   else if (selected.type === 'table') renderTableEditor(selected);
+  else if (selected.type === 'listview') renderListViewEditor(selected);
   else renderTabsEditor(selected);
 }
 
@@ -127,6 +129,27 @@ function renderTreeEditor(control) {
       <button type="button" class="danger" data-tree-action="delete" ${path ? '' : 'disabled'}>Delete node</button>
     </div>
     <p class="inspector-hint designer-keyboard-hint">Keyboard: ↑/↓ or Home/End selects nodes; Ctrl/Cmd+↑/↓ reorders; Ctrl/Cmd+←/→ outdents/indents; Ctrl/Cmd+Enter focuses the label. Ctrl/Cmd+Enter in the label, image, hint or state field applies the selected node source metadata.</p>`;
+}
+
+function renderListViewEditor(control) {
+  const items = control.items ?? [];
+  const mode = control.mode ?? 'details';
+  panel.innerHTML = `
+    <div class="designer-data-editor-head"><strong>ListView items</strong><span>${items.length} item${items.length === 1 ? '' : 's'}</span></div>
+    <label class="inspector-field">Mode <select data-listview-mode><option value="icons"${mode === 'icons' ? ' selected' : ''}>Icons</option><option value="details"${mode === 'details' ? ' selected' : ''}>Details</option></select></label>
+    <div class="designer-listview-editor">
+      ${items.map((item, index) => `<div class="designer-listview-item" data-listview-item="${index}">
+        <label>Label expression <input data-listview-label="${index}" spellcheck="false" value="${escapeAttr(item.labelExpr ?? '')}"></label>
+        <label>Image <input data-listview-image="${index}" spellcheck="false" placeholder="icons.file" value="${escapeAttr(item.imageListId && item.imageItem ? `${item.imageListId}.${item.imageItem}` : '')}"></label>
+        <label>Detail <input data-listview-detail="${index}" spellcheck="true" placeholder="Optional detail text" value="${escapeAttr(item.detail ?? '')}"></label>
+        <button type="button" class="danger small" data-listview-remove="${index}" aria-label="Delete ListView item ${index + 1}" ${items.length <= 1 ? 'disabled' : ''}>×</button>
+      </div>`).join('')}
+    </div>
+    <div class="designer-data-actions">
+      <button type="button" class="secondary" data-listview-action="apply">Apply items</button>
+      <button type="button" class="secondary" data-listview-action="add">+ Item</button>
+    </div>
+    <p class="inspector-hint">Mode, ImageList bindings and detail text are source-backed presentation metadata. <code>changed(value)</code> still emits only the selected label text. <span class="designer-keyboard-hint">Ctrl/Cmd+Enter in a ListView field applies the current items.</span></p>`;
 }
 
 function renderTableEditor(control) {
@@ -178,6 +201,24 @@ function renderTabsEditor(control) {
 }
 
 function handleAction(event) {
+  const removeListItem = event.target.closest?.('[data-listview-remove]');
+  if (removeListItem) {
+    event.preventDefault();
+    applyListViewMutation(data => {
+      if (data.items.length <= 1) throw new Error('A ListView needs at least one item.');
+      return { ...data, items: data.items.filter((_, index) => index !== Number(removeListItem.dataset.listviewRemove)) };
+    });
+    return;
+  }
+
+  const listAction = event.target.closest?.('[data-listview-action]')?.dataset.listviewAction;
+  if (listAction) {
+    event.preventDefault();
+    if (listAction === 'apply') applyListViewMutation(data => data);
+    if (listAction === 'add') applyListViewMutation(data => ({ ...data, items: [...data.items, { labelExpr: JSON.stringify(`Item ${data.items.length + 1}`), detail: '' }] }));
+    return;
+  }
+
   const treePathButton = event.target.closest?.('[data-tree-path]');
   if (treePathButton) {
     const control = selectedControl();
@@ -274,6 +315,36 @@ function applyTabsAction(action) {
     selectedTabPages.set(key, nextIndex);
     setSource(next);
   } catch (error) { showDesignerInspectorError(error, { document }); }
+}
+
+function applyListViewMutation(transform) {
+  const control = selectedControl();
+  if (!control || control.type !== 'listview') return;
+  try {
+    const draft = readListViewDraft(control);
+    const next = transform(draft);
+    const source = updateDesignerListViewData(code.value, control, next);
+    setSource(source);
+  } catch (error) { showDesignerInspectorError(error, { document }); }
+}
+
+function readListViewDraft(control) {
+  const mode = panel.querySelector('[data-listview-mode]')?.value ?? control.mode ?? 'details';
+  const items = (control.items ?? []).map((item, index) => {
+    const labelExpr = panel.querySelector(`[data-listview-label="${index}"]`)?.value.trim() ?? item.labelExpr;
+    const image = panel.querySelector(`[data-listview-image="${index}"]`)?.value.trim() ?? '';
+    const detail = panel.querySelector(`[data-listview-detail="${index}"]`)?.value.trim() ?? '';
+    const result = { labelExpr };
+    if (image) {
+      const match = image.match(/^([A-Za-z_]\w*)\.([A-Za-z_]\w*)$/);
+      if (!match) throw new Error('ListView image must be ImageList.item such as icons.file.');
+      result.imageListId = match[1];
+      result.imageItem = match[2];
+    }
+    if (detail) result.detail = detail;
+    return result;
+  });
+  return { mode, items };
 }
 
 function applyTableMutation(transform) {
