@@ -265,8 +265,8 @@ export function parse(source) {
       const body = childBlock(indent,row);
       for (const child of body) {
         if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
-        if (['panel', 'timer', 'imagelist', 'statusbar'].includes(child.control)) {
-          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList or StatusBar.',child.line);
+        if (['panel', 'timer', 'imagelist', 'statusbar', 'listview'].includes(child.control)) {
+          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList, StatusBar or ListView. ListView Stage 1 is top-level only.',child.line);
         }
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
