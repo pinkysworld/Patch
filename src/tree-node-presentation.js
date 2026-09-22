@@ -2,6 +2,8 @@ import { normalizeImageListId, normalizeImageListItemName } from './imagelist-co
 
 export const PATCH_TREE_NODE_PRESENTATION_VERSION = '0.1';
 export const PATCH_TREE_NODE_HINT_VERSION = '0.1';
+export const PATCH_TREE_NODE_STATE_VERSION = '0.1';
+export const PATCH_TREE_NODE_STATES = Object.freeze(['muted', 'info', 'success', 'warning', 'danger']);
 
 export class PatchTreeNodePresentationError extends Error {
   constructor(message, code = 'TREE_NODE_PRESENTATION_INVALID') {
@@ -75,12 +77,28 @@ export function formatTreeNodeHint(value) {
   return hint ? JSON.stringify(hint) : '';
 }
 
+export function normalizeTreeNodeState(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const state = String(value).trim().toLowerCase();
+  if (!PATCH_TREE_NODE_STATES.includes(state)) {
+    throw new PatchTreeNodePresentationError(
+      `TreeView node state must be one of: ${PATCH_TREE_NODE_STATES.join(', ')}.`,
+      'TREE_NODE_STATE'
+    );
+  }
+  return state;
+}
+
+export function formatTreeNodeState(value) {
+  return normalizeTreeNodeState(value) ?? '';
+}
+
 export function parsePatchTreeNodeDeclaration(value) {
   const source = String(value ?? '').trim();
-  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?(?:\s+hint\s+("(?:\\.|[^"\\])*"))?\s*$/i);
+  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?(?:\s+hint\s+("(?:\\.|[^"\\])*"))?(?:\s+state\s+([A-Za-z][A-Za-z-]*))?\s*$/i);
   if (!match) {
     throw new PatchTreeNodePresentationError(
-      'TreeView node syntax is node <label> [image list.item] [hint "text"].',
+      'TreeView node syntax is node <label> [image list.item] [hint "text"] [state muted|info|success|warning|danger].',
       'TREE_NODE_SOURCE_SYNTAX'
     );
   }
@@ -88,11 +106,13 @@ export function parsePatchTreeNodeDeclaration(value) {
   if (!labelExpr) throw new PatchTreeNodePresentationError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
   const binding = parseTreeNodeImageBinding(match[2]);
   const hint = parseTreeNodeHintLiteral(match[3]);
+  const state = normalizeTreeNodeState(match[4]);
   return Object.freeze({
     labelExpr,
     imageListId: binding?.imageListId ?? null,
     imageItem: binding?.imageItem ?? null,
-    ...(hint ? { hint } : {})
+    ...(hint ? { hint } : {}),
+    ...(state ? { state } : {})
   });
 }
 
@@ -101,7 +121,8 @@ export function formatPatchTreeNodeDeclaration(input = {}) {
   if (!labelExpr) throw new PatchTreeNodePresentationError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
   const image = formatTreeNodeImageBinding(input);
   const hint = formatTreeNodeHint(input.hint);
-  return `node ${labelExpr}${image ? ` image ${image}` : ''}${hint ? ` hint ${hint}` : ''}`;
+  const state = formatTreeNodeState(input.state);
+  return `node ${labelExpr}${image ? ` image ${image}` : ''}${hint ? ` hint ${hint}` : ''}${state ? ` state ${state}` : ''}`;
 }
 
 export function treeNodeHasImage(node) {
@@ -110,6 +131,10 @@ export function treeNodeHasImage(node) {
 
 export function treeNodeHasHint(node) {
   return Boolean(normalizeTreeNodeHint(node?.hint));
+}
+
+export function treeNodeHasState(node) {
+  return Boolean(normalizeTreeNodeState(node?.state));
 }
 
 export function countTreeNodeImages(nodes) {
@@ -126,6 +151,15 @@ export function countTreeNodeHints(nodes) {
   for (const node of nodes ?? []) {
     if (treeNodeHasHint(node)) count += 1;
     count += countTreeNodeHints(node.children);
+  }
+  return count;
+}
+
+export function countTreeNodeStates(nodes) {
+  let count = 0;
+  for (const node of nodes ?? []) {
+    if (treeNodeHasState(node)) count += 1;
+    count += countTreeNodeStates(node.children);
   }
   return count;
 }

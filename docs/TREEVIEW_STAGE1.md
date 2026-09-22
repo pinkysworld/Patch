@@ -99,3 +99,22 @@ The structural Properties editors expose a Node hint field for top-level and nes
 
 Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 does not transport per-node tooltip metadata. Native validation therefore fails closed when hints are present. State presentation remains a later TreeView metadata slice.
 
+## Node state presentation 0.1
+
+The final richer-node R4 slice adds a bounded visual status tone:
+
+```patch
+tree as files:
+  node "src" state success
+    node "parser.js" hint "Parser implementation" state warning
+  node "docs" state muted
+```
+
+Allowed values are `muted`, `info`, `success`, `warning` and `danger`. The state token is presentation metadata only. It does not disable a node, change expansion behavior, create persistent Patch state or alter the root-to-node text-list emitted by `changed(value)`.
+
+Studio App Preview and Standalone Window Web render the state as a compact textual badge. The node keeps its ordinary accessible name based on the selected label path and receives an additional `aria-description` for the state tone. This avoids relying on color alone.
+
+Top-level and nested TreeView structural editors expose the bounded state selector. Rename, reorder, indent, outdent and subtree duplication preserve the metadata through the canonical source rewrite.
+
+Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 does not transport this per-node state-tone metadata. Native validation fails closed instead of silently dropping the presentation.
+

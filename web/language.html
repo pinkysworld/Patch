@@ -97,7 +97,7 @@ when people changed:
 
   <section class="page-section" data-tree-language-support="transient-path-list">
     <h2>TreeView keeps hierarchy source-backed</h2>
-    <p>A TreeView declares its hierarchy directly in Patch source. Selection exposes the selected root-to-node display path as a transient text-list event value.</p>
+    <p>A TreeView declares its hierarchy directly in Patch source. Selection exposes the selected root-to-node display path as a transient text-list event value. Nodes may also carry source-backed <code>image ImageList.item</code>, quoted <code>hint</code> text and a bounded presentation-only <code>state</code> tone: <code>muted</code>, <code>info</code>, <code>success</code>, <code>warning</code> or <code>danger</code>.</p>
     <pre class="page-code">create list selected = []
 window "Files" as main size 560, 380:
   tree as files at 24, 56 size 300, 240:
