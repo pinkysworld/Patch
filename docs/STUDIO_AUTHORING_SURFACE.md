@@ -23,7 +23,7 @@ Duplicate/Delete activation always returns through the existing Form selector. T
 
 ## Visual and nonvisual components
 
-The shared current Component Registry **0.10** workflow covers Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox and StatusBar plus nonvisual Timer and ImageList authoring.
+The shared current Component Registry **0.11** workflow covers Text, Button, Input, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, ListView, TreeView, Tabs, Panel, Picture, Shape, PaintBox and StatusBar plus nonvisual Timer and ImageList authoring.
 
 The standard-control Stage-1 presentation layer additionally provides:
 
@@ -101,6 +101,18 @@ Top-level and nested Tables share the same structural authoring semantics:
 
 Advanced Table columns Stage 1 is presentation metadata only. It does not change Table syntax, row data, transient `changed(value)` selection, persistent application state or Change IR. Studio and Standalone Web render the widths/alignment; Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 fails closed when the directive is present rather than silently discarding it. Column add/remove/reorder/duplicate operations keep the presentation entries structurally aligned with their columns.
 
+## ListView
+
+ListView Stage 1 is a first-class top-level source-backed Data control with two bounded modes:
+
+- `listview icons as ...:` renders compact icon tiles;
+- `listview details as ...:` renders label/detail rows;
+- each `item` has a Patch label expression plus optional `image ImageList.item` and quoted `detail "text"`;
+- the structural Properties editor rewrites mode and items directly in source;
+- the selected transient `changed(value)` is always the evaluated item label text. Icon and detail metadata never become hidden application state.
+
+Stage 1 intentionally keeps ListView top-level. Tabs and Panel nesting fail closed instead of exposing a source shape the structural Designer cannot edit consistently. Studio and Standalone Web support both modes; Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 fails closed because no ListView icon/detail transport contract exists yet.
+
 ## TreeView
 
 Top-level and nested TreeViews support:
@@ -176,7 +188,7 @@ Handler duplication changes only the `when <id> ...:` target when an id is copie
 
 Application persistence still occurs only through ordinary Patch semantic `change` operations. Designer selection, filters, active nested editors, scroll offsets, transient runtime split ratios and other authoring/runtime view state do not become Patch application state or Change History entries.
 
-Input presentations retain the ordinary Input `changed(value)` text contract: NumberEdit emits numeric text, DatePicker emits browser date text, TimePicker emits local `HH:MM` text, and Calendar emits ISO `YYYY-MM-DD` text when a day is selected. Calendar month navigation is transient view state and emits no Patch change by itself. Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state. ProgressBar, ScrollBox and SplitContainer expose no events at all.
+Input presentations retain the ordinary Input `changed(value)` text contract: NumberEdit emits numeric text, DatePicker emits browser date text, TimePicker emits local `HH:MM` text, and Calendar emits ISO `YYYY-MM-DD` text when a day is selected. Calendar month navigation is transient view state and emits no Patch change by itself. Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, ListView exposes the selected label as transient text, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state. ProgressBar, ScrollBox and SplitContainer expose no events at all.
 
 PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; state-dependent native drawing is refreshed from ordinary application state.
 
@@ -194,7 +206,7 @@ The current Ready/offline Windows, macOS and Linux path uses the stable `native-
 
 The current authoring modules are part of the deterministic content-addressed public Patch Studio build and Offline Studio package. The generated site validates both the transitive relative ES-module import closure and the local HTML JS/CSS/manifest/icon asset closure, so a browser dependency cannot be omitted silently.
 
-The canonical multi-file Project-v4 **Patch Studio Showcase** is explicitly selectable in hosted and Offline Studio and covers the complete current Registry 0.10 Studio/Web acceptance surface. Workshop Desk remains the compact Current Ready native acceptance/stress application.
+The canonical multi-file Project-v4 **Patch Studio Showcase** is explicitly selectable in hosted and Offline Studio and covers the complete current Registry 0.11 Studio/Web acceptance surface. Workshop Desk remains the compact Current Ready native acceptance/stress application.
 
 Large-project work includes a deterministic 10-Form / 200-control benchmark, parsed-model reuse, observer reconciliation batching, active-Form full-cost rendering, Chrome startup/Workshop stress and event-to-paint performance gates. Further virtualization remains measurement-driven work rather than a completed guarantee.
 
@@ -204,7 +216,7 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 
 Remaining product work includes:
 
-- new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
+- new/richer data controls beyond the current Table, ListBox, ListView and TreeView vocabulary;
 - richer date/time or shell controls from the RAD master backlog;
 - Panel child Anchors/Dock, nested Panels, visual reparenting and later explicit native containment;
 - remaining resource/non-source Undo/Redo transaction coverage, further large-project virtualization and professional code-editor/debugger features;
@@ -213,4 +225,4 @@ Remaining product work includes:
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 
-Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.10**, Change IR **0.10**, Native GUI IR **1.9**, sealed payload **v19**, token-free Ready/offline runtime **v1.10**, with payload v17/runtime v1.8 retained as explicit compatibility and Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as the frozen TreeView compatibility line. The formal runtime-correspondence milestone remains **beta.32**.
+Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.11**, Change IR **0.10**, Native GUI IR **1.9**, sealed payload **v19**, token-free Ready/offline runtime **v1.10**, with payload v17/runtime v1.8 retained as explicit compatibility and Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as the frozen TreeView compatibility line. The formal runtime-correspondence milestone remains **beta.32**.
