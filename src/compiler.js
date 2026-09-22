@@ -235,6 +235,7 @@ function lowerTreeNodes(nodes) {
       lowered.imageItem = node.imageItem;
     }
     if (node.hint) lowered.hint = node.hint;
+    if (node.state) lowered.state = node.state;
     return lowered;
   });
 }
