@@ -111,10 +111,13 @@ Top-level and nested TreeViews support:
 - indent/outdent;
 - delete node;
 - duplicate the selected node and its complete descendant subtree;
+- edit optional ImageList-backed node images;
+- edit optional node hints/tooltips;
+- edit bounded node state tones: muted, info, success, warning and danger;
 - keyboard roving selection and structural shortcuts;
 - fail closed rather than leaving an invalid empty TreeView.
 
-Subtree duplication is a deep copy; copied descendants do not share a hidden mutable model with the original.
+Subtree duplication is a deep copy; copied descendants do not share a hidden mutable model with the original. Image, hint and state-tone metadata follow the node structurally, while the runtime selection event remains the same transient root-to-node text-list of labels.
 
 ## Tabs and Panel
 
