@@ -567,6 +567,7 @@ function createListViewElement(control, context) {
   const root = document.createElement('div');
   root.className = 'patch-listview';
   root.dataset.patchListviewMode = control.listViewMode || 'details';
+  root.dataset.patchRuntimeSelectionKind = 'listview';
   root.setAttribute('role', 'listbox');
   const key = runtimeControlKey(control, context);
   const remembered = getRuntimeSelection(context.container, 'listview', key);
