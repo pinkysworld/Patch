@@ -3,7 +3,7 @@ name: Patch Studio Runtime Templates
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - scripts/build-native-sea-template.js
       - scripts/build-native-window-template.js
