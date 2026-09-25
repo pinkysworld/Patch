@@ -1,0 +1,387 @@
+when customer changed:
+  change customer:
+    set = value
+  do load_customer_profile()
+  do persist_ticket()
+  change status:
+    set = "Loaded customer profile for " + customer
+
+when item changed:
+  change item:
+    set = value
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Item updated · estimate " + ticket_total
+
+when pay changed:
+  change pay:
+    set = value
+  do persist_ticket()
+  change status:
+    set = "Payment method changed"
+
+when priority changed:
+  change priority:
+    set = value
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Priority changed · estimate " + ticket_total
+
+when rush changed:
+  change rush:
+    set = value
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Rush preference changed · estimate " + ticket_total
+
+when qty changed:
+  change qty:
+    set = value
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Quantity changed · estimate " + ticket_total
+
+when notes changed:
+  change notes:
+    set = value
+  do persist_ticket()
+  change status:
+    set = "Ticket notes updated"
+
+when services changed:
+  change services:
+    set = value
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Services changed · estimate " + ticket_total
+
+when board changed:
+  do load_ticket(value)
+  change status:
+    set = "Loaded " + ticket_id + " from queue · estimate " + ticket_total
+
+when parts changed:
+  do select_part(value)
+  change status:
+    set = "Working item changed to " + item + " · Inventory is ready"
+
+when workshop_logo clicked:
+  change status:
+    set = "Workshop Desk project mark · source-backed UI"
+
+when workshop_clock ticked:
+  change heartbeat:
+    add 1
+
+when ticket_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
+  draw image "patch-resource:workshop.mark" at 208, 10 size 42, 42
+  if rush:
+    draw line 12, 58 to 258, 58 stroke #dc2626 width 3
+  draw text ticket_id at 12, 78 color #111827 size 16
+  draw text ticket_state at 126, 78 color #334155 size 16
+
+when quote_button clicked:
+  do quote_ticket()
+
+when details_quote clicked:
+  do quote_ticket()
+
+when complete_button clicked:
+  change ticket_state:
+    set = "Ready"
+  do persist_ticket()
+  change status:
+    set = ticket_id + " marked ready"
+
+when details_ready clicked:
+  change ticket_state:
+    set = "Ready"
+  do persist_ticket()
+  change status:
+    set = ticket_id + " marked ready"
+
+when settings_button clicked:
+  open settings
+
+when details_button clicked:
+  open details
+
+when inventory_button clicked:
+  open inventory
+  change inventory_status:
+    set = "Inventory opened for " + item
+
+when customer_button clicked:
+  open customer_profile
+  change customer_status:
+    set = "Customer profile opened for " + customer
+
+when diagnostics_button clicked:
+  open diagnostics
+  change diagnostic_status:
+    set = "Diagnostics opened · last completed runs " + diagnostic_runs
+
+when components_button clicked:
+  open components
+  change gallery_status:
+    set = "Current Ready Component Registry 0.10 subset opened"
+
+when close_settings clicked:
+  change status:
+    set = "Settings closed"
+  close settings
+
+when close_about clicked:
+  change status:
+    set = "Settings closed"
+  close settings
+
+when close_details clicked:
+  close details
+
+when notifications changed:
+  change notifications:
+    set = value
+  change status:
+    set = "Notification preference changed"
+
+when default_bench changed:
+  change default_bench:
+    set = value
+  change ticket_bench:
+    set = value
+  do persist_ticket()
+  change status:
+    set = "Default bench changed to " + ticket_bench
+
+when stations changed:
+  change stations:
+    set = value
+  change status:
+    set = "Available stations changed"
+
+when labor_limit changed:
+  change labor_limit:
+    set = value
+  change status:
+    set = "Labor approval limit changed"
+
+when density changed:
+  change density:
+    set = value
+  change status:
+    set = "Appearance density changed"
+
+when inventory_filter changed:
+  change inventory_filter:
+    set = value
+  change inventory_status:
+    set = "Inventory filter changed"
+
+when inventory_zone changed:
+  change inventory_zone:
+    set = value
+  change inventory_status:
+    set = "Inventory zone changed to " + inventory_zone
+
+when reorder_qty changed:
+  change reorder_qty:
+    set = value
+  change inventory_status:
+    set = "Reorder quantity changed to " + reorder_qty
+
+when inventory_grid changed:
+  change inventory_status:
+    set = "Inventory row selected · prepare reorder uses current item " + item
+
+when inventory_tree changed:
+  change inventory_status:
+    set = "Inventory tree selection changed"
+
+when reorder_button clicked:
+  do prepare_reorder()
+
+when inventory_details clicked:
+  open details
+  change status:
+    set = "Job details opened from Inventory Center"
+
+when close_inventory clicked:
+  close inventory
+  change status:
+    set = "Inventory Center closed"
+
+when customer_email changed:
+  change customer_email:
+    set = value
+  change customer_status:
+    set = "Customer email changed"
+
+when customer_tier changed:
+  change customer_tier:
+    set = value
+  change customer_status:
+    set = "Customer tier changed"
+
+when customer_marketing changed:
+  change customer_marketing:
+    set = value
+  change customer_status:
+    set = "Marketing preference changed"
+
+when customer_channels changed:
+  change customer_channels:
+    set = value
+  change customer_status:
+    set = "Preferred channels changed"
+
+when customer_note changed:
+  change customer_note:
+    set = value
+  change customer_status:
+    set = "Customer note changed"
+
+when customer_jobs changed:
+  change customer_status:
+    set = "Customer job row selected"
+
+when customer_save clicked:
+  do save_customer()
+
+when customer_job clicked:
+  open details
+  change status:
+    set = "Current customer job opened"
+
+when close_customer clicked:
+  close customer_profile
+  change status:
+    set = "Customer Profile closed"
+
+when diagnostic_mode changed:
+  change diagnostic_mode:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic mode changed to " + diagnostic_mode
+
+when trace_enabled changed:
+  change trace_enabled:
+    set = value
+  change diagnostic_status:
+    set = "Trace preference changed"
+
+when diagnostic_interval changed:
+  change diagnostic_interval:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic interval changed"
+
+when diagnostic_checks changed:
+  change diagnostic_status:
+    set = "Diagnostic check row selected"
+
+when diagnostic_run clicked:
+  change diagnostic_runs:
+    add 1
+  if trace_enabled:
+    change diagnostic_status:
+      set = "Trace checks passed in " + diagnostic_mode + " mode · run " + diagnostic_runs
+  else:
+    change diagnostic_status:
+      set = "Runtime checks passed in " + diagnostic_mode + " mode · run " + diagnostic_runs
+  change status:
+    set = "Diagnostics completed"
+
+when diagnostics_clock ticked:
+  change diagnostic_ticks:
+    add 1
+
+when diagnostic_settings clicked:
+  open settings
+  change diagnostic_status:
+    set = "Settings opened from Diagnostics"
+
+when close_diagnostics clicked:
+  close diagnostics
+  change status:
+    set = "Workshop Diagnostics closed"
+
+when gallery_text changed:
+  change gallery_text:
+    set = value
+  change gallery_status:
+    set = "Input change handled"
+
+when gallery_enabled changed:
+  change gallery_enabled:
+    set = value
+  change gallery_status:
+    set = "Checkbox change handled"
+
+when gallery_mode changed:
+  change gallery_mode:
+    set = value
+  change gallery_status:
+    set = "Radio change handled"
+
+when gallery_color changed:
+  change gallery_color:
+    set = value
+  change gallery_status:
+    set = "ComboBox change handled"
+
+when gallery_features changed:
+  change gallery_features:
+    set = value
+  change gallery_status:
+    set = "ListBox change handled"
+
+when gallery_level changed:
+  change gallery_level:
+    set = value
+  change gallery_status:
+    set = "Slider change handled"
+
+when gallery_table changed:
+  change gallery_status:
+    set = "Table selection handled"
+
+when gallery_tree changed:
+  change gallery_status:
+    set = "TreeView selection handled"
+
+when gallery_picture clicked:
+  change gallery_status:
+    set = "Picture click handled"
+
+when gallery_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 10, 10 size 54, 28 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 76, 10 size 28, 28 fill #dcfce7 stroke #16a34a width 2
+  draw text gallery_mode at 10, 62 color #111827 size 14
+
+when gallery_clock ticked:
+  change gallery_ticks:
+    add 1
+
+when gallery_refresh clicked:
+  change gallery_ticks:
+    add 1
+  change gallery_status:
+    set = "Gallery refreshed · pulse " + gallery_ticks
+
+when close_components clicked:
+  close components
+  change status:
+    set = "Component Gallery closed"
+
+when reset_button clicked:
+  do reset_workshop()
