@@ -8,8 +8,8 @@ Workshop Desk is organized around one coherent repair-ticket workflow. Queue sel
 
 The built-in Studio example is this multi-file Project-v4 bundle:
 
-- `main.patch`: all seven source-backed Forms so Designer Form switching remains a first-class stress path.
-- `model.patch`: application state, Things and quote/customer/inventory recipes.
+- `main.patch`: UI-bound state plus all seven source-backed Forms so Designer Form switching remains a first-class stress path.
+- `model.patch`: Things and quote/customer/inventory recipes.
 - `logic.patch`: event handlers.
 - `workshop.mark`: one deterministic project PNG used as the application/Form icon, Picture, PaintBox image and ImageList-backed buttons.
 
