@@ -49,7 +49,8 @@ test('Workshop Project-v4 resource is consumed by application chrome, Picture, P
   assert.match(composition.source, /imagelist as desk_images[\s\S]*?image mark from "patch-resource:workshop\.mark"/);
   assert.match(composition.source, /button "Studio Features" as components_button image desk_images\.mark/);
   assert.match(composition.source, /imagelist as gallery_images[\s\S]*?image mark from "patch-resource:workshop\.mark"/);
-  assert.match(composition.source, /button "Refresh" as gallery_refresh image gallery_images\.mark/);
+  assert.match(composition.source, /button "Resource button" as gallery_resource_button image gallery_images\.mark/);
+  assert.match(composition.source, /button "Refresh demo" as gallery_refresh image gallery_images\.mark/);
 });
 
 test('Workshop Project-v4 builds its declared Web target with project resources', () => {
