@@ -43,6 +43,16 @@ create list gallery_features = ["Designer"]
 create number gallery_level = 60
 create text gallery_status = "Component gallery ready"
 create number gallery_ticks = 0
+create text gallery_memo = "Feature Lab notes"
+create text gallery_secret = ""
+create text gallery_mask = ""
+create text gallery_number = "42"
+create text gallery_date = "2026-09-25"
+create text gallery_time = "14:30"
+create text gallery_calendar = "2026-09-25"
+create number gallery_progress = 40
+create number gallery_scroll = 25
+create text gallery_path = "No file selected"
 create text ticket_id = "WD-104"
 create list selected_job = ["WD-104", "Ada", "Bench A", "Open"]
 create list selected_part = ["Parts", "Input", "Keyboard"]
@@ -462,6 +472,26 @@ make reset_workshop():
     set = "Component gallery ready"
   change gallery_ticks:
     set = 0
+  change gallery_memo:
+    set = "Feature Lab notes"
+  change gallery_secret:
+    set = ""
+  change gallery_mask:
+    set = ""
+  change gallery_number:
+    set = "42"
+  change gallery_date:
+    set = "2026-09-25"
+  change gallery_time:
+    set = "14:30"
+  change gallery_calendar:
+    set = "2026-09-25"
+  change gallery_progress:
+    set = 40
+  change gallery_scroll:
+    set = 25
+  change gallery_path:
+    set = "No file selected"
   do calculate_quote()
   do persist_ticket()
   change status:
@@ -475,10 +505,9 @@ window "Workshop Desk" as main size 1080, 720:
   text "Workshop Desk" at 96, 20 size 280, 28
   text "{status}" at 96, 50 size 500, 24
   text "{ticket_id} · quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
-  text "Current Ready · IR 1.9 · runtime v1.10" at 620, 50 size 420, 22
+  text "Project v4 · Studio/Web · native fixture separate" at 620, 50 size 420, 22
 
   # @locked
-
   shape rounded as ticket_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 100 size 1048, 248
   text "Ticket" at 32, 112 size 120, 24
   text "Customer" at 32, 144 size 100, 20
@@ -499,7 +528,6 @@ window "Workshop Desk" as main size 1080, 720:
   listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 780, 244 size 260, 84
 
   # @locked
-
   shape rounded as queue_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 360 size 640, 292
   text "Queue" at 32, 372 size 120, 22
   table "Ticket", "Customer", "Bench", "State" as board at 32, 402 size 608, 230:
@@ -509,7 +537,6 @@ window "Workshop Desk" as main size 1080, 720:
     row "WD-107", "Margaret", "Overflow", "Waiting"
 
   # @locked
-
   shape rounded as side_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 668, 360 size 396, 292
   text "Parts & tools" at 684, 372 size 180, 22
   tree as parts at 684, 400 size 168, 232:
@@ -532,7 +559,7 @@ window "Workshop Desk" as main size 1080, 720:
   button "Customer" as customer_button at 958, 552 size 86, 30
   button "Diagnostics" as diagnostics_button at 864, 588 size 86, 30
   button "Settings" as settings_button at 958, 588 size 86, 30
-  button "Components" as components_button at 864, 622 size 180, 28
+  button "Studio Features" as components_button at 864, 622 size 180, 28
 
   # @layout anchor left right bottom
   text "Seven-Form working app · queue, quote, customer and inventory state persist through explicit change; Components shows the Current Ready native subset." at 16, 660 size 1048, 22
@@ -568,7 +595,6 @@ window "Job details" as details size 640, 560:
   text "{status}" at 32, 48 size 560, 22
 
   # @locked
-
   shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
   text "Customer: {customer}" at 32, 108 size 270, 22
   text "Item: {item}" at 32, 134 size 270, 22
@@ -580,13 +606,11 @@ window "Job details" as details size 640, 560:
   text "Current quote: {ticket_total}" at 330, 186 size 270, 22
 
   # @locked
-
   shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
   text "Ticket canvas" at 32, 256 size 200, 20
   paintbox as ticket_canvas at 32, 282 size 264, 146
 
   # @locked
-
   shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
   panel as runtime_panel at 340, 260 size 268, 168:
     text "Native runtime pulse {heartbeat}"
@@ -697,76 +721,104 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
   timer as diagnostics_clock interval 3000
   statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
 
-window "Component Gallery" as components size 900, 640:
-  # @locked
-  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 868, 64
-  text "Component Gallery" at 32, 22 size 280, 26
-  text "{gallery_status}" at 330, 22 size 530, 26
-  text "Current Ready native subset" at 32, 48 size 360, 20
+window "Studio Feature Lab" as components size 980, 700:
+  menu "Lab":
+    item "Confirm action..." as gallery_menu_confirm shortcut "Primary+Enter"
+    item "Open file..." as gallery_menu_open shortcut "Primary+O"
+    item "Save file..." as gallery_menu_save shortcut "Primary+S"
+    separator
+    item "Enabled" as gallery_menu_enabled checked gallery_enabled shortcut "Primary+E"
+  menu "Help":
+    item "About Feature Lab" as gallery_menu_about shortcut "F1"
 
   # @locked
-
-  shape rounded as inputs_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 88 size 430, 292
-  text "Inputs & choices" at 32, 100 size 220, 22
-  text "Text input" at 32, 128 size 120, 18
-  input gallery_text at 32, 148 size 190, 32
-  checkbox "Enabled" as gallery_enabled at 236, 148 size 190, 32
-  text "Mode" at 32, 190 size 80, 18
-  radio "Ready", "Review", "Blocked" as gallery_mode at 32, 210 size 190, 148
-  text "Color" at 236, 190 size 80, 18
-  combo "Blue", "Green", "Amber", "Red" as gallery_color at 236, 210 size 190, 32
-  text "Level {gallery_level}" at 236, 250 size 180, 18
-  slider 0..100 as gallery_level step 10 at 236, 270 size 190, 28
-  text "Features" at 236, 304 size 120, 16
-  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 236, 322 size 190, 44
-
-  # @locked
-
-  shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 458, 88 size 426, 292
-  text "Graphics & containers" at 474, 100 size 280, 22
-  picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Gallery picture" at 474, 132 size 64, 64
-  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 554, 132 size 88, 64
-  paintbox as gallery_canvas at 658, 132 size 200, 110
-  panel as gallery_panel at 474, 256 size 384, 108:
-    text "Panel Stage 1"
-    text "Source-backed visual grouping"
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 948, 64
+  text "Studio Feature Lab" at 32, 22 size 300, 26
+  text "{gallery_status}" at 346, 22 size 590, 26
+  text "Complete current Studio/Web acceptance surface · Component Registry 0.10" at 32, 48 size 700, 20
 
   imagelist as gallery_images size 20, 20:
-    image mark from "patch-resource:workshop.mark"
+    image mark from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg=="
 
-  # @locked
+  tabs as feature_tabs at 16, 88 size 948, 536:
+    tab "Inputs":
+      text "Text, Memo and all current source-backed Input presentations"
+      input gallery_text
+      memo gallery_memo
+      # @input-mode password
+      input gallery_secret
+      # @input-mask "AA-000"
+      input gallery_mask
+      # @number-edit
+      input gallery_number
+      # @input-mode date
+      input gallery_date
+      # @input-mode time
+      input gallery_time
+    tab "Choices":
+      text "Core choices plus CheckedListBox, ProgressBar, ScrollBar and LinkLabel"
+      checkbox "Enabled" as gallery_enabled
+      radio "Ready", "Review", "Blocked" as gallery_mode
+      combo "Blue", "Green", "Amber", "Red" as gallery_color
+      # @listbox-mode checked
+      listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features
+      slider 0..100 as gallery_level step 10
+      # @slider-mode progress
+      slider 0..100 as gallery_progress step 1
+      # @slider-mode scrollbar
+      slider 0..100 as gallery_scroll step 5
+      # @button-mode link
+      button "LinkLabel action" as gallery_link
+    tab "Calendar":
+      text "Calendar Stage 1 keeps ISO date text in ordinary Patch state"
+      # @input-mode calendar
+      input gallery_calendar
+      text "Selected date {gallery_calendar}"
+    tab "Data":
+      text "Advanced Table columns and TreeView node image, hint and state metadata"
+      # @table-columns 150:left, 180:left, 120:center
+      table "Component", "Contract", "Surface" as gallery_table:
+        row "Memo", "changed(value)", "Studio/Web"
+        row "Calendar", "ISO date text", "Studio/Web"
+        row "TreeView", "path list", "Studio/Web"
+        row "Table", "advanced columns", "Studio/Web"
+      tree as gallery_tree:
+        node "Component Registry 0.10" image gallery_images.mark hint "Feature Lab root" state info
+          node "Inputs" image gallery_images.mark hint "Input presentations" state success
+            node "Memo" image gallery_images.mark hint "Multiline text" state muted
+          node "Data" image gallery_images.mark hint "Structured controls" state warning
+            node "TreeView" image gallery_images.mark hint "Node metadata" state success
+    tab "Containers":
+      text "GroupBox, ScrollBox and SplitContainer reuse the source-backed Panel model"
+      # @panel-mode group
+      panel as gallery_group:
+        text "GroupBox presentation"
+        button "Group action" as gallery_group_action
+      # @panel-scroll auto
+      panel as gallery_scrollbox:
+        text "ScrollBox keeps viewport state transient"
+        button "ScrollBox action" as gallery_scroll_action
+      panel as gallery_split:
+        # @panel-split vertical 42
+        text "Navigator pane"
+        button "Navigate" as gallery_split_left
+        # @panel-split-break
+        text "Preview pane"
+        button "Preview" as gallery_split_right
+    tab "Graphics":
+      text "Project graphics, Separator preset, PaintBox and ImageList-backed Button"
+      picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop Feature Lab picture"
+      # @locked
+      shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1
+      # @locked
+      shape line as gallery_separator fill transparent stroke #94a3b8 stroke-width 1 radius 0 opacity 1
+      paintbox as gallery_canvas
+      button "Resource button" as gallery_resource_button image gallery_images.mark
 
-  shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 392 size 868, 158
-  text "Data controls" at 32, 404 size 180, 22
-  text "ImageList is nonvisual and is shown in the Object Tree." at 230, 404 size 500, 22
-  table "Component", "Event", "State" as gallery_table at 32, 436 size 500, 100:
-    row "Button", "clicked", "Ready"
-    row "Input", "changed", "Ready"
-    row "Table", "changed", "Ready"
-    row "TreeView", "changed", "Ready"
-    row "PaintBox", "paint", "Ready"
-
-  tree as gallery_tree at 548, 436 size 312, 100:
-    node "Registry 0.10 native subset"
-      node "Basic"
-        node "Text"
-        node "Button"
-        node "Input"
-      node "Data"
-        node "Table"
-        node "TreeView"
-      node "Graphics"
-        node "Picture"
-        node "Shape"
-        node "PaintBox"
-      node "Nonvisual"
-        node "Timer"
-        node "ImageList"
-
-  button "Refresh" as gallery_refresh at 560, 564 size 148, 32
-  button "Close gallery" as close_components at 720, 564 size 148, 32
+  button "Refresh demo" as gallery_refresh image gallery_images.mark at 620, 642 size 160, 32
+  button "Close Feature Lab" as close_components at 792, 642 size 172, 32
   timer as gallery_clock interval 2000
-  statusbar "{gallery_status}" as gallery_statusbar at 0, 612 size 900, 28
+  statusbar "{gallery_status} · progress {gallery_progress}% · pulse {gallery_ticks}" as gallery_statusbar at 0, 672 size 980, 28
 
 when customer changed:
   change customer:
@@ -902,7 +954,7 @@ when diagnostics_button clicked:
 when components_button clicked:
   open components
   change gallery_status:
-    set = "Current Ready Component Registry 0.10 subset opened"
+    set = "Studio Feature Lab opened · complete current Studio/Web surface"
 
 when close_settings clicked:
   change status:
@@ -1088,70 +1140,202 @@ when gallery_text changed:
   change gallery_text:
     set = value
   change gallery_status:
-    set = "Input change handled"
+    set = "Plain Input persisted"
+
+when gallery_memo changed:
+  change gallery_memo:
+    set = value
+  change gallery_status:
+    set = "Memo persisted"
+
+when gallery_secret changed:
+  change gallery_secret:
+    set = value
+  change gallery_status:
+    set = "PasswordEdit value persisted explicitly"
+
+when gallery_mask changed:
+  change gallery_mask:
+    set = value
+  change gallery_status:
+    set = "MaskedEdit value persisted explicitly"
+
+when gallery_number changed:
+  change gallery_number:
+    set = value
+  change gallery_status:
+    set = "NumberEdit value persisted explicitly"
+
+when gallery_date changed:
+  change gallery_date:
+    set = value
+  change gallery_status:
+    set = "DatePicker ISO date persisted"
+
+when gallery_time changed:
+  change gallery_time:
+    set = value
+  change gallery_status:
+    set = "TimePicker local time persisted"
+
+when gallery_calendar changed:
+  change gallery_calendar:
+    set = value
+  change gallery_status:
+    set = "Calendar ISO date persisted"
 
 when gallery_enabled changed:
   change gallery_enabled:
     set = value
   change gallery_status:
-    set = "Checkbox change handled"
+    set = "Checkbox state persisted"
 
 when gallery_mode changed:
   change gallery_mode:
     set = value
   change gallery_status:
-    set = "Radio change handled"
+    set = "Radio selection persisted"
 
 when gallery_color changed:
   change gallery_color:
     set = value
   change gallery_status:
-    set = "ComboBox change handled"
+    set = "ComboBox selection persisted"
 
 when gallery_features changed:
   change gallery_features:
     set = value
   change gallery_status:
-    set = "ListBox change handled"
+    set = "CheckedListBox selection persisted"
 
 when gallery_level changed:
   change gallery_level:
     set = value
   change gallery_status:
-    set = "Slider change handled"
+    set = "Slider value persisted"
+
+when gallery_scroll changed:
+  change gallery_scroll:
+    set = value
+  change gallery_status:
+    set = "ScrollBar value persisted"
+
+when gallery_link clicked:
+  change gallery_status:
+    set = "LinkLabel clicked through ordinary Button semantics"
 
 when gallery_table changed:
   change gallery_status:
-    set = "Table selection handled"
+    set = "Advanced Table row selected"
 
 when gallery_tree changed:
   change gallery_status:
-    set = "TreeView selection handled"
+    set = "TreeView path selected"
+
+when gallery_group_action clicked:
+  change gallery_status:
+    set = "GroupBox child action completed"
+
+when gallery_scroll_action clicked:
+  change gallery_status:
+    set = "ScrollBox child action completed"
+
+when gallery_split_left clicked:
+  change gallery_status:
+    set = "SplitContainer navigator action completed"
+
+when gallery_split_right clicked:
+  change gallery_status:
+    set = "SplitContainer preview action completed"
 
 when gallery_picture clicked:
   change gallery_status:
-    set = "Picture click handled"
+    set = "Picture resource selected"
+
+when gallery_resource_button clicked:
+  change gallery_status:
+    set = "ImageList-backed Button clicked"
 
 when gallery_canvas paint:
   draw clear #f8fafc
   draw rectangle 10, 10 size 54, 28 fill #dbeafe stroke #2563eb width 2
   draw ellipse 76, 10 size 28, 28 fill #dcfce7 stroke #16a34a width 2
-  draw text gallery_mode at 10, 62 color #111827 size 14
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 118, 8 size 36, 36
+  draw line 10, 48 to 154, 48 stroke #64748b width 2
+  draw text gallery_mode at 10, 66 color #111827 size 14
+
+when gallery_menu_confirm clicked:
+  confirm "Feature Lab", "Persist a confirmation result?" as gallery_confirm_result
+
+when gallery_confirm_result confirmed:
+  change gallery_status:
+    set = "Confirmation accepted and persisted"
+
+when gallery_confirm_result cancelled:
+  change gallery_status:
+    set = "Confirmation cancelled"
+
+when gallery_menu_open clicked:
+  open file "Choose a Patch file" as gallery_open_result
+
+when gallery_open_result chosen:
+  change gallery_path:
+    set = value
+  change gallery_status:
+    set = "Open-file result persisted: " + value
+
+when gallery_open_result cancelled:
+  change gallery_status:
+    set = "Open file cancelled"
+
+when gallery_menu_save clicked:
+  save file "Choose a Patch save name" as gallery_save_result
+
+when gallery_save_result chosen:
+  change gallery_path:
+    set = value
+  change gallery_status:
+    set = "Save-file result persisted: " + value
+
+when gallery_save_result cancelled:
+  change gallery_status:
+    set = "Save file cancelled"
+
+when gallery_menu_enabled clicked:
+  if gallery_enabled:
+    change gallery_enabled:
+      set = false
+  else:
+    change gallery_enabled:
+      set = true
+  change gallery_status:
+    set = "Menu checked state changed explicitly"
+
+when gallery_menu_about clicked:
+  dialog "Studio Feature Lab", "Workshop keeps the business workflow focused while this tabbed lab exercises the complete current Studio/Web authoring surface."
 
 when gallery_clock ticked:
   change gallery_ticks:
     add 1
+  if gallery_progress >= 100:
+    change gallery_progress:
+      set = 0
+  else:
+    change gallery_progress:
+      add 10
 
 when gallery_refresh clicked:
   change gallery_ticks:
     add 1
+  change gallery_progress:
+    set = 100
   change gallery_status:
-    set = "Gallery refreshed · pulse " + gallery_ticks
+    set = "Feature Lab refreshed · all demonstrations ready"
 
 when close_components clicked:
   close components
   change status:
-    set = "Component Gallery closed"
+    set = "Studio Feature Lab closed"
 
 when reset_button clicked:
   do reset_workshop()
