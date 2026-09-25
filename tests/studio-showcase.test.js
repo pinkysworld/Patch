@@ -42,17 +42,6 @@ function collectKinds(nodes, out = new Set()) {
   return out;
 }
 
-function webReadyShowcaseSlice() {
-  const main = bundle.files.find(file => file.path === 'main.patch')?.content ?? '';
-  const forms = bundle.files.find(file => file.path === 'forms.patch')?.content ?? '';
-  const withoutMenus = main.replace(
-    /\n  menu "File":[\s\S]*?\n\n  # @locked/,
-    '\n  # @locked'
-  );
-  assert.doesNotMatch(withoutMenus, /^\s*menu\b/m, 'Web-ready Showcase slice must not silently retain unsupported Menu nodes');
-  return `${withoutMenus}\n${forms}\nwhen gallery_canvas paint:\n  draw clear #f8fafc\n  draw image "patch-resource:showcase.logo" at 16, 16 size 48, 48\n`;
-}
-
 test('Patch Studio Showcase is a canonical current project-v4 multi-file fixture', () => {
   assert.equal(bundle.version, PATCH_STUDIO_PROJECT_VERSION);
   assert.equal(bundle.project.name, 'Patch Studio Showcase');
@@ -182,27 +171,22 @@ test('Patch Studio Showcase covers structural RAD, dialogs, resources and explic
   assert.match(composition.source, /when outline_tree changed:\n  change tree_path:\n    set = value/);
 });
 
-test('complete Showcase preserves explicit fail-closed export boundaries instead of hiding unsupported target features', () => {
-  assert.throws(
-    () => buildStandaloneWebApp(composition.source, {
-      name: bundle.project.name,
-      kind: bundle.project.kind,
-      entry: bundle.project.entry,
-      resources: bundle.resources
-    }),
-    /Menu decorations|Standalone Window Web App does not yet support:.*menu/i
-  );
-});
-
-test('Web-compatible Showcase slice packages every current Studio/Web-only R4 surface and resources', () => {
-  const built = buildStandaloneWebApp(webReadyShowcaseSlice(), {
-    name: `${bundle.project.name} Web Surface`,
+test('complete Showcase builds its declared Web target with menus, dialogs, R4 surfaces and resources', () => {
+  const built = buildStandaloneWebApp(composition.source, {
+    name: bundle.project.name,
     kind: 'window',
     entry: bundle.project.entry,
     resources: bundle.resources
   });
 
   assert.equal(built.metadata.projectKind, 'window');
+  assert.equal(built.metadata.version, '0.10');
+  assert.equal(built.metadata.menuStage, 1);
+  assert.equal(built.metadata.menuItems >= 6, true);
+  assert.equal(built.metadata.menuSeparators >= 1, true);
+  assert.equal(built.metadata.menuShortcuts >= 3, true);
+  assert.equal(built.metadata.resultDialogStage, 1);
+  assert.equal(built.metadata.resultDialogs >= 3, true);
   assert.equal(built.metadata.memoStage, 1);
   assert.equal(built.metadata.passwordEditStage, 1);
   assert.equal(built.metadata.datePickerStage, 1);
@@ -229,6 +213,10 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.splitContainerStage, 1);
   assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');
   assert.equal(built.metadata.splitContainerResizeState, 'transient-runtime-only');
+  assert.match(built.html, /patch-menu-bar/);
+  assert.match(built.html, /runConfirmDialog/);
+  assert.match(built.html, /runOpenFileDialog/);
+  assert.match(built.html, /runSaveFileDialog/);
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /dataset\.patchInputPresentation='date'/);
