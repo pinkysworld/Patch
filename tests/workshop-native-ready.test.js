@@ -44,7 +44,7 @@ test('Workshop Desk builds on Current Ready across the Component Registry 0.10 n
   assert.equal(controls.filter(control => control.type === 'slider').length, 5);
   assert.equal(controls.filter(control => control.type === 'timer').length, 3);
   assert.equal(controls.filter(control => control.type === 'panel').length, 2);
-  assert.equal(controls.filter(control => control.type === 'shape').length, 2);
+  assert.equal(controls.filter(control => control.type === 'shape').length, 14);
   assert.equal(controls.filter(control => control.type === 'picture').length, 2);
   assert.equal(controls.filter(control => control.type === 'paintbox').length, 2);
   assert.equal(

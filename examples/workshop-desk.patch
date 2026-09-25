@@ -45,40 +45,43 @@ create text gallery_status = "Component gallery ready"
 create number gallery_ticks = 0
 
 window "Workshop Desk" as main size 1080, 720:
-  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 24, 16 size 54, 54
-  text "Workshop Desk" at 94, 16 size 260, 30
-  text "{status}" at 94, 48 size 610, 22
-  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 750, 18 size 300, 28
-  text "Current Ready · IR 1.9 · runtime v1.10" at 790, 50 size 260, 20
+  shape rounded as desk_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 18 opacity 1 at 16, 12 size 1048, 76
+  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 28, 24 size 52, 52
+  text "Workshop Desk" at 96, 20 size 280, 28
+  text "{status}" at 96, 50 size 500, 24
+  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
+  text "Current Ready · IR 1.9 · runtime v1.10" at 620, 50 size 420, 22
 
-  text "Ticket" at 24, 92 size 110, 24
-  text "Customer" at 24, 122 size 100, 22
-  combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 146 size 210, 36
-  text "Item" at 250, 122 size 80, 22
-  input item at 250, 146 size 252, 36
-  text "Quantity {qty}" at 518, 122 size 130, 22
-  slider 1..8 as qty step 1 at 518, 146 size 220, 38
-  checkbox "Rush bench" as rush at 758, 146 size 160, 36
+  shape rounded as ticket_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 100 size 1048, 248
+  text "Ticket" at 32, 112 size 120, 24
+  text "Customer" at 32, 144 size 100, 20
+  combo "Ada", "Grace", "Linus", "Margaret" as customer at 32, 168 size 200, 36
+  text "Item" at 248, 144 size 80, 20
+  input item at 248, 168 size 240, 36
+  text "Quantity {qty}" at 508, 144 size 140, 20
+  slider 1..8 as qty step 1 at 508, 168 size 210, 36
+  checkbox "Rush bench" as rush at 740, 168 size 160, 36
 
-  text "Workflow" at 24, 202 size 120, 24
-  text "Payment" at 24, 232 size 90, 22
-  radio "Card", "Cash", "Account" as pay at 24, 256 size 250, 82
-  text "Priority" at 292, 232 size 90, 22
-  radio "Normal", "High", "Critical" as priority at 292, 256 size 250, 82
-  text "Notes" at 560, 232 size 80, 22
-  input notes at 560, 256 size 490, 36
-  text "Services" at 560, 298 size 90, 22
-  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 560, 322 size 490, 58
+  text "Payment" at 32, 220 size 90, 20
+  radio "Card", "Cash", "Account" as pay at 32, 244 size 220, 84
+  text "Priority" at 272, 220 size 90, 20
+  radio "Normal", "High", "Critical" as priority at 272, 244 size 220, 84
+  text "Notes" at 512, 220 size 80, 20
+  input notes at 512, 244 size 250, 36
+  text "Services" at 780, 220 size 90, 20
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 780, 244 size 260, 84
 
-  text "Queue" at 24, 394 size 100, 22
-  table "Ticket", "Customer", "Bench", "State" as board at 24, 420 size 520, 190:
+  shape rounded as queue_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 360 size 640, 292
+  text "Queue" at 32, 372 size 120, 22
+  table "Ticket", "Customer", "Bench", "State" as board at 32, 402 size 608, 230:
     row "WD-104", "Ada", "Bench A", "Open"
     row "WD-105", "Grace", "Bench B", "Quoted"
     row "WD-106", "Linus", "Bench A", "Ready"
     row "WD-107", "Margaret", "Overflow", "Waiting"
 
-  text "Parts & tools" at 560, 394 size 160, 22
-  tree as parts at 560, 420 size 240, 190:
+  shape rounded as side_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 668, 360 size 396, 292
+  text "Parts & tools" at 684, 372 size 180, 22
+  tree as parts at 684, 400 size 168, 232:
     node "Parts"
       node "Input"
         node "Keyboard"
@@ -90,20 +93,18 @@ window "Workshop Desk" as main size 1080, 720:
       node "Driver"
       node "Solder"
       node "Meter"
-
-  text "Actions" at 816, 394 size 120, 22
-  button "Quote" as quote_button at 816, 420 size 104, 36
-  button "Details" as details_button at 936, 420 size 104, 36
-  button "Ready" as complete_button at 816, 464 size 104, 36
-  button "Reset" as reset_button at 936, 464 size 104, 36
-  button "Inventory" as inventory_button at 816, 508 size 104, 36
-  button "Customer" as customer_button at 936, 508 size 104, 36
-  button "Diagnostics" as diagnostics_button at 816, 552 size 104, 36
-  button "Settings" as settings_button at 936, 552 size 104, 36
-  button "Components" as components_button at 816, 596 size 224, 36
+  button "Quote" as quote_button at 864, 400 size 180, 32
+  button "Details" as details_button at 864, 438 size 180, 32
+  button "Ready" as complete_button at 864, 476 size 180, 32
+  button "Reset" as reset_button at 864, 514 size 180, 32
+  button "Inventory" as inventory_button at 864, 552 size 86, 30
+  button "Customer" as customer_button at 958, 552 size 86, 30
+  button "Diagnostics" as diagnostics_button at 864, 588 size 86, 30
+  button "Settings" as settings_button at 958, 588 size 86, 30
+  button "Components" as components_button at 864, 622 size 180, 28
 
   # @layout anchor left right bottom
-  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 24, 640 size 1016, 24
+  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 692 size 1080, 28
 
@@ -130,25 +131,34 @@ window "Workshop settings" as settings size 720, 520:
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
 window "Job details" as details size 640, 560:
-  text "Current workshop ticket" at 24, 24 size 300, 28
-  text "Customer: {customer}" at 24, 70 size 280, 24
-  text "Item: {item}" at 24, 104 size 280, 24
-  text "Quantity: {qty}" at 24, 138 size 280, 24
-  text "Bench: {ticket_bench}" at 24, 172 size 280, 24
-  text "Priority: {priority}" at 24, 206 size 280, 24
-  text "Payment: {pay}" at 326, 70 size 280, 24
-  text "State: {ticket_state}" at 326, 104 size 280, 24
-  text "Current quote: {ticket_total}" at 326, 138 size 280, 24
-  panel as runtime_panel at 326, 172 size 280, 170:
+  shape rounded as details_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 16 opacity 1 at 16, 12 size 608, 68
+  text "Job details" at 32, 22 size 240, 26
+  text "{status}" at 32, 48 size 560, 22
+
+  shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
+  text "Customer: {customer}" at 32, 108 size 270, 22
+  text "Item: {item}" at 32, 134 size 270, 22
+  text "Quantity: {qty}" at 32, 160 size 270, 22
+  text "Bench: {ticket_bench}" at 32, 186 size 270, 22
+  text "Priority: {priority}" at 330, 108 size 270, 22
+  text "Payment: {pay}" at 330, 134 size 270, 22
+  text "State: {ticket_state}" at 330, 160 size 270, 22
+  text "Current quote: {ticket_total}" at 330, 186 size 270, 22
+
+  shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
+  text "Ticket canvas" at 32, 256 size 200, 20
+  paintbox as ticket_canvas at 32, 282 size 264, 146
+
+  shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
+  panel as runtime_panel at 340, 260 size 268, 168:
     text "Native runtime pulse {heartbeat}"
     text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"
     text "Quote revision {quote_revision}"
     shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
-  paintbox as ticket_canvas at 24, 244 size 280, 120
-  text "{status}" at 24, 386 size 560, 28
-  button "Add inspection" as details_quote at 24, 470 size 160, 38
-  button "Mark ready" as details_ready at 202, 470 size 150, 38
-  button "Close details" as close_details at 370, 470 size 160, 38
+
+  button "Add inspection" as details_quote at 16, 460 size 180, 36
+  button "Mark ready" as details_ready at 208, 460 size 180, 36
+  button "Close details" as close_details at 400, 460 size 180, 36
 
 window "Inventory Center" as inventory size 900, 620:
   text "Inventory Center" at 24, 20 size 280, 30
@@ -250,43 +260,48 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
   statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
 
 window "Component Gallery" as components size 900, 640:
-  text "Component Gallery" at 24, 20 size 280, 30
-  text "{gallery_status}" at 320, 20 size 550, 30
-  text "Inputs & choices" at 24, 66 size 200, 24
-  text "Text input" at 24, 96 size 100, 22
-  input gallery_text at 24, 120 size 250, 36
-  checkbox "Enabled" as gallery_enabled at 24, 170 size 180, 36
-  text "Mode" at 24, 218 size 80, 22
-  radio "Ready", "Review", "Blocked" as gallery_mode at 24, 242 size 250, 82
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 868, 64
+  text "Component Gallery" at 32, 22 size 280, 26
+  text "{gallery_status}" at 330, 22 size 530, 26
+  text "Current Ready native subset" at 32, 48 size 360, 20
 
-  text "Color" at 294, 96 size 80, 22
-  combo "Blue", "Green", "Amber", "Red" as gallery_color at 294, 120 size 220, 36
-  text "Level {gallery_level}" at 294, 170 size 130, 22
-  slider 0..100 as gallery_level step 10 at 294, 194 size 220, 38
-  text "Features" at 294, 246 size 100, 22
-  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 294, 270 size 220, 64
+  shape rounded as inputs_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 88 size 430, 292
+  text "Inputs & choices" at 32, 100 size 220, 22
+  text "Text input" at 32, 128 size 120, 18
+  input gallery_text at 32, 148 size 190, 32
+  checkbox "Enabled" as gallery_enabled at 236, 148 size 190, 32
+  text "Mode" at 32, 190 size 80, 18
+  radio "Ready", "Review", "Blocked" as gallery_mode at 32, 210 size 190, 148
+  text "Color" at 236, 190 size 80, 18
+  combo "Blue", "Green", "Amber", "Red" as gallery_color at 236, 210 size 190, 32
+  text "Level {gallery_level}" at 236, 250 size 180, 18
+  slider 0..100 as gallery_level step 10 at 236, 270 size 190, 28
+  text "Features" at 236, 304 size 120, 16
+  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 236, 322 size 190, 44
 
-  text "Graphics & containers" at 540, 66 size 250, 24
-  picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Gallery picture" at 540, 100 size 64, 64
-  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 620, 100 size 96, 64
-  paintbox as gallery_canvas at 732, 100 size 144, 100
-  panel as gallery_panel at 540, 220 size 336, 108:
+  shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 458, 88 size 426, 292
+  text "Graphics & containers" at 474, 100 size 280, 22
+  picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Gallery picture" at 474, 132 size 64, 64
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 554, 132 size 88, 64
+  paintbox as gallery_canvas at 658, 132 size 200, 110
+  panel as gallery_panel at 474, 256 size 384, 108:
     text "Panel Stage 1"
     text "Source-backed visual grouping"
 
   imagelist as gallery_images size 20, 20:
     image mark from "patch-resource:workshop.mark"
-  text "ImageList is nonvisual and appears in the Object Tree. Resource-backed button images use project v4 assets." at 540, 340 size 336, 46
 
-  text "Data controls" at 24, 354 size 180, 24
-  table "Component", "Event", "State" as gallery_table at 24, 384 size 480, 150:
+  shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 392 size 868, 158
+  text "Data controls" at 32, 404 size 180, 22
+  text "ImageList is nonvisual and is shown in the Object Tree." at 230, 404 size 500, 22
+  table "Component", "Event", "State" as gallery_table at 32, 436 size 500, 100:
     row "Button", "clicked", "Ready"
     row "Input", "changed", "Ready"
     row "Table", "changed", "Ready"
     row "TreeView", "changed", "Ready"
     row "PaintBox", "paint", "Ready"
 
-  tree as gallery_tree at 524, 400 size 180, 134:
+  tree as gallery_tree at 548, 436 size 312, 100:
     node "Registry 0.10 native subset"
       node "Basic"
         node "Text"
@@ -303,8 +318,8 @@ window "Component Gallery" as components size 900, 640:
         node "Timer"
         node "ImageList"
 
-  button "Refresh" as gallery_refresh at 724, 448 size 152, 38
-  button "Close gallery" as close_components at 724, 496 size 152, 38
+  button "Refresh" as gallery_refresh at 560, 564 size 148, 32
+  button "Close gallery" as close_components at 720, 564 size 148, 32
   timer as gallery_clock interval 2000
   statusbar "{gallery_status}" as gallery_statusbar at 0, 612 size 900, 28
 

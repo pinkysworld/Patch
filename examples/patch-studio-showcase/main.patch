@@ -25,6 +25,110 @@ create text dialog_status = "Dialogs ready"
 create text split_status = "SplitContainer ready"
 create list tree_path = ["Workspace"]
 create text tree_status = "Tree Lab ready"
+create text profile_summary = "Ada · User · 2026-09-10 14:30"
+create number profile_saves = 0
+create number review_score = 0
+create thing profile:
+  name = "Ada"
+  code = ""
+  phone_number = ""
+  role = "User"
+  theme_name = "Blue"
+  level = 60
+  active = true
+  slot = "2026-09-10 14:30"
+  progress = 35
+  surfaces = ["Designer", "Web"]
+
+make score_review(bonus number 0..30):
+  change review_score:
+    set = 0
+  repeat 4:
+    change review_score:
+      add count
+  if level >= 60:
+    change review_score:
+      add bonus
+  else:
+    change review_score:
+      add 5
+
+make save_profile():
+  change profile:
+    set name = user_name
+    set code = nested_code
+    set phone_number = phone
+    set role = access
+    set theme_name = theme
+    set level = level
+    set active = active
+    set slot = review_date + " " + review_time
+    set progress = completion
+    set surfaces = features
+  do score_review(20)
+  change profile_saves:
+    add 1
+  if active:
+    change profile_summary:
+      set = user_name + " · " + access + " · " + review_date + " " + review_time
+    change status:
+      set = "Saved " + user_name + " · " + access + " · " + review_date + " · score " + review_score
+  else:
+    change profile_summary:
+      set = "Inactive " + user_name
+    change status:
+      set = "Saved inactive profile for " + user_name
+
+make reset_showcase():
+  change user_name:
+    set = "Ada"
+  change secret:
+    set = ""
+  change phone:
+    set = ""
+  change notes:
+    set = "Patch Studio Showcase keeps the complete current Studio/Web surface visible in one project."
+  change active:
+    set = true
+  change access:
+    set = "User"
+  change theme:
+    set = "Blue"
+  change features:
+    set = ["Designer", "Web"]
+  change level:
+    set = 60
+  change completion:
+    set = 35
+  change selected_path:
+    set = "No file selected"
+  change nested_code:
+    set = ""
+  change nested_number:
+    set = "42"
+  change review_date:
+    set = "2026-09-10"
+  change review_time:
+    set = "14:30"
+  change profile:
+    set name = "Ada"
+    set code = ""
+    set phone_number = ""
+    set role = "User"
+    set theme_name = "Blue"
+    set level = 60
+    set active = true
+    set slot = "2026-09-10 14:30"
+    set progress = 35
+    set surfaces = ["Designer", "Web"]
+  change profile_summary:
+    set = "Ada · User · 2026-09-10 14:30"
+  change profile_saves:
+    set = 0
+  change review_score:
+    set = 0
+  change status:
+    set = "Showcase restored to its demo defaults"
 
 window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showcase.logo":
   menu "File":
@@ -44,7 +148,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   # @locked
   picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 44, 36 size 56, 56
   text "Patch Studio Showcase" at 120, 34 size 430, 34
-  text "A polished Project-v4 workspace for the complete Registry 0.10 Studio/Web surface." at 120, 68 size 660, 24
+  text "Saved " + profile.name + " · " + profile.slot + " · editing " + user_name + " · score " + review_score at 120, 68 size 660, 24
   text "{status}" at 824, 42 size 300, 42
 
   imagelist as showcase_images size 20, 20:
@@ -53,7 +157,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   # @locked
   shape rounded as account_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 132 size 548, 280
   text "Account & input" at 44, 150 size 260, 28
-  text "Plain, password, masked and multiline input stay ordinary source-backed Patch controls." at 44, 180 size 492, 38
+  text "These inputs stay source-backed. Save profile stores them on the profile Thing." at 44, 180 size 492, 38
 
   text "Name" at 44, 226 size 120, 20
   # @taborder 0
@@ -97,7 +201,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   text "Tabs keep secondary concepts available without crowding the primary dashboard." at 44, 484 size 660, 24
   tabs as showcase_tabs at 44, 516 size 692, 218:
     tab "Nested controls":
-      text "Tabs Stage 1 keeps supported Input presentations source-backed."
+      text "Save here or with Save profile. The recipe stores this review on the profile Thing."
       # @input-mask "AA-000"
       input nested_code
       # @number-edit
@@ -107,25 +211,26 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
       # @input-mode time
       input review_time
       text "Review slot {review_date} at {review_time}"
-      button "Apply nested values" as nested_apply
+      button "Save profile" as nested_apply
     tab "Project v4":
       text "Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle."
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "Layout, TabOrder, Locked, PasswordEdit, MaskedEdit, NumberEdit, DatePicker, TimePicker, Calendar, LinkLabel and the current Panel/List/Slider presentations stay source-backed."
+      text "save_profile copies this account onto a Thing, score_review repeats and branches on level, and reset_showcase restores the demo."
 
   # @layout anchor right bottom
   panel as actions_panel at 780, 436 size 376, 318:
-    text "Quick actions" at 20, 18 size 220, 28
-    text "Open focused Forms for components and dialogs, or exercise project-level actions." at 20, 50 size 336, 42
-    button "Component Gallery" as open_gallery image showcase_images.mark at 20, 106 size 160, 42
-    button "Dialog Lab" as open_dialogs at 196, 106 size 160, 42
-    button "Confirm reset" as confirm_reset at 20, 164 size 160, 42
-    button "About" as about_button at 196, 164 size 160, 42
-    text "Selected file" at 20, 224 size 160, 20
-    text "{selected_path}" at 20, 248 size 336, 48
+    text "Quick actions" at 20, 16 size 220, 26
+    text "Save writes this account onto the profile Thing. Labs open the rest of the surface." at 20, 44 size 336, 36
+    button "Save profile" as save_button at 20, 86 size 336, 40
+    button "Component Gallery" as open_gallery image showcase_images.mark at 20, 136 size 160, 36
+    button "Dialog Lab" as open_dialogs at 196, 136 size 160, 36
+    button "Confirm reset" as confirm_reset at 20, 180 size 160, 36
+    button "About" as about_button at 196, 180 size 160, 36
+    text "Selected file" at 20, 226 size 160, 18
+    text "{selected_path}" at 20, 246 size 336, 40
 
   timer as showcase_clock interval 4000
   # @layout anchor left right bottom
-  statusbar "{status} · timer {ticks}" as showcase_status at 0, 792 size 1180, 28
+  statusbar "{status} · saves {profile_saves} · timer {ticks}" as showcase_status at 0, 792 size 1180, 28

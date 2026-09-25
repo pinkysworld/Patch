@@ -9,9 +9,9 @@ It complements, rather than replaces, `examples/workshop-desk.patch`:
 
 ## Visual structure
 
-The Showcase uses four focused Forms with a consistent card/dashboard layout:
+The Showcase uses six Forms with a consistent card/dashboard layout:
 
-- **Patch Studio Showcase** is the primary dashboard. It groups account inputs, preferences/state, secondary semantics and project actions into distinct visual regions with consistent spacing.
+- **Patch Studio Showcase** is the primary workspace and a running review desk. Save profile stores the account on a Thing through `save_profile`. `score_review` takes a ranged bonus, repeats to fold `count`, and branches on the experience level. `reset_showcase` restores the demo. The same Form still groups account inputs, preferences, secondary details and project actions. The hero shows the saved Thing beside the draft name.
 - **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
 - **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.
 - **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.

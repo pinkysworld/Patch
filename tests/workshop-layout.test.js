@@ -17,6 +17,13 @@ function overlaps(a, b) {
     && a.y + a.height > b.y;
 }
 
+function contains(outer, inner) {
+  return inner.x >= outer.x
+    && inner.y >= outer.y
+    && inner.x + inner.width <= outer.x + outer.width
+    && inner.y + inner.height <= outer.y + outer.height;
+}
+
 function label(control) {
   return control.id || control.label || `${control.type}@${control.line}`;
 }
@@ -36,8 +43,10 @@ test('Workshop Desk main Form uses a clean non-overlapping dashboard layout', ()
     for (let right = left + 1; right < controls.length; right += 1) {
       const a = controls[left];
       const b = controls[right];
+      const contained = (a.control.type === 'shape' && contains(a.rect, b.rect))
+        || (b.control.type === 'shape' && contains(b.rect, a.rect));
       assert.equal(
-        overlaps(a.rect, b.rect),
+        overlaps(a.rect, b.rect) && !contained,
         false,
         `Workshop controls overlap: ${label(a.control)} and ${label(b.control)}`
       );
@@ -54,13 +63,13 @@ test('Workshop Desk separates ticket, workflow, data and action regions with del
   const components = controls.find(control => control.id === 'components_button');
   const status = controls.find(control => control.id === 'desk_status');
 
-  assert.equal(services?.y, 322);
-  assert.equal(services?.height, 58);
-  assert.equal(board?.y, 420);
-  assert.equal(parts?.y, 420);
+  assert.equal(services?.y, 244);
+  assert.equal(services?.height, 84);
+  assert.equal(board?.y, 402);
+  assert.equal(parts?.y, 400);
   assert.equal(board?.y - (services?.y + services?.height) >= 40, true);
-  assert.deepEqual([quote?.x, quote?.y, quote?.width, quote?.height], [816, 420, 104, 36]);
-  assert.deepEqual([components?.x, components?.y, components?.width, components?.height], [816, 596, 224, 36]);
+  assert.deepEqual([quote?.x, quote?.y, quote?.width, quote?.height], [864, 400, 180, 32]);
+  assert.deepEqual([components?.x, components?.y, components?.width, components?.height], [864, 622, 180, 28]);
   assert.equal((components?.y ?? 0) + (components?.height ?? 0) < (status?.y ?? 0), true);
 });
 

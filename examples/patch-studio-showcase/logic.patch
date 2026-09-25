@@ -2,25 +2,25 @@ when user_name changed:
   change user_name:
     set = value
   change status:
-    set = "Account name updated"
+    set = "Name set to " + value
 
 when secret changed:
   change secret:
     set = value
   change status:
-    set = "PasswordEdit updated securely"
+    set = "Password stored"
 
 when phone changed:
   change phone:
     set = value
   change status:
-    set = "Masked phone input updated"
+    set = "Phone number stored"
 
 when notes changed:
   change notes:
     set = value
   change status:
-    set = "Notes updated"
+    set = "Notes saved"
 
 when active changed:
   change active:
@@ -83,8 +83,10 @@ when calendar_date changed:
     set = "Calendar date selection persisted explicitly"
 
 when nested_apply clicked:
-  change status:
-    set = "Nested values applied"
+  do save_profile()
+
+when save_button clicked:
+  do save_profile()
 
 when showcase_logo clicked:
   change status:
@@ -131,10 +133,10 @@ when menu_pinned clicked:
     set = "Pinned menu state changed explicitly"
 
 when menu_about clicked:
-  dialog "Patch Studio Showcase", "A polished Project-v4 workspace for Component Registry 0.10 and current Studio/Web RAD features."
+  dialog "Patch Studio Showcase", "Save profile stores this account on a Thing. Component Registry 0.10 labs open the rest of the Studio/Web surface."
 
 when about_button clicked:
-  dialog "About", "Patch Studio Showcase combines a dashboard, Component Gallery and Dialog Lab while keeping persistent state changes explicit."
+  dialog "About", "Save profile runs a recipe that stores the account, scores the review and branches on whether the account is active."
 
 when menu_open clicked:
   open file "Choose a Patch file" as menu_open_result
@@ -163,17 +165,10 @@ when menu_save_result cancelled:
     set = "Save file cancelled"
 
 when confirm_reset clicked:
-  confirm "Reset showcase?", "Restore the dashboard progress, level, selected path and status?" as reset_confirm
+  confirm "Reset showcase?", "Restore the saved profile, progress, level, selected path and status?" as reset_confirm
 
 when reset_confirm confirmed:
-  change selected_path:
-    set = "No file selected"
-  change level:
-    set = 60
-  change completion:
-    set = 35
-  change status:
-    set = "Showcase restored to its demo defaults"
+  do reset_showcase()
 
 when reset_confirm cancelled:
   change status:

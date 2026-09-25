@@ -12,6 +12,8 @@ import {
   PATCH_COMPONENTS
 } from '../src/component-registry.js';
 import { compile } from '../src/compiler.js';
+import { PatchInterpreter } from '../src/interpreter.js';
+import { triggerWindowEvent } from '../src/window-events.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 
 const PROJECT_PATH = 'examples/patch-studio-showcase.patchproject';
@@ -249,4 +251,64 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.match(built.html, /rel="icon"/);
   assert.match(built.html, /data:image\/png;base64/);
   assert.match(built.html, /PATCH_IMAGE_RESOURCES/);
+});
+
+test('Patch Studio Showcase saves, scores and restores a review profile', () => {
+  const runtime = new PatchInterpreter();
+  runtime.run(composition.source);
+  const hero = () => runtime.buildUIModel()[0].controls.find(control => String(control.text).startsWith('Saved '));
+
+  assert.equal(runtime.state.get('profile').name, 'Ada');
+  assert.equal(runtime.state.get('review_score'), 0);
+  assert.equal(runtime.state.get('profile_saves'), 0);
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
+
+  triggerWindowEvent(runtime, 'user_name', 'changed', { value: 'Grace' });
+  triggerWindowEvent(runtime, 'nested_code', 'changed', { value: 'PX-100' });
+  triggerWindowEvent(runtime, 'phone', 'changed', { value: '(415) 555-0100' });
+  triggerWindowEvent(runtime, 'review_date', 'changed', { value: '2026-10-01' });
+  triggerWindowEvent(runtime, 'review_time', 'changed', { value: '09:15' });
+  triggerWindowEvent(runtime, 'access', 'changed', { value: 'Admin' });
+  triggerWindowEvent(runtime, 'nested_apply', 'clicked');
+
+  let profile = runtime.state.get('profile');
+  assert.equal(profile.name, 'Grace');
+  assert.equal(profile.code, 'PX-100');
+  assert.equal(profile.phone_number, '(415) 555-0100');
+  assert.equal(profile.role, 'Admin');
+  assert.equal(profile.active, true);
+  assert.equal(profile.slot, '2026-10-01 09:15');
+  assert.equal(profile.level, 60);
+  assert.deepEqual(profile.surfaces, ['Designer', 'Web']);
+  assert.equal(runtime.state.get('profile_saves'), 1);
+  assert.equal(runtime.state.get('review_score'), 30);
+  assert.equal(runtime.state.get('status'), 'Saved Grace · Admin · 2026-10-01 · score 30');
+  assert.match(hero().text, /Saved Grace · 2026-10-01 09:15 · editing Grace · score 30/);
+
+  triggerWindowEvent(runtime, 'active', 'changed', { value: false });
+  triggerWindowEvent(runtime, 'level', 'changed', { value: 10 });
+  triggerWindowEvent(runtime, 'save_button', 'clicked');
+
+  profile = runtime.state.get('profile');
+  assert.equal(profile.active, false);
+  assert.equal(profile.level, 10);
+  assert.equal(runtime.state.get('profile_saves'), 2);
+  assert.equal(runtime.state.get('review_score'), 15);
+  assert.equal(runtime.state.get('status'), 'Saved inactive profile for Grace');
+  assert.equal(runtime.state.get('profile_summary'), 'Inactive Grace');
+
+  triggerWindowEvent(runtime, 'reset_confirm', 'confirmed');
+  profile = runtime.state.get('profile');
+  assert.equal(profile.name, 'Ada');
+  assert.equal(profile.code, '');
+  assert.equal(profile.slot, '2026-09-10 14:30');
+  assert.equal(profile.active, true);
+  assert.equal(runtime.state.get('user_name'), 'Ada');
+  assert.equal(runtime.state.get('level'), 60);
+  assert.equal(runtime.state.get('completion'), 35);
+  assert.equal(runtime.state.get('selected_path'), 'No file selected');
+  assert.equal(runtime.state.get('profile_saves'), 0);
+  assert.equal(runtime.state.get('review_score'), 0);
+  assert.equal(runtime.state.get('status'), 'Showcase restored to its demo defaults');
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
 });

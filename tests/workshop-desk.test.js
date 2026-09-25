@@ -33,20 +33,20 @@ function workshopV06Fixture() {
       'create number ticket_total = 40'
     )
     .replace(
-      '  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 750, 18 size 300, 28',
-      '  text "Quote {ticket_total} · {ticket_state}" at 790, 18 size 260, 28'
+      '  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28',
+      '  text "Quote {ticket_total} · {ticket_state}" at 620, 20 size 420, 28'
     )
     .replace(
-      '  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 24, 640 size 1016, 24',
-      '  text "Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component." at 24, 640 size 1016, 24'
+      '  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22',
+      '  text "Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22'
     )
     .replace(
       '      text "It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring."',
       '      text "It covers the complete Component Registry 0.9 surface, including nonvisual Timer and ImageList authoring."'
     )
     .replace(
-      '  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"\n    text "Quote revision {quote_revision}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1',
-      '  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1'
+      '  panel as runtime_panel at 340, 260 size 268, 168:\n    text "Native runtime pulse {heartbeat}"\n    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"\n    text "Quote revision {quote_revision}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1',
+      '  panel as runtime_panel at 340, 260 size 268, 168:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1'
     )
     .replace(
       '      text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."',
