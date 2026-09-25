@@ -2,7 +2,7 @@ name: Patch Native Window Icon Packaging v1.10
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - 'src/native-window-icon-packaging.js'
       - 'src/native-window-icon-package-v110.js'
