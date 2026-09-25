@@ -27,7 +27,6 @@ create list tree_path = ["Workspace"]
 create text tree_status = "Tree Lab ready"
 create text profile_summary = "Ada · User · 2026-09-10 14:30"
 create number profile_saves = 0
-create number review_score = 0
 create thing profile:
   name = "Ada"
   code = ""
@@ -39,19 +38,6 @@ create thing profile:
   slot = "2026-09-10 14:30"
   progress = 35
   surfaces = ["Designer", "Web"]
-
-make score_review(bonus number 0..30):
-  change review_score:
-    set = 0
-  repeat 4:
-    change review_score:
-      add count
-  if level >= 60:
-    change review_score:
-      add bonus
-  else:
-    change review_score:
-      add 5
 
 make save_profile():
   change profile:
@@ -65,14 +51,13 @@ make save_profile():
     set slot = review_date + " " + review_time
     set progress = completion
     set surfaces = features
-  do score_review(20)
   change profile_saves:
     add 1
   if active:
     change profile_summary:
       set = user_name + " · " + access + " · " + review_date + " " + review_time
     change status:
-      set = "Saved " + user_name + " · " + access + " · " + review_date + " · score " + review_score
+      set = "Saved review profile · " + user_name + " · " + access + " · " + review_date
   else:
     change profile_summary:
       set = "Inactive " + user_name
@@ -125,8 +110,6 @@ make reset_showcase():
     set = "Ada · User · 2026-09-10 14:30"
   change profile_saves:
     set = 0
-  change review_score:
-    set = 0
   change status:
     set = "Showcase restored to its demo defaults"
 
@@ -148,7 +131,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   # @locked
   picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 44, 36 size 56, 56
   text "Patch Studio Showcase" at 120, 34 size 430, 34
-  text "Saved " + profile.name + " · " + profile.slot + " · editing " + user_name + " · score " + review_score at 120, 68 size 660, 24
+  text "Saved " + profile.name + " · " + profile.slot + " · editing " + user_name at 120, 68 size 660, 24
   text "{status}" at 824, 42 size 300, 42
 
   imagelist as showcase_images size 20, 20:
@@ -156,13 +139,13 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
 
   # @locked
   shape rounded as account_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 132 size 548, 280
-  text "Account & input" at 44, 150 size 260, 28
-  text "These inputs stay source-backed. Save profile stores them on the profile Thing." at 44, 180 size 492, 38
+  text "Reviewer & input modes" at 44, 150 size 300, 28
+  text "Password, mask and Memo stay ordinary source-backed inputs in one reviewer workflow." at 44, 180 size 492, 38
 
-  text "Name" at 44, 226 size 120, 20
+  text "Reviewer" at 44, 226 size 120, 20
   # @taborder 0
   input user_name at 44, 250 size 236, 38
-  text "Password" at 306, 226 size 120, 20
+  text "Review token" at 306, 226 size 120, 20
   # @input-mode password
   # @taborder 1
   input secret at 306, 250 size 236, 38
@@ -177,10 +160,10 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
 
   # @locked
   shape rounded as preference_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 596, 132 size 560, 280
-  text "Preferences & state" at 616, 150 size 280, 28
+  text "Review preferences" at 616, 150 size 280, 28
   text "Interactive controls emit transient values. Only explicit change blocks persist them." at 616, 180 size 504, 38
 
-  checkbox "Account active" as active at 616, 226 size 200, 34
+  checkbox "Review active" as active at 616, 226 size 200, 34
   radio "User", "Admin", "Guest" as access at 616, 268 size 218, 78
 
   text "Theme" at 860, 226 size 100, 20
@@ -197,7 +180,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
 
   # @locked
   shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 436 size 732, 318
-  text "Details & semantics" at 44, 454 size 280, 28
+  text "Project & semantics" at 44, 454 size 280, 28
   text "Tabs keep secondary concepts available without crowding the primary dashboard." at 44, 484 size 660, 24
   tabs as showcase_tabs at 44, 516 size 692, 218:
     tab "Nested controls":
@@ -217,12 +200,12 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
     tab "Semantics":
       text "Persistent application state changes only through explicit change blocks."
-      text "save_profile copies this account onto a Thing, score_review repeats and branches on level, and reset_showcase restores the demo."
+      text "save_profile copies this review onto a Thing, branches on active state, and reset_showcase restores the acceptance fixture."
 
   # @layout anchor right bottom
   panel as actions_panel at 780, 436 size 376, 318:
     text "Quick actions" at 20, 16 size 220, 26
-    text "Save writes this account onto the profile Thing. Labs open the rest of the surface." at 20, 44 size 336, 36
+    text "Save writes this review onto the profile Thing. Labs open the complete feature surface." at 20, 44 size 336, 36
     button "Save profile" as save_button at 20, 86 size 336, 40
     button "Component Gallery" as open_gallery image showcase_images.mark at 20, 136 size 160, 36
     button "Dialog Lab" as open_dialogs at 196, 136 size 160, 36
