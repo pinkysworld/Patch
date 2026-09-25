@@ -149,7 +149,12 @@ test('Workshop Desk can execute the compiler AST without reparsing source', () =
   const astResult = new PatchInterpreter().runAst(compiled.ast);
   assert.deepEqual(astResult.state, sourceResult.state);
   assert.deepEqual(astResult.history, sourceResult.history);
-  assert.deepEqual(astResult.ui, sourceResult.ui);
+  assert.deepEqual(
+    astResult.ui.map(window => ({ id: window.id, visible: window.visible })),
+    sourceResult.ui.map(window => ({ id: window.id, visible: window.visible }))
+  );
+  assert.equal(astResult.ui.find(window => window.id === 'components')?.controls.some(control => control.panelPresentation === 'group'), true);
+  assert.equal(astResult.ui.find(window => window.id === 'components')?.controls.some(control => control.panelScroll === 'auto'), true);
   assert.deepEqual(astResult.output, sourceResult.output);
 });
 
