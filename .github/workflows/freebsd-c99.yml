@@ -28,6 +28,7 @@ on:
         required: false
         default: manual
   pull_request:
+    types: [opened, reopened, ready_for_review]
     paths:
       - src/c99.js
       - src/cli.js
