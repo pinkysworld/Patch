@@ -299,7 +299,7 @@ function fail(error){appEl.innerHTML='<section class="console"><strong>Patch sto
 function safeTrigger(control,event,payload={}){try{trigger(control,event,payload);}catch(error){fail(error);}}
 function shortcutMatches(event,shortcut){const parts=String(shortcut||'').split('+').map(part=>part.trim()).filter(Boolean);if(!parts.length)return false;const key=parts.pop();const modifiers=new Set(parts.map(part=>part.toLowerCase()));const apple=typeof navigator!=='undefined'&&/Mac|iPhone|iPad/i.test(String(navigator.platform||''));const wantsPrimary=modifiers.has('primary');const wantsCtrl=modifiers.has('ctrl')||(wantsPrimary&&!apple);const wantsMeta=modifiers.has('meta')||(wantsPrimary&&apple);const wantsAlt=modifiers.has('alt')||modifiers.has('option');const wantsShift=modifiers.has('shift');if(Boolean(event.ctrlKey)!==wantsCtrl||Boolean(event.metaKey)!==wantsMeta||Boolean(event.altKey)!==wantsAlt||Boolean(event.shiftKey)!==wantsShift)return false;return String(event.key||'').toLowerCase()===String(key).toLowerCase();}
 function dispatchMenuShortcut(event){if(event.defaultPrevented)return;for(const model of buildUI()){if(model.visible===false)continue;for(const menu of model.menus??[]){for(const item of menu.items??[]){if(item.type!=='item'||item.enabled===false||!item.shortcut)continue;if(!shortcutMatches(event,item.shortcut))continue;event.preventDefault();safeTrigger(item.id,'clicked');return;}}}}
-document.addEventListener('keydown',dispatchMenuShortcut);
+if(document&&typeof document.addEventListener==='function')document.addEventListener('keydown',dispatchMenuShortcut);
 try{executeBlock(PROGRAM,{});render();showOutput();}catch(error){fail(error);}
 `;
 }
