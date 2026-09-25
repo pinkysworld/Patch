@@ -33,7 +33,8 @@ test('Showcase appears as an explicit repeatable Example load without replacing 
   assert.match(restore, /option\.value = 'studioShowcase'/);
   assert.match(restore, /option\.textContent = 'Patch Studio Showcase'/);
   assert.match(restore, /if \(sample && hasOption\(sample, 'counterWindow'\)\) sample\.value = 'counterWindow'/);
-  assert.match(restore, /if \(sample\.value !== 'studioShowcase'\) return;/);
+  assert.match(restore, /if \(sample\.value !== 'studioShowcase' && sample\.value !== 'workshopDesk'\) return;/);
+  assert.match(restore, /if \(sample\.value === 'workshopDesk'\) loadWorkshopDeskProject\(\)/);
   assert.match(restore, /event\.stopImmediatePropagation\(\)/);
   assert.match(restore, /document\.querySelector\('#tabDesigner'\)\?\.click\(\)/);
 });
