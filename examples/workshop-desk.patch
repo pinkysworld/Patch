@@ -737,7 +737,7 @@ window "Studio Feature Lab" as components size 980, 700:
   text "{gallery_status}" at 346, 22 size 590, 26
   text "Complete current Studio/Web acceptance surface · Component Registry 0.10" at 32, 48 size 700, 20
 
-  text "Project-v4 adds ImageList-backed icons from workshop.mark; the standalone source remains resource-free." at 32, 74 size 820, 18
+  text "Project-v4 adds ImageList-backed icons from workshop.mark; the standalone source remains resource-free." at 32, 78 size 820, 18
 
   tabs as feature_tabs at 16, 100 size 948, 318:
     tab "Inputs":
