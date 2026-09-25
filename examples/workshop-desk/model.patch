@@ -411,6 +411,26 @@ make reset_workshop():
     set = "Component gallery ready"
   change gallery_ticks:
     set = 0
+  change gallery_memo:
+    set = "Feature Lab notes"
+  change gallery_secret:
+    set = ""
+  change gallery_mask:
+    set = ""
+  change gallery_number:
+    set = "42"
+  change gallery_date:
+    set = "2026-09-25"
+  change gallery_time:
+    set = "14:30"
+  change gallery_calendar:
+    set = "2026-09-25"
+  change gallery_progress:
+    set = 40
+  change gallery_scroll:
+    set = 25
+  change gallery_path:
+    set = "No file selected"
   do calculate_quote()
   do persist_ticket()
   change status:
