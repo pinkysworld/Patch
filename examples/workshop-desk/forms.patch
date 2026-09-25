@@ -1,0 +1,228 @@
+window "Workshop settings" as settings size 720, 520:
+  tabs as prefs at 24, 24 size 672, 400:
+    tab "Workflow":
+      text "Default bench"
+      combo "Bench A", "Bench B", "Overflow" as default_bench
+      checkbox "Notify when a quote changes" as notifications
+      text "Available stations"
+      listbox "Bench A", "Bench B", "Overflow" as stations
+    tab "Limits":
+      text "Labor approval limit {labor_limit}"
+      slider 0..100 as labor_limit step 10
+      text "This tab demonstrates a nested Slider and shared persistent state."
+    tab "Appearance":
+      radio "Compact", "Comfortable", "Spacious" as density
+      text "Density is source-backed application state, not hidden Designer metadata."
+    tab "About":
+      text "Workshop Desk is the Patch Studio seven-Form RAD showcase project."
+      text "It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring."
+      text "Current Ready desktop contract: Native GUI IR 1.9 / payload v19 / runtime v1.10."
+      button "Close" as close_about
+  button "Close settings" as close_settings at 24, 448 size 170, 38
+
+window "Job details" as details size 640, 560:
+  # @locked
+  shape rounded as details_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 16 opacity 1 at 16, 12 size 608, 68
+  text "Job details · {ticket_id}" at 32, 22 size 300, 26
+  text "{status}" at 32, 48 size 560, 22
+
+  # @locked
+
+  shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
+  text "Customer: {customer}" at 32, 108 size 270, 22
+  text "Item: {item}" at 32, 134 size 270, 22
+  text "Quantity: {qty}" at 32, 160 size 270, 22
+  text "Bench: {ticket_bench}" at 32, 186 size 270, 22
+  text "Priority: {priority}" at 330, 108 size 270, 22
+  text "Payment: {pay}" at 330, 134 size 270, 22
+  text "State: {ticket_state}" at 330, 160 size 270, 22
+  text "Current quote: {ticket_total}" at 330, 186 size 270, 22
+
+  # @locked
+
+  shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
+  text "Ticket canvas" at 32, 256 size 200, 20
+  paintbox as ticket_canvas at 32, 282 size 264, 146
+
+  # @locked
+
+  shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
+  panel as runtime_panel at 340, 260 size 268, 168:
+    text "Native runtime pulse {heartbeat}"
+    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"
+    text "Quote revision {quote_revision}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+
+  button "Recalculate quote" as details_quote at 16, 460 size 180, 36
+  button "Mark ready" as details_ready at 208, 460 size 180, 36
+  button "Close details" as close_details at 400, 460 size 180, 36
+
+window "Inventory Center" as inventory size 900, 620:
+  text "Inventory Center" at 24, 20 size 280, 30
+  text "{inventory_status}" at 324, 20 size 520, 30
+  text "Filter" at 24, 66 size 90, 22
+  input inventory_filter at 24, 90 size 230, 36
+  text "Zone" at 276, 66 size 90, 22
+  combo "Main store", "Bench A", "Bench B", "Overflow" as inventory_zone at 276, 90 size 220, 36
+  text "Reorder quantity {reorder_qty}" at 520, 66 size 190, 22
+  slider 1..20 as reorder_qty step 1 at 520, 90 size 300, 38
+
+  table "SKU", "Part", "Zone", "Stock", "State" as inventory_grid at 24, 154 size 540, 310:
+    row "KB-001", "Keyboard", "Main store", "12", "Available"
+    row "TP-014", "Trackpad", "Bench A", "4", "Low"
+    row "PN-220", "Display panel", "Bench B", "2", "Reorder"
+    row "CB-119", "Display cable", "Main store", "18", "Available"
+    row "DR-301", "Precision driver", "Bench A", "7", "Available"
+    row "SL-044", "Solder", "Overflow", "3", "Low"
+
+  tree as inventory_tree at 588, 154 size 280, 310:
+    node "Stock"
+      node "Input devices"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Display panel"
+        node "Display cable"
+      node "Tools"
+        node "Precision driver"
+        node "Solder"
+    node "Locations"
+      node "Main store"
+      node "Bench A"
+      node "Bench B"
+      node "Overflow"
+
+  button "Prepare reorder" as reorder_button at 24, 500 size 170, 38
+  button "Open job details" as inventory_details at 210, 500 size 170, 38
+  button "Close inventory" as close_inventory at 396, 500 size 170, 38
+  statusbar "{inventory_status}" as inventory_statusbar at 0, 592 size 900, 28
+
+window "Customer Profile" as customer_profile size 760, 600:
+  text "Customer Profile" at 24, 20 size 280, 30
+  text "{customer_status}" at 318, 20 size 410, 30
+  text "Name" at 24, 68 size 100, 22
+  text "{customer}" at 24, 92 size 220, 36
+  text "Email" at 268, 68 size 100, 22
+  input customer_email at 268, 92 size 300, 36
+  text "Tier" at 590, 68 size 100, 22
+  combo "Standard", "Silver", "Gold", "Platinum" as customer_tier at 590, 92 size 140, 36
+  checkbox "Marketing updates" as customer_marketing at 24, 150 size 190, 36
+  text "Preferred channels" at 238, 150 size 160, 22
+  listbox "Email", "SMS", "Phone", "Portal" as customer_channels at 238, 176 size 220, 110
+  text "Account note" at 482, 150 size 150, 22
+  input customer_note at 482, 176 size 248, 38
+
+  table "Ticket", "Item", "State", "Quote" as customer_jobs at 24, 318 size 706, 150:
+    row "WD-104", "Keyboard", "Open", "40"
+    row "WD-091", "Display panel", "Ready", "210"
+    row "WD-076", "Trackpad", "Closed", "85"
+
+  button "Save profile" as customer_save at 24, 496 size 150, 38
+  button "Open current job" as customer_job at 190, 496 size 170, 38
+  button "Close profile" as close_customer at 376, 496 size 150, 38
+  statusbar "{customer_status}" as customer_statusbar at 0, 572 size 760, 28
+
+window "Workshop Diagnostics" as diagnostics size 840, 620:
+  text "Workshop Diagnostics" at 24, 20 size 300, 30
+  text "{diagnostic_status}" at 338, 20 size 470, 30
+  tabs as diagnostic_tabs at 24, 72 size 792, 270:
+    tab "Runtime":
+      text "Runtime mode"
+      radio "Runtime", "Designer", "Native" as diagnostic_mode
+      checkbox "Trace semantic changes" as trace_enabled
+      text "Sampling interval {diagnostic_interval}s"
+      slider 1..10 as diagnostic_interval step 1
+    tab "Build":
+      text "Offline compiler and sealed runtime readiness"
+      text "Use Downloads for platform compiler and Offline Studio bundles."
+      text "Current desktop Ready runtime contract: v1.10."
+    tab "Quality":
+      text "Designer materializes one active Form while preserving source-backed shells."
+      text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."
+      text "Diagnostic runs: {diagnostic_runs} · runtime pulses: {diagnostic_ticks}"
+    tab "Environment":
+      text "Browser, Offline Studio and generated Web App share the same source."
+      text "Native capability gates remain fail-closed for unsupported resources."
+
+  table "Check", "Surface", "State" as diagnostic_checks at 24, 370 size 540, 150:
+    row "Designer", "Active Form materialization", "Ready"
+    row "Compiler", "Window Web App", "Ready"
+    row "Runtime", "Desktop v1.10", "Ready"
+    row "Offline", "Studio Stage 1", "Ready"
+
+  button "Run checks" as diagnostic_run at 590, 370 size 190, 38
+  button "Open settings" as diagnostic_settings at 590, 418 size 190, 38
+  button "Close diagnostics" as close_diagnostics at 590, 466 size 190, 38
+  timer as diagnostics_clock interval 3000
+  statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
+
+window "Component Gallery" as components size 900, 640:
+  # @locked
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 868, 64
+  text "Component Gallery" at 32, 22 size 280, 26
+  text "{gallery_status}" at 330, 22 size 530, 26
+  text "Current Ready native subset" at 32, 48 size 360, 20
+
+  # @locked
+
+  shape rounded as inputs_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 88 size 430, 292
+  text "Inputs & choices" at 32, 100 size 220, 22
+  text "Text input" at 32, 128 size 120, 18
+  input gallery_text at 32, 148 size 190, 32
+  checkbox "Enabled" as gallery_enabled at 236, 148 size 190, 32
+  text "Mode" at 32, 190 size 80, 18
+  radio "Ready", "Review", "Blocked" as gallery_mode at 32, 210 size 190, 148
+  text "Color" at 236, 190 size 80, 18
+  combo "Blue", "Green", "Amber", "Red" as gallery_color at 236, 210 size 190, 32
+  text "Level {gallery_level}" at 236, 250 size 180, 18
+  slider 0..100 as gallery_level step 10 at 236, 270 size 190, 28
+  text "Features" at 236, 304 size 120, 16
+  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 236, 322 size 190, 44
+
+  # @locked
+
+  shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 458, 88 size 426, 292
+  text "Graphics & containers" at 474, 100 size 280, 22
+  picture as gallery_picture from "patch-resource:workshop.mark" description "Gallery picture" at 474, 132 size 64, 64
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 554, 132 size 88, 64
+  paintbox as gallery_canvas at 658, 132 size 200, 110
+  panel as gallery_panel at 474, 256 size 384, 108:
+    text "Panel Stage 1"
+    text "Source-backed visual grouping"
+
+  imagelist as gallery_images size 20, 20:
+    image mark from "patch-resource:workshop.mark"
+
+  # @locked
+
+  shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 392 size 868, 158
+  text "Data controls" at 32, 404 size 180, 22
+  text "ImageList is nonvisual and is shown in the Object Tree." at 230, 404 size 500, 22
+  table "Component", "Event", "State" as gallery_table at 32, 436 size 500, 100:
+    row "Button", "clicked", "Ready"
+    row "Input", "changed", "Ready"
+    row "Table", "changed", "Ready"
+    row "TreeView", "changed", "Ready"
+    row "PaintBox", "paint", "Ready"
+
+  tree as gallery_tree at 548, 436 size 312, 100:
+    node "Registry 0.10 native subset"
+      node "Basic"
+        node "Text"
+        node "Button"
+        node "Input"
+      node "Data"
+        node "Table"
+        node "TreeView"
+      node "Graphics"
+        node "Picture"
+        node "Shape"
+        node "PaintBox"
+      node "Nonvisual"
+        node "Timer"
+        node "ImageList"
+
+  button "Refresh" as gallery_refresh image gallery_images.mark at 560, 564 size 148, 32
+  button "Close gallery" as close_components at 720, 564 size 148, 32
+  timer as gallery_clock interval 2000
+  statusbar "{gallery_status}" as gallery_statusbar at 0, 612 size 900, 28
