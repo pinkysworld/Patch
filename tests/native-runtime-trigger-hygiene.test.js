@@ -66,6 +66,24 @@ test('development PR updates do not restart the expensive workflow fleet', () =>
   }
 });
 
+test('no pull-request workflow allocates runners for every synchronize event', () => {
+  const directory = '.github/workflows';
+  for (const file of fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name))) {
+    const workflow = fs.readFileSync(`${directory}/${file}`, 'utf8');
+    if (!/\n  pull_request:/.test(`\n${workflow}`)) continue;
+    assert.match(
+      workflow,
+      /\n  pull_request:\s*\n    types:\s*\[[^\]]+\]/,
+      `${file} must opt into explicit PR lifecycle events instead of GitHub's synchronize-by-default set`
+    );
+    assert.doesNotMatch(
+      workflow,
+      /types:\s*\[[^\]]*synchronize[^\]]*\]/,
+      `${file} must not restart runners for each development push`
+    );
+  }
+});
+
 test('CodeQL is integration/scheduled/manual rather than per-PR synchronization', () => {
   assert.doesNotMatch(codeql, /\n\s*pull_request:/);
   assert.match(codeql, /push:\s*\n\s*branches:\s*\[main\]/);
