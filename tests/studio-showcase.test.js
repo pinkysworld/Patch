@@ -68,9 +68,9 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
     assert.match(main, new RegExp(`shape rounded as ${card}`));
   }
   assert.match(main, /panel as actions_panel at 780, 436 size 376, 318/);
-  assert.match(main, /text "Account & input"/);
-  assert.match(main, /text "Preferences & state"/);
-  assert.match(main, /text "Details & semantics"/);
+  assert.match(main, /text "Reviewer & input modes"/);
+  assert.match(main, /text "Review preferences"/);
+  assert.match(main, /text "Project & semantics"/);
   assert.match(main, /text "Quick actions"/);
   assert.doesNotMatch(main, /text "Input presentations"/);
   assert.doesNotMatch(main, /text "Choices and state"/);
@@ -241,15 +241,16 @@ test('complete Showcase builds its declared Web target with menus, dialogs, R4 s
   assert.match(built.html, /PATCH_IMAGE_RESOURCES/);
 });
 
-test('Patch Studio Showcase saves, scores and restores a review profile', () => {
+test('Patch Studio Showcase saves and restores a coherent reviewer profile without artificial scoring', () => {
   const runtime = new PatchInterpreter();
   runtime.run(composition.source);
   const hero = () => runtime.buildUIModel()[0].controls.find(control => String(control.text).startsWith('Saved '));
 
   assert.equal(runtime.state.get('profile').name, 'Ada');
-  assert.equal(runtime.state.get('review_score'), 0);
+  assert.equal(runtime.state.has('review_score'), false);
   assert.equal(runtime.state.get('profile_saves'), 0);
-  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada/);
+  assert.doesNotMatch(composition.source, /score_review|review_score/);
 
   triggerWindowEvent(runtime, 'user_name', 'changed', { value: 'Grace' });
   triggerWindowEvent(runtime, 'nested_code', 'changed', { value: 'PX-100' });
@@ -269,9 +270,8 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(profile.level, 60);
   assert.deepEqual(profile.surfaces, ['Designer', 'Web']);
   assert.equal(runtime.state.get('profile_saves'), 1);
-  assert.equal(runtime.state.get('review_score'), 30);
-  assert.equal(runtime.state.get('status'), 'Saved Grace · Admin · 2026-10-01 · score 30');
-  assert.match(hero().text, /Saved Grace · 2026-10-01 09:15 · editing Grace · score 30/);
+  assert.equal(runtime.state.get('status'), 'Saved review profile · Grace · Admin · 2026-10-01');
+  assert.match(hero().text, /Saved Grace · 2026-10-01 09:15 · editing Grace/);
 
   triggerWindowEvent(runtime, 'active', 'changed', { value: false });
   triggerWindowEvent(runtime, 'level', 'changed', { value: 10 });
@@ -281,7 +281,6 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(profile.active, false);
   assert.equal(profile.level, 10);
   assert.equal(runtime.state.get('profile_saves'), 2);
-  assert.equal(runtime.state.get('review_score'), 15);
   assert.equal(runtime.state.get('status'), 'Saved inactive profile for Grace');
   assert.equal(runtime.state.get('profile_summary'), 'Inactive Grace');
 
@@ -296,7 +295,6 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(runtime.state.get('completion'), 35);
   assert.equal(runtime.state.get('selected_path'), 'No file selected');
   assert.equal(runtime.state.get('profile_saves'), 0);
-  assert.equal(runtime.state.get('review_score'), 0);
   assert.equal(runtime.state.get('status'), 'Showcase restored to its demo defaults');
-  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada/);
 });
