@@ -64,7 +64,7 @@ Patch Studio aims for a Delphi / Visual Basic style RAD workflow while keeping o
 - Command Palette and project/symbol navigation;
 - standalone Web builds, token-free native Ready builds, Offline Compiler kits, and the downloadable Offline Studio beta.
 
-Open **Patch Studio Showcase** for the exhaustive current Studio/Web Project-v4 feature surface. Open **Workshop Desk** for the working seven-Form Project-v4 Studio/Web application. The separate `examples/workshop-desk-native.patch` fixture owns Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 acceptance.
+Open **Patch Studio Showcase** for the exhaustive current Studio/Web Project-v4 feature surface. Open **Workshop Desk** for the working seven-Form Project-v4 Studio/Web application with the same current surface organized behind a tabbed Studio Feature Lab. The separate `examples/workshop-desk-native.patch` fixture owns Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 acceptance.
 
 For the full IDE contract and long-term backlog, see [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) and [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md).
 
