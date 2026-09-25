@@ -410,6 +410,10 @@ when gallery_tree changed:
   change gallery_status:
     set = "TreeView path selected"
 
+when gallery_container_focus clicked:
+  change gallery_status:
+    set = "Container demos are visible below the tabs"
+
 when gallery_group_action clicked:
   change gallery_status:
     set = "GroupBox child action completed"
