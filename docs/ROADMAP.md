@@ -78,8 +78,8 @@ Remaining R0 work:
 - [ ] bound any remaining design-time expression evaluation
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
 - [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
-- [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
-- [ ] reduce CI notification noise and shrink Offline Compiler triggers to the real dependency closure
+- [x] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
+- [x] reduce CI notification/runner noise, remove per-push PR `synchronize` runs from the workflow fleet, and shrink Offline Compiler triggers to the real dependency closure
 
 ## RAD R1 graphics/resources status
 
