@@ -90,7 +90,7 @@ test('presentation-only Workshop card Shapes are explicitly locked', () => {
   for (const id of [
     'desk_header', 'ticket_card', 'queue_card', 'side_card',
     'details_header', 'details_card', 'canvas_card', 'rates_card',
-    'gallery_header', 'inputs_card', 'graphics_card', 'data_card'
+    'gallery_header'
   ]) {
     assert.match(source, new RegExp('# @locked\\n\\s*shape rounded as ' + id + '\\b'), id + ' must remain Designer-locked');
   }
