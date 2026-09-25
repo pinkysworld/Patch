@@ -1,0 +1,468 @@
+create text customer = "Ada"
+create text item = "Keyboard"
+create number qty = 1
+create boolean rush = false
+create text priority = "Normal"
+create text pay = "Card"
+create text notes = ""
+create list services = ["Diagnostics"]
+create text status = "Ready for the next workshop ticket."
+create boolean notifications = true
+create text default_bench = "Bench A"
+create list stations = ["Bench A", "Bench B"]
+create text density = "Comfortable"
+create number labor_limit = 50
+create number heartbeat = 0
+create number ticket_total = 40
+create number base_rate = 25
+create number inspection_fee = 15
+create number rush_fee = 20
+create number quote_revision = 0
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
+create text inventory_filter = "All stock"
+create text inventory_zone = "Main store"
+create number reorder_qty = 5
+create text inventory_status = "Inventory synchronized"
+create text customer_email = "ada@example.com"
+create text customer_tier = "Gold"
+create boolean customer_marketing = true
+create list customer_channels = ["Email"]
+create text customer_note = "Priority account"
+create text customer_status = "Customer profile ready"
+create text diagnostic_mode = "Runtime"
+create boolean trace_enabled = true
+create number diagnostic_interval = 5
+create number diagnostic_runs = 0
+create text diagnostic_status = "All systems ready"
+create text gallery_text = "Workshop sample"
+create boolean gallery_enabled = true
+create text gallery_mode = "Ready"
+create text gallery_color = "Blue"
+create list gallery_features = ["Designer"]
+create number gallery_level = 60
+create text gallery_status = "Component gallery ready"
+create number gallery_ticks = 0
+create text ticket_id = "WD-104"
+create list selected_job = ["WD-104", "Ada", "Bench A", "Open"]
+create list selected_part = ["Parts", "Input", "Keyboard"]
+create number service_fee = 15
+create number customer_saves = 0
+create number diagnostic_ticks = 0
+create thing ticket:
+  id = "WD-104"
+  customer_name = "Ada"
+  item_name = "Keyboard"
+  quantity = 1
+  rush = false
+  priority_name = "Normal"
+  payment = "Card"
+  notes_text = ""
+  services_selected = ["Diagnostics"]
+  bench = "Bench A"
+  state = "Open"
+  quote = 40
+  revision = 0
+create thing saved_customer:
+  name = "Ada"
+  email = "ada@example.com"
+  tier = "Gold"
+  marketing = true
+  channels = ["Email"]
+  note = "Priority account"
+  saves = 0
+create thing reorder_request:
+  part = "Keyboard"
+  zone = "Main store"
+  quantity = 5
+  prepared = false
+
+make price_services():
+  change service_fee:
+    set = 0
+  if services == ["Diagnostics"]:
+    change service_fee:
+      set = 15
+  if services == ["Warranty"]:
+    change service_fee:
+      set = 0
+  if services == ["Install"]:
+    change service_fee:
+      set = 20
+  if services == ["Pickup"]:
+    change service_fee:
+      set = 10
+  if services == ["Diagnostics", "Warranty"]:
+    change service_fee:
+      set = 15
+  if services == ["Diagnostics", "Install"]:
+    change service_fee:
+      set = 35
+  if services == ["Diagnostics", "Pickup"]:
+    change service_fee:
+      set = 25
+  if services == ["Warranty", "Install"]:
+    change service_fee:
+      set = 20
+  if services == ["Warranty", "Pickup"]:
+    change service_fee:
+      set = 10
+  if services == ["Install", "Pickup"]:
+    change service_fee:
+      set = 30
+  if services == ["Diagnostics", "Warranty", "Install"]:
+    change service_fee:
+      set = 35
+  if services == ["Diagnostics", "Warranty", "Pickup"]:
+    change service_fee:
+      set = 25
+  if services == ["Diagnostics", "Install", "Pickup"]:
+    change service_fee:
+      set = 45
+  if services == ["Warranty", "Install", "Pickup"]:
+    change service_fee:
+      set = 30
+  if services == ["Diagnostics", "Warranty", "Install", "Pickup"]:
+    change service_fee:
+      set = 45
+
+make calculate_quote():
+  do price_services()
+  change ticket_total:
+    set = base_rate * qty + service_fee
+  if rush:
+    change ticket_total:
+      add rush_fee
+  if priority == "High":
+    change ticket_total:
+      add 10
+  if priority == "Critical":
+    change ticket_total:
+      add 25
+
+make persist_ticket():
+  change ticket:
+    set id = ticket_id
+    set customer_name = customer
+    set item_name = item
+    set quantity = qty
+    set rush = rush
+    set priority_name = priority
+    set payment = pay
+    set notes_text = notes
+    set services_selected = services
+    set bench = ticket_bench
+    set state = ticket_state
+    set quote = ticket_total
+    set revision = quote_revision
+
+make load_customer_profile():
+  if customer == "Ada":
+    change customer_email:
+      set = "ada@example.com"
+    change customer_tier:
+      set = "Gold"
+    change customer_marketing:
+      set = true
+    change customer_channels:
+      set = ["Email"]
+    change customer_note:
+      set = "Priority account"
+  if customer == "Grace":
+    change customer_email:
+      set = "grace@example.com"
+    change customer_tier:
+      set = "Platinum"
+    change customer_marketing:
+      set = true
+    change customer_channels:
+      set = ["Email", "Portal"]
+    change customer_note:
+      set = "Design team"
+  if customer == "Linus":
+    change customer_email:
+      set = "linus@example.com"
+    change customer_tier:
+      set = "Silver"
+    change customer_marketing:
+      set = false
+    change customer_channels:
+      set = ["Portal"]
+    change customer_note:
+      set = "Engineering account"
+  if customer == "Margaret":
+    change customer_email:
+      set = "margaret@example.com"
+    change customer_tier:
+      set = "Standard"
+    change customer_marketing:
+      set = false
+    change customer_channels:
+      set = ["Phone"]
+    change customer_note:
+      set = "Call before pickup"
+
+make load_ticket(row):
+  change selected_job:
+    set = row
+  if row == ["WD-104", "Ada", "Bench A", "Open"]:
+    change ticket_id:
+      set = "WD-104"
+    change customer:
+      set = "Ada"
+    change item:
+      set = "Keyboard"
+    change qty:
+      set = 1
+    change rush:
+      set = false
+    change priority:
+      set = "Normal"
+    change pay:
+      set = "Card"
+    change services:
+      set = ["Diagnostics"]
+    change ticket_bench:
+      set = "Bench A"
+    change ticket_state:
+      set = "Open"
+    change quote_revision:
+      set = 0
+  if row == ["WD-105", "Grace", "Bench B", "Quoted"]:
+    change ticket_id:
+      set = "WD-105"
+    change customer:
+      set = "Grace"
+    change item:
+      set = "Trackpad"
+    change qty:
+      set = 2
+    change rush:
+      set = false
+    change priority:
+      set = "High"
+    change pay:
+      set = "Account"
+    change services:
+      set = ["Diagnostics", "Pickup"]
+    change ticket_bench:
+      set = "Bench B"
+    change ticket_state:
+      set = "Quoted"
+    change quote_revision:
+      set = 1
+  if row == ["WD-106", "Linus", "Bench A", "Ready"]:
+    change ticket_id:
+      set = "WD-106"
+    change customer:
+      set = "Linus"
+    change item:
+      set = "Display panel"
+    change qty:
+      set = 1
+    change rush:
+      set = true
+    change priority:
+      set = "Critical"
+    change pay:
+      set = "Card"
+    change services:
+      set = ["Warranty", "Install"]
+    change ticket_bench:
+      set = "Bench A"
+    change ticket_state:
+      set = "Ready"
+    change quote_revision:
+      set = 2
+  if row == ["WD-107", "Margaret", "Overflow", "Waiting"]:
+    change ticket_id:
+      set = "WD-107"
+    change customer:
+      set = "Margaret"
+    change item:
+      set = "Display cable"
+    change qty:
+      set = 3
+    change rush:
+      set = false
+    change priority:
+      set = "Normal"
+    change pay:
+      set = "Cash"
+    change services:
+      set = ["Pickup"]
+    change ticket_bench:
+      set = "Overflow"
+    change ticket_state:
+      set = "Waiting"
+    change quote_revision:
+      set = 0
+  do load_customer_profile()
+  do calculate_quote()
+  do persist_ticket()
+
+make select_part(path):
+  change selected_part:
+    set = path
+  if path == ["Parts", "Input", "Keyboard"]:
+    change item:
+      set = "Keyboard"
+  if path == ["Parts", "Input", "Trackpad"]:
+    change item:
+      set = "Trackpad"
+  if path == ["Parts", "Displays", "Panel"]:
+    change item:
+      set = "Display panel"
+  if path == ["Parts", "Displays", "Cable"]:
+    change item:
+      set = "Display cable"
+  if path == ["Tools", "Driver"]:
+    change item:
+      set = "Precision driver"
+  if path == ["Tools", "Solder"]:
+    change item:
+      set = "Solder"
+  if path == ["Tools", "Meter"]:
+    change item:
+      set = "Meter"
+  change inventory_filter:
+    set = item
+  do calculate_quote()
+  do persist_ticket()
+
+make quote_ticket():
+  do calculate_quote()
+  change quote_revision:
+    add 1
+  change ticket_state:
+    set = "Quoted"
+  do persist_ticket()
+  change status:
+    set = ticket_id + " quoted at " + ticket_total + " · revision " + quote_revision
+
+make save_customer():
+  change customer_saves:
+    add 1
+  change saved_customer:
+    set name = customer
+    set email = customer_email
+    set tier = customer_tier
+    set marketing = customer_marketing
+    set channels = customer_channels
+    set note = customer_note
+    set saves = customer_saves
+  change customer_status:
+    set = customer + " profile saved · revision " + customer_saves
+  change status:
+    set = "Customer profile persisted for " + customer
+
+make prepare_reorder():
+  change reorder_request:
+    set part = item
+    set zone = inventory_zone
+    set quantity = reorder_qty
+    set prepared = true
+  change inventory_status:
+    set = "Reorder prepared · " + item + " · " + inventory_zone + " · qty " + reorder_qty
+  change status:
+    set = "Inventory reorder prepared for " + item
+
+make reset_workshop():
+  change customer:
+    set = "Ada"
+  change item:
+    set = "Keyboard"
+  change qty:
+    set = 1
+  change rush:
+    set = false
+  change priority:
+    set = "Normal"
+  change pay:
+    set = "Card"
+  change notes:
+    set = ""
+  change services:
+    set = ["Diagnostics"]
+  change notifications:
+    set = true
+  change default_bench:
+    set = "Bench A"
+  change stations:
+    set = ["Bench A", "Bench B"]
+  change density:
+    set = "Comfortable"
+  change labor_limit:
+    set = 50
+  change heartbeat:
+    set = 0
+  change ticket_id:
+    set = "WD-104"
+  change ticket_bench:
+    set = "Bench A"
+  change ticket_state:
+    set = "Open"
+  change quote_revision:
+    set = 0
+  change selected_job:
+    set = ["WD-104", "Ada", "Bench A", "Open"]
+  change selected_part:
+    set = ["Parts", "Input", "Keyboard"]
+  change inventory_filter:
+    set = "All stock"
+  change inventory_zone:
+    set = "Main store"
+  change reorder_qty:
+    set = 5
+  change inventory_status:
+    set = "Inventory synchronized"
+  change customer_saves:
+    set = 0
+  do load_customer_profile()
+  change customer_status:
+    set = "Customer profile ready"
+  change saved_customer:
+    set name = "Ada"
+    set email = "ada@example.com"
+    set tier = "Gold"
+    set marketing = true
+    set channels = ["Email"]
+    set note = "Priority account"
+    set saves = 0
+  change reorder_request:
+    set part = "Keyboard"
+    set zone = "Main store"
+    set quantity = 5
+    set prepared = false
+  change diagnostic_mode:
+    set = "Runtime"
+  change trace_enabled:
+    set = true
+  change diagnostic_interval:
+    set = 5
+  change diagnostic_runs:
+    set = 0
+  change diagnostic_ticks:
+    set = 0
+  change diagnostic_status:
+    set = "All systems ready"
+  change gallery_text:
+    set = "Workshop sample"
+  change gallery_enabled:
+    set = true
+  change gallery_mode:
+    set = "Ready"
+  change gallery_color:
+    set = "Blue"
+  change gallery_features:
+    set = ["Designer"]
+  change gallery_level:
+    set = 60
+  change gallery_status:
+    set = "Component gallery ready"
+  change gallery_ticks:
+    set = 0
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Ticket reset to WD-104"
