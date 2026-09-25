@@ -1,3 +1,55 @@
+create text customer = "Ada"
+create text item = "Keyboard"
+create number qty = 1
+create boolean rush = false
+create text priority = "Normal"
+create text pay = "Card"
+create text notes = ""
+create list services = ["Diagnostics"]
+create text status = "Ready for the next workshop ticket."
+create boolean notifications = true
+create text default_bench = "Bench A"
+create list stations = ["Bench A", "Bench B"]
+create text density = "Comfortable"
+create number labor_limit = 50
+create number heartbeat = 0
+create number ticket_total = 40
+create number base_rate = 25
+create number inspection_fee = 15
+create number rush_fee = 20
+create number quote_revision = 0
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
+create text inventory_filter = "All stock"
+create text inventory_zone = "Main store"
+create number reorder_qty = 5
+create text inventory_status = "Inventory synchronized"
+create text customer_email = "ada@example.com"
+create text customer_tier = "Gold"
+create boolean customer_marketing = true
+create list customer_channels = ["Email"]
+create text customer_note = "Priority account"
+create text customer_status = "Customer profile ready"
+create text diagnostic_mode = "Runtime"
+create boolean trace_enabled = true
+create number diagnostic_interval = 5
+create number diagnostic_runs = 0
+create text diagnostic_status = "All systems ready"
+create text gallery_text = "Workshop sample"
+create boolean gallery_enabled = true
+create text gallery_mode = "Ready"
+create text gallery_color = "Blue"
+create list gallery_features = ["Designer"]
+create number gallery_level = 60
+create text gallery_status = "Component gallery ready"
+create number gallery_ticks = 0
+create text ticket_id = "WD-104"
+create list selected_job = ["WD-104", "Ada", "Bench A", "Open"]
+create list selected_part = ["Parts", "Input", "Keyboard"]
+create number service_fee = 15
+create number customer_saves = 0
+create number diagnostic_ticks = 0
+
 window "Workshop Desk" as main size 1080, 720 icon "patch-resource:workshop.mark":
   # @locked
   shape rounded as desk_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 18 opacity 1 at 16, 12 size 1048, 76
