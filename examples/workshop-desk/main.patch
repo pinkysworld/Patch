@@ -127,7 +127,7 @@ window "Workshop Desk" as main size 1080, 720 icon "patch-resource:workshop.mark
   button "Studio Features" as components_button image desk_images.mark at 864, 622 size 180, 28
 
   # @layout anchor left right bottom
-  text "Seven-Form working app · queue, quote, customer and inventory state persist through explicit change; Components shows the Current Ready native subset." at 16, 660 size 1048, 22
+  text "Seven-Form working app · real workflow in front, complete Studio/Web Feature Lab behind one action." at 16, 660 size 1048, 22
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 692 size 1080, 28
 
@@ -147,9 +147,9 @@ window "Workshop settings" as settings size 720, 520:
       radio "Compact", "Comfortable", "Spacious" as density
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
-      text "Workshop Desk is the Patch Studio seven-Form RAD showcase project."
-      text "It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring."
-      text "Current Ready desktop contract: Native GUI IR 1.9 / payload v19 / runtime v1.10."
+      text "Workshop Desk is the working seven-Form Project-v4 Studio/Web application."
+      text "Studio Feature Lab covers the complete current Component Registry 0.10 and R4 Studio/Web presentations."
+      text "Current Ready desktop acceptance is isolated in workshop-desk-native.patch."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
@@ -268,7 +268,7 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
       text "Current desktop Ready runtime contract: v1.10."
     tab "Quality":
       text "Designer materializes one active Form while preserving source-backed shells."
-      text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."
+      text "Workshop Desk exercises seven Forms; Studio Feature Lab covers the complete current Studio/Web surface."
       text "Diagnostic runs: {diagnostic_runs} · runtime pulses: {diagnostic_ticks}"
     tab "Environment":
       text "Browser, Offline Studio and generated Web App share the same source."
