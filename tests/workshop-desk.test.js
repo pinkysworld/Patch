@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { PATCH_COMPONENTS } from '../src/component-registry.js';
+import { parseStudioProjectBundle, composeStudioProjectSource } from '../src/studio-project.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { upgradeWorkshopDeskSource, WORKSHOP_DESK_CURRENT_SAMPLE_VERSION } from '../web/studio-dom-sync.js';
@@ -14,6 +15,8 @@ const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 const nativeFixture = fs.readFileSync('examples/workshop-desk-native.patch', 'utf8');
 const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
+const workshopProject = parseStudioProjectBundle(fs.readFileSync('examples/workshop-desk.patchproject', 'utf8'));
+const workshopProjectSource = composeStudioProjectSource(workshopProject).source;
 
 function collectComponentTypes(nodes, out = new Set()) {
   for (const node of nodes ?? []) {
@@ -257,7 +260,7 @@ test('Workshop diagnostics distinguish user-requested checks from timer pulses',
 });
 
 test('Workshop Studio Feature Lab covers and exercises the complete current Studio/Web component surface', () => {
-  const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
+  const compiled = compile(workshopProjectSource, { name: 'workshop-desk', kind: 'window', entry: workshopProject.project.entry });
   const represented = collectComponentTypes(compiled.ast);
   const missing = PATCH_COMPONENTS.map(component => component.type).filter(type => !represented.has(type));
   assert.deepEqual(missing, [], 'Workshop Feature Lab must keep the complete Component Registry represented');
@@ -270,7 +273,7 @@ test('Workshop Studio Feature Lab covers and exercises the complete current Stud
     '# @panel-mode group', '# @panel-scroll auto', '# @panel-split vertical 42', '# @panel-split-break',
     'state info', 'state success', 'state muted', 'state warning',
     'menu "Lab":', 'confirm "Feature Lab"', 'open file "Choose a Patch file"', 'save file "Choose a Patch save name"'
-  ]) assert.ok(example.includes(marker), marker);
+  ]) assert.ok(workshopProjectSource.includes(marker), marker);
 
   const runtime = new PatchInterpreter();
   runtime.run(example);
