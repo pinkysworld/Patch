@@ -805,8 +805,8 @@ window "Studio Feature Lab" as components size 980, 700:
     text "GroupBox presentation"
     button "Group action" as gallery_group_action
 
-  # @panel-scroll auto
   panel as gallery_scrollbox at 328, 432 size 300, 160:
+    # @panel-scroll auto
     text "ScrollBox keeps viewport state transient"
     button "ScrollBox action" as gallery_scroll_action
     text "Overflow content exercises a real scroll viewport."
