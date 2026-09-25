@@ -302,10 +302,12 @@ window "Studio Feature Lab" as components size 980, 700:
   text "{gallery_status}" at 346, 22 size 590, 26
   text "Complete current Studio/Web acceptance surface · Component Registry 0.10" at 32, 48 size 700, 20
 
+  text "Project-v4 adds ImageList-backed icons from workshop.mark; the standalone source remains resource-free." at 32, 78 size 820, 18
+
   imagelist as gallery_images size 20, 20:
     image mark from "patch-resource:workshop.mark"
 
-  tabs as feature_tabs at 16, 88 size 948, 536:
+  tabs as feature_tabs at 16, 100 size 948, 318:
     tab "Inputs":
       text "Text, Memo and all current source-backed Input presentations"
       input gallery_text
@@ -354,22 +356,8 @@ window "Studio Feature Lab" as components size 980, 700:
           node "Data" image gallery_images.mark hint "Structured controls" state warning
             node "TreeView" image gallery_images.mark hint "Node metadata" state success
     tab "Containers":
-      text "GroupBox, ScrollBox and SplitContainer reuse the source-backed Panel model"
-      # @panel-mode group
-      panel as gallery_group:
-        text "GroupBox presentation"
-        button "Group action" as gallery_group_action
-      # @panel-scroll auto
-      panel as gallery_scrollbox:
-        text "ScrollBox keeps viewport state transient"
-        button "ScrollBox action" as gallery_scroll_action
-      panel as gallery_split:
-        # @panel-split vertical 42
-        text "Navigator pane"
-        button "Navigate" as gallery_split_left
-        # @panel-split-break
-        text "Preview pane"
-        button "Preview" as gallery_split_right
+      text "GroupBox, ScrollBox and SplitContainer are shown below the tabs because container controls stay top-level in Tabs Stage 1."
+      button "Focus container demos" as gallery_container_focus
     tab "Graphics":
       text "Project graphics, Separator preset, PaintBox and ImageList-backed Button"
       picture as gallery_picture from "patch-resource:workshop.mark" description "Workshop Feature Lab picture"
@@ -380,7 +368,27 @@ window "Studio Feature Lab" as components size 980, 700:
       paintbox as gallery_canvas
       button "Resource button" as gallery_resource_button image gallery_images.mark
 
-  button "Refresh demo" as gallery_refresh image gallery_images.mark at 620, 642 size 160, 32
-  button "Close Feature Lab" as close_components at 792, 642 size 172, 32
+  # @panel-mode group
+  panel as gallery_group at 16, 432 size 300, 160:
+    text "GroupBox presentation"
+    button "Group action" as gallery_group_action
+
+  # @panel-scroll auto
+  panel as gallery_scrollbox at 328, 432 size 300, 160:
+    text "ScrollBox keeps viewport state transient"
+    button "ScrollBox action" as gallery_scroll_action
+    text "Overflow content exercises a real scroll viewport."
+    text "No hidden application state is created by scrolling."
+
+  panel as gallery_split at 640, 432 size 324, 160:
+    # @panel-split vertical 42
+    text "Navigator pane"
+    button "Navigate" as gallery_split_left
+    # @panel-split-break
+    text "Preview pane"
+    button "Preview" as gallery_split_right
+
+  button "Refresh demo" as gallery_refresh image gallery_images.mark at 620, 620 size 160, 32
+  button "Close Feature Lab" as close_components at 792, 620 size 172, 32
   timer as gallery_clock interval 2000
   statusbar "{gallery_status} · progress {gallery_progress}% · pulse {gallery_ticks}" as gallery_statusbar at 0, 672 size 980, 28
