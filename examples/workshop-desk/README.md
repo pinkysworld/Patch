@@ -1,0 +1,22 @@
+# Workshop Desk
+
+Workshop Desk is the working Patch Studio sample application.
+
+Unlike the exhaustive Patch Studio Showcase, Workshop Desk is organized around one coherent repair-ticket workflow. Queue selection loads a ticket, Parts selection changes the working item, quote calculation derives an idempotent estimate from quantity, services, rush and priority, Customer Profile persists a customer Thing, Inventory prepares a reorder Thing, and Diagnostics separates completed checks from timer pulses.
+
+## Project-v4 surfaces
+
+The built-in Studio example is this multi-file Project-v4 bundle:
+
+- `main.patch`: application state, Things, recipes and the primary Workshop Desk Form.
+- `forms.patch`: Settings, Job Details, Inventory, Customer Profile, Diagnostics and the Component Gallery.
+- `logic.patch`: event handlers.
+- `workshop.mark`: one deterministic project PNG used as the application/Form icon, Picture, PaintBox image and ImageList-backed buttons.
+
+Presentation-only card Shapes are locked so they do not compete with working controls in Designer selection.
+
+## Target boundary
+
+The Project-v4 Workshop is a Studio/Web application and intentionally uses richer language semantics such as Things and recipes. It does not widen the Current Ready native contract.
+
+`../workshop-desk-native.patch` is the separate Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 acceptance fixture. Keeping the two fixtures separate makes the target boundary explicit instead of weakening either example.
