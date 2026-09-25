@@ -146,7 +146,7 @@ Windows CI verifies the packaged EXE with `ExtractAssociatedIcon` and `--patch-s
 
 ## Workshop Desk acceptance examples
 
-`examples/workshop-desk.patchproject` is the canonical working Project-v4 Studio/Web application and Designer stress fixture. Its entry file keeps all seven Forms together for active-Form switching, while `model.patch` owns Things/recipes and `logic.patch` owns event handlers. One project resource is consumed by application chrome, Picture, PaintBox and ImageList-backed Buttons.
+`examples/workshop-desk.patchproject` is the canonical working Project-v4 Studio/Web application and Designer stress fixture. Its entry file keeps all seven Forms together for active-Form switching, while `model.patch` owns Things/recipes and `logic.patch` owns event handlers. One project resource is consumed by application chrome, Picture, PaintBox and ImageList-backed Buttons. The main workflow stays task-oriented; one tabbed Studio Feature Lab carries the complete current Component Registry 0.10 and R4 Studio/Web presentations, including menus and result dialogs.
 
 `examples/workshop-desk-native.patch` is the separate Current Ready desktop fixture. It stays intentionally inside Native GUI IR 1.9 / payload v19 / runtime v1.10 instead of forcing richer Project-v4 semantics through an unsupported native boundary.
 
