@@ -82,7 +82,7 @@ when ticket_canvas paint:
   draw clear #f8fafc
   draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
   draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
-  draw image "patch-resource:workshop.mark" at 208, 10 size 42, 42
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
   if rush:
     draw line 12, 58 to 258, 58 stroke #dc2626 width 3
   draw text ticket_id at 12, 78 color #111827 size 16
@@ -132,7 +132,7 @@ when diagnostics_button clicked:
 when components_button clicked:
   open components
   change gallery_status:
-    set = "Current Ready Component Registry 0.10 subset opened"
+    set = "Studio Feature Lab opened · complete current Studio/Web surface"
 
 when close_settings clicked:
   change status:
@@ -318,70 +318,202 @@ when gallery_text changed:
   change gallery_text:
     set = value
   change gallery_status:
-    set = "Input change handled"
+    set = "Plain Input persisted"
+
+when gallery_memo changed:
+  change gallery_memo:
+    set = value
+  change gallery_status:
+    set = "Memo persisted"
+
+when gallery_secret changed:
+  change gallery_secret:
+    set = value
+  change gallery_status:
+    set = "PasswordEdit value persisted explicitly"
+
+when gallery_mask changed:
+  change gallery_mask:
+    set = value
+  change gallery_status:
+    set = "MaskedEdit value persisted explicitly"
+
+when gallery_number changed:
+  change gallery_number:
+    set = value
+  change gallery_status:
+    set = "NumberEdit value persisted explicitly"
+
+when gallery_date changed:
+  change gallery_date:
+    set = value
+  change gallery_status:
+    set = "DatePicker ISO date persisted"
+
+when gallery_time changed:
+  change gallery_time:
+    set = value
+  change gallery_status:
+    set = "TimePicker local time persisted"
+
+when gallery_calendar changed:
+  change gallery_calendar:
+    set = value
+  change gallery_status:
+    set = "Calendar ISO date persisted"
 
 when gallery_enabled changed:
   change gallery_enabled:
     set = value
   change gallery_status:
-    set = "Checkbox change handled"
+    set = "Checkbox state persisted"
 
 when gallery_mode changed:
   change gallery_mode:
     set = value
   change gallery_status:
-    set = "Radio change handled"
+    set = "Radio selection persisted"
 
 when gallery_color changed:
   change gallery_color:
     set = value
   change gallery_status:
-    set = "ComboBox change handled"
+    set = "ComboBox selection persisted"
 
 when gallery_features changed:
   change gallery_features:
     set = value
   change gallery_status:
-    set = "ListBox change handled"
+    set = "CheckedListBox selection persisted"
 
 when gallery_level changed:
   change gallery_level:
     set = value
   change gallery_status:
-    set = "Slider change handled"
+    set = "Slider value persisted"
+
+when gallery_scroll changed:
+  change gallery_scroll:
+    set = value
+  change gallery_status:
+    set = "ScrollBar value persisted"
+
+when gallery_link clicked:
+  change gallery_status:
+    set = "LinkLabel clicked through ordinary Button semantics"
 
 when gallery_table changed:
   change gallery_status:
-    set = "Table selection handled"
+    set = "Advanced Table row selected"
 
 when gallery_tree changed:
   change gallery_status:
-    set = "TreeView selection handled"
+    set = "TreeView path selected"
+
+when gallery_group_action clicked:
+  change gallery_status:
+    set = "GroupBox child action completed"
+
+when gallery_scroll_action clicked:
+  change gallery_status:
+    set = "ScrollBox child action completed"
+
+when gallery_split_left clicked:
+  change gallery_status:
+    set = "SplitContainer navigator action completed"
+
+when gallery_split_right clicked:
+  change gallery_status:
+    set = "SplitContainer preview action completed"
 
 when gallery_picture clicked:
   change gallery_status:
-    set = "Picture click handled"
+    set = "Picture resource selected"
+
+when gallery_resource_button clicked:
+  change gallery_status:
+    set = "ImageList-backed Button clicked"
 
 when gallery_canvas paint:
   draw clear #f8fafc
   draw rectangle 10, 10 size 54, 28 fill #dbeafe stroke #2563eb width 2
   draw ellipse 76, 10 size 28, 28 fill #dcfce7 stroke #16a34a width 2
-  draw text gallery_mode at 10, 62 color #111827 size 14
+  draw image "patch-resource:workshop.mark" at 118, 8 size 36, 36
+  draw line 10, 48 to 154, 48 stroke #64748b width 2
+  draw text gallery_mode at 10, 66 color #111827 size 14
+
+when gallery_menu_confirm clicked:
+  confirm "Feature Lab", "Persist a confirmation result?" as gallery_confirm_result
+
+when gallery_confirm_result confirmed:
+  change gallery_status:
+    set = "Confirmation accepted and persisted"
+
+when gallery_confirm_result cancelled:
+  change gallery_status:
+    set = "Confirmation cancelled"
+
+when gallery_menu_open clicked:
+  open file "Choose a Patch file" as gallery_open_result
+
+when gallery_open_result chosen:
+  change gallery_path:
+    set = value
+  change gallery_status:
+    set = "Open-file result persisted: " + value
+
+when gallery_open_result cancelled:
+  change gallery_status:
+    set = "Open file cancelled"
+
+when gallery_menu_save clicked:
+  save file "Choose a Patch save name" as gallery_save_result
+
+when gallery_save_result chosen:
+  change gallery_path:
+    set = value
+  change gallery_status:
+    set = "Save-file result persisted: " + value
+
+when gallery_save_result cancelled:
+  change gallery_status:
+    set = "Save file cancelled"
+
+when gallery_menu_enabled clicked:
+  if gallery_enabled:
+    change gallery_enabled:
+      set = false
+  else:
+    change gallery_enabled:
+      set = true
+  change gallery_status:
+    set = "Menu checked state changed explicitly"
+
+when gallery_menu_about clicked:
+  dialog "Studio Feature Lab", "Workshop keeps the business workflow focused while this tabbed lab exercises the complete current Studio/Web authoring surface."
 
 when gallery_clock ticked:
   change gallery_ticks:
     add 1
+  if gallery_progress >= 100:
+    change gallery_progress:
+      set = 0
+  else:
+    change gallery_progress:
+      add 10
 
 when gallery_refresh clicked:
   change gallery_ticks:
     add 1
+  change gallery_progress:
+    set = 100
   change gallery_status:
-    set = "Gallery refreshed · pulse " + gallery_ticks
+    set = "Feature Lab refreshed · all demonstrations ready"
 
 when close_components clicked:
   close components
   change status:
-    set = "Component Gallery closed"
+    set = "Studio Feature Lab closed"
 
 when reset_button clicked:
   do reset_workshop()
