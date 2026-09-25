@@ -46,7 +46,7 @@ Do not silently widen or flatten these labels. Future native features need a new
 
 Product JavaScript imports `src/native-current-contract.js`. The frozen TreeView facade is `src/native-frozen-contract.js`. Older versioned modules are compatibility evidence, not current Ready.
 
-Workshop Desk (`examples/workshop-desk.patch`) is seven Forms.
+Workshop Desk has two explicit fixtures: `examples/workshop-desk.patchproject` is the working seven-Form Studio/Web Project-v4 app; `examples/workshop-desk-native.patch` is the Current Ready native acceptance source. Do not widen native v19 merely to keep the richer app native-compatible.
 
 ## Current collaboration state
 
