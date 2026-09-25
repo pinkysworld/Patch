@@ -38,7 +38,7 @@ on:
       - package.json
       - .github/workflows/formal.yml
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - formal/**
       - src/compiler.js
