@@ -32,7 +32,7 @@ test('Patch handbook exposes dedicated tutorial and example pages', () => {
   assert.match(examples, /Starter examples/);
   assert.match(examples, /GUI component examples/);
   assert.match(examples, /Formal-assurance examples/);
-  assert.match(examples, /Showcases: Studio\/Web and Current Ready native/);
+  assert.match(examples, /Showcases: exhaustive Studio, working app and native boundary/);
   assert.match(examples, /Patch Studio Showcase/);
   assert.match(examples, /Workshop Desk/);
   assert.match(examples, /Calendar Window/);
