@@ -723,7 +723,7 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
 
 window "Studio Feature Lab" as components size 980, 700:
   menu "Lab":
-    item "Confirm action..." as gallery_menu_confirm shortcut "Primary+Enter"
+    item "Confirm action..." as gallery_menu_confirm shortcut "Primary+K"
     item "Open file..." as gallery_menu_open shortcut "Primary+O"
     item "Save file..." as gallery_menu_save shortcut "Primary+S"
     separator
