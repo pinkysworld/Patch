@@ -1,0 +1,785 @@
+create text customer = "Ada"
+create text item = "Keyboard"
+create number qty = 1
+create boolean rush = false
+create text priority = "Normal"
+create text pay = "Card"
+create text notes = ""
+create list services = ["Diagnostics"]
+create text status = "Ready for the next workshop ticket."
+create boolean notifications = true
+create text default_bench = "Bench A"
+create list stations = ["Bench A", "Bench B"]
+create text density = "Comfortable"
+create number labor_limit = 50
+create number heartbeat = 0
+create number ticket_total = 40
+create number base_rate = 25
+create number inspection_fee = 15
+create number rush_fee = 20
+create number quote_revision = 0
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
+create text inventory_filter = "All stock"
+create text inventory_zone = "Main store"
+create number reorder_qty = 5
+create text inventory_status = "Inventory synchronized"
+create text customer_email = "ada@example.com"
+create text customer_tier = "Gold"
+create boolean customer_marketing = true
+create list customer_channels = ["Email"]
+create text customer_note = "Priority account"
+create text customer_status = "Customer profile ready"
+create text diagnostic_mode = "Runtime"
+create boolean trace_enabled = true
+create number diagnostic_interval = 5
+create number diagnostic_runs = 0
+create text diagnostic_status = "All systems ready"
+create text gallery_text = "Workshop sample"
+create boolean gallery_enabled = true
+create text gallery_mode = "Ready"
+create text gallery_color = "Blue"
+create list gallery_features = ["Designer"]
+create number gallery_level = 60
+create text gallery_status = "Component gallery ready"
+create number gallery_ticks = 0
+
+window "Workshop Desk" as main size 1080, 720:
+  shape rounded as desk_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 18 opacity 1 at 16, 12 size 1048, 76
+  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 28, 24 size 52, 52
+  text "Workshop Desk" at 96, 20 size 280, 28
+  text "{status}" at 96, 50 size 500, 24
+  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
+  text "Current Ready · IR 1.9 · runtime v1.10" at 620, 50 size 420, 22
+
+  shape rounded as ticket_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 100 size 1048, 248
+  text "Ticket" at 32, 112 size 120, 24
+  text "Customer" at 32, 144 size 100, 20
+  combo "Ada", "Grace", "Linus", "Margaret" as customer at 32, 168 size 200, 36
+  text "Item" at 248, 144 size 80, 20
+  input item at 248, 168 size 240, 36
+  text "Quantity {qty}" at 508, 144 size 140, 20
+  slider 1..8 as qty step 1 at 508, 168 size 210, 36
+  checkbox "Rush bench" as rush at 740, 168 size 160, 36
+
+  text "Payment" at 32, 220 size 90, 20
+  radio "Card", "Cash", "Account" as pay at 32, 244 size 220, 84
+  text "Priority" at 272, 220 size 90, 20
+  radio "Normal", "High", "Critical" as priority at 272, 244 size 220, 84
+  text "Notes" at 512, 220 size 80, 20
+  input notes at 512, 244 size 250, 36
+  text "Services" at 780, 220 size 90, 20
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 780, 244 size 260, 84
+
+  shape rounded as queue_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 360 size 640, 292
+  text "Queue" at 32, 372 size 120, 22
+  table "Ticket", "Customer", "Bench", "State" as board at 32, 402 size 608, 230:
+    row "WD-104", "Ada", "Bench A", "Open"
+    row "WD-105", "Grace", "Bench B", "Quoted"
+    row "WD-106", "Linus", "Bench A", "Ready"
+    row "WD-107", "Margaret", "Overflow", "Waiting"
+
+  shape rounded as side_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 668, 360 size 396, 292
+  text "Parts & tools" at 684, 372 size 180, 22
+  tree as parts at 684, 400 size 168, 232:
+    node "Parts"
+      node "Input"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Panel"
+        node "Cable"
+    node "Tools"
+      node "Driver"
+      node "Solder"
+      node "Meter"
+  button "Quote" as quote_button at 864, 400 size 180, 32
+  button "Details" as details_button at 864, 438 size 180, 32
+  button "Ready" as complete_button at 864, 476 size 180, 32
+  button "Reset" as reset_button at 864, 514 size 180, 32
+  button "Inventory" as inventory_button at 864, 552 size 86, 30
+  button "Customer" as customer_button at 958, 552 size 86, 30
+  button "Diagnostics" as diagnostics_button at 864, 588 size 86, 30
+  button "Settings" as settings_button at 958, 588 size 86, 30
+  button "Components" as components_button at 864, 622 size 180, 28
+
+  # @layout anchor left right bottom
+  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22
+  timer as workshop_clock interval 5000
+  statusbar "{status}" as desk_status at 0, 692 size 1080, 28
+
+window "Workshop settings" as settings size 720, 520:
+  tabs as prefs at 24, 24 size 672, 400:
+    tab "Workflow":
+      text "Default bench"
+      combo "Bench A", "Bench B", "Overflow" as default_bench
+      checkbox "Notify when a quote changes" as notifications
+      text "Available stations"
+      listbox "Bench A", "Bench B", "Overflow" as stations
+    tab "Limits":
+      text "Labor approval limit {labor_limit}"
+      slider 0..100 as labor_limit step 10
+      text "This tab demonstrates a nested Slider and shared persistent state."
+    tab "Appearance":
+      radio "Compact", "Comfortable", "Spacious" as density
+      text "Density is source-backed application state, not hidden Designer metadata."
+    tab "About":
+      text "Workshop Desk is the Patch Studio seven-Form RAD showcase project."
+      text "It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring."
+      text "Current Ready desktop contract: Native GUI IR 1.9 / payload v19 / runtime v1.10."
+      button "Close" as close_about
+  button "Close settings" as close_settings at 24, 448 size 170, 38
+
+window "Job details" as details size 640, 560:
+  shape rounded as details_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 16 opacity 1 at 16, 12 size 608, 68
+  text "Job details" at 32, 22 size 240, 26
+  text "{status}" at 32, 48 size 560, 22
+
+  shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
+  text "Customer: {customer}" at 32, 108 size 270, 22
+  text "Item: {item}" at 32, 134 size 270, 22
+  text "Quantity: {qty}" at 32, 160 size 270, 22
+  text "Bench: {ticket_bench}" at 32, 186 size 270, 22
+  text "Priority: {priority}" at 330, 108 size 270, 22
+  text "Payment: {pay}" at 330, 134 size 270, 22
+  text "State: {ticket_state}" at 330, 160 size 270, 22
+  text "Current quote: {ticket_total}" at 330, 186 size 270, 22
+
+  shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
+  text "Ticket canvas" at 32, 256 size 200, 20
+  paintbox as ticket_canvas at 32, 282 size 264, 146
+
+  shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
+  panel as runtime_panel at 340, 260 size 268, 168:
+    text "Native runtime pulse {heartbeat}"
+    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"
+    text "Quote revision {quote_revision}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+
+  button "Add inspection" as details_quote at 16, 460 size 180, 36
+  button "Mark ready" as details_ready at 208, 460 size 180, 36
+  button "Close details" as close_details at 400, 460 size 180, 36
+
+window "Inventory Center" as inventory size 900, 620:
+  text "Inventory Center" at 24, 20 size 280, 30
+  text "{inventory_status}" at 324, 20 size 520, 30
+  text "Filter" at 24, 66 size 90, 22
+  input inventory_filter at 24, 90 size 230, 36
+  text "Zone" at 276, 66 size 90, 22
+  combo "Main store", "Bench A", "Bench B", "Overflow" as inventory_zone at 276, 90 size 220, 36
+  text "Reorder quantity {reorder_qty}" at 520, 66 size 190, 22
+  slider 1..20 as reorder_qty step 1 at 520, 90 size 300, 38
+
+  table "SKU", "Part", "Zone", "Stock", "State" as inventory_grid at 24, 154 size 540, 310:
+    row "KB-001", "Keyboard", "Main store", "12", "Available"
+    row "TP-014", "Trackpad", "Bench A", "4", "Low"
+    row "PN-220", "Display panel", "Bench B", "2", "Reorder"
+    row "CB-119", "Display cable", "Main store", "18", "Available"
+    row "DR-301", "Precision driver", "Bench A", "7", "Available"
+    row "SL-044", "Solder", "Overflow", "3", "Low"
+
+  tree as inventory_tree at 588, 154 size 280, 310:
+    node "Stock"
+      node "Input devices"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Display panel"
+        node "Display cable"
+      node "Tools"
+        node "Precision driver"
+        node "Solder"
+    node "Locations"
+      node "Main store"
+      node "Bench A"
+      node "Bench B"
+      node "Overflow"
+
+  button "Prepare reorder" as reorder_button at 24, 500 size 170, 38
+  button "Open job details" as inventory_details at 210, 500 size 170, 38
+  button "Close inventory" as close_inventory at 396, 500 size 170, 38
+  statusbar "{inventory_status}" as inventory_statusbar at 0, 592 size 900, 28
+
+window "Customer Profile" as customer_profile size 760, 600:
+  text "Customer Profile" at 24, 20 size 280, 30
+  text "{customer_status}" at 318, 20 size 410, 30
+  text "Name" at 24, 68 size 100, 22
+  text "{customer}" at 24, 92 size 220, 36
+  text "Email" at 268, 68 size 100, 22
+  input customer_email at 268, 92 size 300, 36
+  text "Tier" at 590, 68 size 100, 22
+  combo "Standard", "Silver", "Gold", "Platinum" as customer_tier at 590, 92 size 140, 36
+  checkbox "Marketing updates" as customer_marketing at 24, 150 size 190, 36
+  text "Preferred channels" at 238, 150 size 160, 22
+  listbox "Email", "SMS", "Phone", "Portal" as customer_channels at 238, 176 size 220, 110
+  text "Account note" at 482, 150 size 150, 22
+  input customer_note at 482, 176 size 248, 38
+
+  table "Ticket", "Item", "State", "Quote" as customer_jobs at 24, 318 size 706, 150:
+    row "WD-104", "Keyboard", "Open", "40"
+    row "WD-091", "Display panel", "Ready", "210"
+    row "WD-076", "Trackpad", "Closed", "85"
+
+  button "Save profile" as customer_save at 24, 496 size 150, 38
+  button "Open current job" as customer_job at 190, 496 size 170, 38
+  button "Close profile" as close_customer at 376, 496 size 150, 38
+  statusbar "{customer_status}" as customer_statusbar at 0, 572 size 760, 28
+
+window "Workshop Diagnostics" as diagnostics size 840, 620:
+  text "Workshop Diagnostics" at 24, 20 size 300, 30
+  text "{diagnostic_status}" at 338, 20 size 470, 30
+  tabs as diagnostic_tabs at 24, 72 size 792, 270:
+    tab "Runtime":
+      text "Runtime mode"
+      radio "Runtime", "Designer", "Native" as diagnostic_mode
+      checkbox "Trace semantic changes" as trace_enabled
+      text "Sampling interval {diagnostic_interval}s"
+      slider 1..10 as diagnostic_interval step 1
+    tab "Build":
+      text "Offline compiler and sealed runtime readiness"
+      text "Use Downloads for platform compiler and Offline Studio bundles."
+      text "Current desktop Ready runtime contract: v1.10."
+    tab "Quality":
+      text "Designer materializes one active Form while preserving source-backed shells."
+      text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."
+      text "Diagnostic runs: {diagnostic_runs}"
+    tab "Environment":
+      text "Browser, Offline Studio and generated Web App share the same source."
+      text "Native capability gates remain fail-closed for unsupported resources."
+
+  table "Check", "Surface", "State" as diagnostic_checks at 24, 370 size 540, 150:
+    row "Designer", "Active Form materialization", "Ready"
+    row "Compiler", "Window Web App", "Ready"
+    row "Runtime", "Desktop v1.10", "Ready"
+    row "Offline", "Studio Stage 1", "Ready"
+
+  button "Run checks" as diagnostic_run at 590, 370 size 190, 38
+  button "Open settings" as diagnostic_settings at 590, 418 size 190, 38
+  button "Close diagnostics" as close_diagnostics at 590, 466 size 190, 38
+  timer as diagnostics_clock interval 3000
+  statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
+
+window "Component Gallery" as components size 900, 640:
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 868, 64
+  text "Component Gallery" at 32, 22 size 280, 26
+  text "{gallery_status}" at 330, 22 size 530, 26
+  text "Current Ready native subset" at 32, 48 size 360, 20
+
+  shape rounded as inputs_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 88 size 430, 292
+  text "Inputs & choices" at 32, 100 size 220, 22
+  text "Text input" at 32, 128 size 120, 18
+  input gallery_text at 32, 148 size 190, 32
+  checkbox "Enabled" as gallery_enabled at 236, 148 size 190, 32
+  text "Mode" at 32, 190 size 80, 18
+  radio "Ready", "Review", "Blocked" as gallery_mode at 32, 210 size 190, 148
+  text "Color" at 236, 190 size 80, 18
+  combo "Blue", "Green", "Amber", "Red" as gallery_color at 236, 210 size 190, 32
+  text "Level {gallery_level}" at 236, 250 size 180, 18
+  slider 0..100 as gallery_level step 10 at 236, 270 size 190, 28
+  text "Features" at 236, 304 size 120, 16
+  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 236, 322 size 190, 44
+
+  shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 458, 88 size 426, 292
+  text "Graphics & containers" at 474, 100 size 280, 22
+  picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Gallery picture" at 474, 132 size 64, 64
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 554, 132 size 88, 64
+  paintbox as gallery_canvas at 658, 132 size 200, 110
+  panel as gallery_panel at 474, 256 size 384, 108:
+    text "Panel Stage 1"
+    text "Source-backed visual grouping"
+
+  imagelist as gallery_images size 20, 20:
+    image mark from "patch-resource:workshop.mark"
+
+  shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 392 size 868, 158
+  text "Data controls" at 32, 404 size 180, 22
+  text "ImageList is nonvisual and is shown in the Object Tree." at 230, 404 size 500, 22
+  table "Component", "Event", "State" as gallery_table at 32, 436 size 500, 100:
+    row "Button", "clicked", "Ready"
+    row "Input", "changed", "Ready"
+    row "Table", "changed", "Ready"
+    row "TreeView", "changed", "Ready"
+    row "PaintBox", "paint", "Ready"
+
+  tree as gallery_tree at 548, 436 size 312, 100:
+    node "Registry 0.10 native subset"
+      node "Basic"
+        node "Text"
+        node "Button"
+        node "Input"
+      node "Data"
+        node "Table"
+        node "TreeView"
+      node "Graphics"
+        node "Picture"
+        node "Shape"
+        node "PaintBox"
+      node "Nonvisual"
+        node "Timer"
+        node "ImageList"
+
+  button "Refresh" as gallery_refresh at 560, 564 size 148, 32
+  button "Close gallery" as close_components at 720, 564 size 148, 32
+  timer as gallery_clock interval 2000
+  statusbar "{gallery_status}" as gallery_statusbar at 0, 612 size 900, 28
+
+when customer changed:
+  change customer:
+    set = value
+  change status:
+    set = "Customer changed"
+  change customer_status:
+    set = "Selected customer changed"
+
+when item changed:
+  change item:
+    set = value
+  change status:
+    set = "Item description updated"
+
+when pay changed:
+  change pay:
+    set = value
+  change status:
+    set = "Payment method changed"
+
+when priority changed:
+  change priority:
+    set = value
+  change status:
+    set = "Priority changed"
+
+when rush changed:
+  change rush:
+    set = value
+  change status:
+    set = "Rush bench preference changed"
+
+when qty changed:
+  change qty:
+    set = value
+  change status:
+    set = "Quantity changed"
+
+when notes changed:
+  change notes:
+    set = value
+  change status:
+    set = "Notes updated"
+
+when services changed:
+  change services:
+    set = value
+  change status:
+    set = "Services updated"
+
+when board changed:
+  change status:
+    set = "Queue selection changed · open Details to continue"
+
+when parts changed:
+  change status:
+    set = "Parts selection changed · open Inventory to continue"
+
+when workshop_logo clicked:
+  change status:
+    set = "Workshop mark clicked"
+
+when workshop_clock ticked:
+  change heartbeat:
+    add 1
+
+when ticket_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
+  if rush:
+    draw line 12, 58 to 258, 58 stroke #dc2626 width 3
+  draw text "Live quote" at 12, 78 color #111827 size 16
+  draw text ticket_state at 126, 78 color #334155 size 16
+
+when quote_button clicked:
+  change ticket_total:
+    add 25
+    add 15
+  change quote_revision:
+    add 1
+  change ticket_state:
+    set = "Quoted"
+  change status:
+    set = "Base rate and inspection added"
+
+when details_quote clicked:
+  change ticket_total:
+    add 15
+  change quote_revision:
+    add 1
+  change ticket_state:
+    set = "Quoted"
+  change status:
+    set = "Inspection fee added to quote"
+
+when complete_button clicked:
+  change ticket_state:
+    set = "Ready"
+  change status:
+    set = "Ticket marked ready"
+
+when details_ready clicked:
+  change ticket_state:
+    set = "Ready"
+  change status:
+    set = "Ticket marked ready"
+
+when settings_button clicked:
+  open settings
+
+when details_button clicked:
+  open details
+
+when inventory_button clicked:
+  open inventory
+  change inventory_status:
+    set = "Inventory opened from Workshop Desk"
+
+when customer_button clicked:
+  open customer_profile
+  change customer_status:
+    set = "Customer profile opened from Workshop Desk"
+
+when diagnostics_button clicked:
+  open diagnostics
+  change diagnostic_status:
+    set = "Diagnostics opened from Workshop Desk"
+
+when components_button clicked:
+  open components
+  change gallery_status:
+    set = "Current Ready Component Registry 0.10 subset opened"
+
+when close_settings clicked:
+  change status:
+    set = "Settings closed"
+  close settings
+
+when close_about clicked:
+  change status:
+    set = "Settings closed"
+  close settings
+
+when close_details clicked:
+  close details
+
+when notifications changed:
+  change notifications:
+    set = value
+  change status:
+    set = "Notification preference changed"
+
+when default_bench changed:
+  change default_bench:
+    set = value
+  change ticket_bench:
+    set = value
+  change status:
+    set = "Default bench changed"
+
+when stations changed:
+  change stations:
+    set = value
+  change status:
+    set = "Available stations changed"
+
+when labor_limit changed:
+  change labor_limit:
+    set = value
+  change status:
+    set = "Labor approval limit changed"
+
+when density changed:
+  change density:
+    set = value
+  change status:
+    set = "Appearance density changed"
+
+when inventory_filter changed:
+  change inventory_filter:
+    set = value
+  change inventory_status:
+    set = "Inventory filter changed"
+
+when inventory_zone changed:
+  change inventory_zone:
+    set = value
+  change inventory_status:
+    set = "Inventory zone changed"
+
+when reorder_qty changed:
+  change reorder_qty:
+    set = value
+  change inventory_status:
+    set = "Reorder quantity changed"
+
+when inventory_grid changed:
+  change inventory_status:
+    set = "Inventory row selected"
+
+when inventory_tree changed:
+  change inventory_status:
+    set = "Inventory tree selection changed"
+
+when reorder_button clicked:
+  change inventory_status:
+    set = "Reorder prepared"
+  change status:
+    set = "Inventory reorder prepared"
+
+when inventory_details clicked:
+  open details
+  change status:
+    set = "Job details opened from Inventory Center"
+
+when close_inventory clicked:
+  close inventory
+  change status:
+    set = "Inventory Center closed"
+
+when customer_email changed:
+  change customer_email:
+    set = value
+  change customer_status:
+    set = "Customer email changed"
+
+when customer_tier changed:
+  change customer_tier:
+    set = value
+  change customer_status:
+    set = "Customer tier changed"
+
+when customer_marketing changed:
+  change customer_marketing:
+    set = value
+  change customer_status:
+    set = "Marketing preference changed"
+
+when customer_channels changed:
+  change customer_channels:
+    set = value
+  change customer_status:
+    set = "Preferred channels changed"
+
+when customer_note changed:
+  change customer_note:
+    set = value
+  change customer_status:
+    set = "Customer note changed"
+
+when customer_jobs changed:
+  change customer_status:
+    set = "Customer job row selected"
+
+when customer_save clicked:
+  change customer_status:
+    set = "Customer profile saved"
+  change status:
+    set = "Customer profile saved"
+
+when customer_job clicked:
+  open details
+  change status:
+    set = "Current customer job opened"
+
+when close_customer clicked:
+  close customer_profile
+  change status:
+    set = "Customer Profile closed"
+
+when diagnostic_mode changed:
+  change diagnostic_mode:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic mode changed"
+
+when trace_enabled changed:
+  change trace_enabled:
+    set = value
+  change diagnostic_status:
+    set = "Trace preference changed"
+
+when diagnostic_interval changed:
+  change diagnostic_interval:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic interval changed"
+
+when diagnostic_checks changed:
+  change diagnostic_status:
+    set = "Diagnostic check row selected"
+
+when diagnostic_run clicked:
+  change diagnostic_runs:
+    add 1
+  change diagnostic_status:
+    set = "Diagnostic checks completed"
+  change status:
+    set = "Diagnostics completed"
+
+when diagnostics_clock ticked:
+  change diagnostic_runs:
+    add 1
+
+when diagnostic_settings clicked:
+  open settings
+  change diagnostic_status:
+    set = "Settings opened from Diagnostics"
+
+when close_diagnostics clicked:
+  close diagnostics
+  change status:
+    set = "Workshop Diagnostics closed"
+
+when gallery_text changed:
+  change gallery_text:
+    set = value
+  change gallery_status:
+    set = "Input change handled"
+
+when gallery_enabled changed:
+  change gallery_enabled:
+    set = value
+  change gallery_status:
+    set = "Checkbox change handled"
+
+when gallery_mode changed:
+  change gallery_mode:
+    set = value
+  change gallery_status:
+    set = "Radio change handled"
+
+when gallery_color changed:
+  change gallery_color:
+    set = value
+  change gallery_status:
+    set = "ComboBox change handled"
+
+when gallery_features changed:
+  change gallery_features:
+    set = value
+  change gallery_status:
+    set = "ListBox change handled"
+
+when gallery_level changed:
+  change gallery_level:
+    set = value
+  change gallery_status:
+    set = "Slider change handled"
+
+when gallery_table changed:
+  change gallery_status:
+    set = "Table selection handled"
+
+when gallery_tree changed:
+  change gallery_status:
+    set = "TreeView selection handled"
+
+when gallery_picture clicked:
+  change gallery_status:
+    set = "Picture click handled"
+
+when gallery_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 10, 10 size 54, 28 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 76, 10 size 28, 28 fill #dcfce7 stroke #16a34a width 2
+  draw text gallery_mode at 10, 62 color #111827 size 14
+
+when gallery_clock ticked:
+  change gallery_ticks:
+    add 1
+
+when gallery_refresh clicked:
+  change gallery_ticks:
+    add 1
+  change gallery_status:
+    set = "Gallery refreshed"
+
+when close_components clicked:
+  close components
+  change status:
+    set = "Component Gallery closed"
+
+when reset_button clicked:
+  change customer:
+    set = "Ada"
+  change item:
+    set = "Keyboard"
+  change qty:
+    set = 1
+  change rush:
+    set = false
+  change priority:
+    set = "Normal"
+  change pay:
+    set = "Card"
+  change notes:
+    set = ""
+  change services:
+    set = ["Diagnostics"]
+  change heartbeat:
+    set = 0
+  change ticket_total:
+    set = 40
+  change quote_revision:
+    set = 0
+  change ticket_bench:
+    set = "Bench A"
+  change ticket_state:
+    set = "Open"
+  change inventory_filter:
+    set = "All stock"
+  change inventory_zone:
+    set = "Main store"
+  change reorder_qty:
+    set = 5
+  change inventory_status:
+    set = "Inventory synchronized"
+  change customer_email:
+    set = "ada@example.com"
+  change customer_tier:
+    set = "Gold"
+  change customer_marketing:
+    set = true
+  change customer_channels:
+    set = ["Email"]
+  change customer_note:
+    set = "Priority account"
+  change customer_status:
+    set = "Customer profile ready"
+  change diagnostic_mode:
+    set = "Runtime"
+  change trace_enabled:
+    set = true
+  change diagnostic_interval:
+    set = 5
+  change diagnostic_runs:
+    set = 0
+  change diagnostic_status:
+    set = "All systems ready"
+  change gallery_text:
+    set = "Workshop sample"
+  change gallery_enabled:
+    set = true
+  change gallery_mode:
+    set = "Ready"
+  change gallery_color:
+    set = "Blue"
+  change gallery_features:
+    set = ["Designer"]
+  change gallery_level:
+    set = 60
+  change gallery_status:
+    set = "Component gallery ready"
+  change gallery_ticks:
+    set = 0
+  change status:
+    set = "Ticket reset"
