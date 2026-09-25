@@ -12,9 +12,9 @@ import {
   flattenCurrentNativeGuiControls
 } from '../src/native-current-contract.js';
 
-const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
+const source = fs.readFileSync('examples/workshop-desk-native.patch', 'utf8');
 
-test('Workshop Desk builds on Current Ready across the Component Registry 0.10 native subset', () => {
+test('Workshop Desk native acceptance fixture builds on Current Ready across the Component Registry 0.10 native subset', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   const support = validateWindowRuntimeSupport(compiled, {
     allowTables: true,
@@ -58,7 +58,7 @@ test('Workshop Desk builds on Current Ready across the Component Registry 0.10 n
   assert.match(JSON.stringify(paintboxes.find(control => control.id === 'gallery_canvas')?.paintProgram), /"operation":"rectangle"/);
 });
 
-test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
+test('Workshop Desk native acceptance fixture still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   assert.throws(
     () => validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true, allowSlider: true, allowPaintBox: true, allowImageList: true }),
