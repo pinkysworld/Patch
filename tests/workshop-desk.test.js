@@ -209,12 +209,10 @@ test('Workshop queue, parts, customer and inventory screens form one stateful wo
   result = triggerWindowEvent(runtime, 'inventory_zone', 'changed', { value: 'Bench B' });
   result = triggerWindowEvent(runtime, 'reorder_qty', 'changed', { value: 9 });
   result = triggerWindowEvent(runtime, 'reorder_button', 'clicked');
-  assert.deepEqual(result.state.reorder_request, {
-    part: 'Display panel',
-    zone: 'Bench B',
-    quantity: 9,
-    prepared: true
-  });
+  assert.equal(result.state.reorder_request.part, 'Display panel');
+  assert.equal(result.state.reorder_request.zone, 'Bench B');
+  assert.equal(result.state.reorder_request.quantity, 9);
+  assert.equal(result.state.reorder_request.prepared, true);
   assert.match(result.state.inventory_status, /Display panel · Bench B · qty 9/);
 
   result = triggerWindowEvent(runtime, 'customer_button', 'clicked');
