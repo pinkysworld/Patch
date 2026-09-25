@@ -4,7 +4,6 @@ import fs from 'node:fs';
 
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const spec = fs.readFileSync('docs/SPEC.md', 'utf8');
-const paper = fs.readFileSync('paper/README.md', 'utf8');
 const parser = fs.readFileSync('src/parser.js', 'utf8');
 const compiler = fs.readFileSync('src/compiler.js', 'utf8');
 
@@ -72,6 +71,7 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
+  const paper = fs.readFileSync('paper/README.md', 'utf8');
   assert.match(paper, /manuscript's recorded snapshot: \*\*Native GUI IR 1\.3 \/ sealed payload v13 \/ runtime v1\.4\*\*/);
   assert.match(paper, /current native product contract: \*\*Native GUI IR 1\.9 \/ sealed payload v19 \/ runtime v1\.10\*\*/);
   assert.match(paper, /frozen TreeView compatibility contract: \*\*Native GUI IR 1\.2 \/ sealed payload v12 \/ runtime v1\.3\*\*/);
@@ -79,12 +79,18 @@ test('paper product snapshot and frozen contract stay explicit without widening 
   assert.match(paper, /does not widen the beta\.32 Lean claim/);
   assert.match(paper, /historical include-chain bases, not the Ready runtime/);
   const tex = fs.readFileSync('paper/main.tex', 'utf8');
-  assert.match(tex, /Native GUI IR 1\.3/);
-  assert.match(tex, /manuscript's recorded snapshot/);
-  assert.match(tex, /current product contract is Native GUI IR 1\.9 \/ sealed payload v19 \/ runtime v1\.10/);
-  assert.match(tex, /does not widen the beta\.32 claim/);
+  assert.match(tex, /do not enlarge the formal claims/);
   assert.match(tex, /fail closed on Things/);
+  assert.doesNotMatch(tex, /Native GUI IR \d|sealed payload v\d|runtime v\d/i);
   assert.doesNotMatch(tex, /Native GUI IR 0\.7 does not model persistent list state, so current native Window paths fail closed/);
+});
+
+test('research manuscript keeps product evolution outside its formal claims', () => {
+  const tex = fs.readFileSync('paper/main.tex', 'utf8');
+  assert.match(tex, /Product surface[\s\S]*GUI\/native\/host features outside formal slices/i);
+  assert.match(tex, /broader product contains syntax, GUI\/runtime paths, native packaging, host interactions/i);
+  assert.match(tex, /does not claim a source-to-core compiler-correctness theorem/i);
+  assert.doesNotMatch(tex, /Native GUI IR \d|sealed payload v\d|runtime v\d/i);
 });
 
 test('SPEC exposes the fail-closed Thing field boundary implemented by the parser', () => {
