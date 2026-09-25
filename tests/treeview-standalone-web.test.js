@@ -19,12 +19,12 @@ when files changed:
     set = value
 `;
 
-test('Standalone Window Web v0.9 opts into TreeView without opening the generic target boundary', () => {
+test('Standalone Window Web v0.10 opts into TreeView without opening the generic target boundary', () => {
   const compiled = compile(SOURCE, { name: 'TreeWeb', kind: 'window' });
   assert.throws(() => validateWindowRuntimeSupport(compiled), /TreeView.*not enabled.*Window target/i);
-  assert.equal(PATCH_WINDOW_WEB_VERSION, '0.9');
+  assert.equal(PATCH_WINDOW_WEB_VERSION, '0.10');
   const built = buildStandaloneWindowWebApp(compiled, 'Tree Web');
-  assert.equal(built.metadata.version, '0.9');
+  assert.equal(built.metadata.version, '0.10');
   assert.equal(built.metadata.projectKind, 'window');
   assert.ok(built.compiled.ir.capabilities.includes('ui.tree'));
 });
