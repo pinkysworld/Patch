@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
+import { PATCH_COMPONENTS } from '../src/component-registry.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { upgradeWorkshopDeskSource, WORKSHOP_DESK_CURRENT_SAMPLE_VERSION } from '../web/studio-dom-sync.js';
@@ -13,6 +14,17 @@ const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 const nativeFixture = fs.readFileSync('examples/workshop-desk-native.patch', 'utf8');
 const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
+
+function collectComponentTypes(nodes, out = new Set()) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl') out.add(node.control);
+    if (node?.kind === 'tabs') out.add('tabs');
+    if (node?.body) collectComponentTypes(node.body, out);
+    if (node?.thenBody) collectComponentTypes(node.thenBody, out);
+    if (node?.elseBody) collectComponentTypes(node.elseBody, out);
+  }
+  return out;
+}
 
 function embeddedWorkshopBaseline() {
   const match = studioModule.match(/const WORKSHOP_DESK_SAMPLE = `([\s\S]*?)`;\n\nconst MULTISELECT_SAMPLE/);
@@ -244,35 +256,72 @@ test('Workshop diagnostics distinguish user-requested checks from timer pulses',
   assert.equal(result.state.diagnostic_ticks, 1);
 });
 
-test('Workshop Component Gallery remains interactive while the main workflow is stateful', () => {
+test('Workshop Studio Feature Lab covers and exercises the complete current Studio/Web component surface', () => {
+  const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
+  const represented = collectComponentTypes(compiled.ast);
+  const missing = PATCH_COMPONENTS.map(component => component.type).filter(type => !represented.has(type));
+  assert.deepEqual(missing, [], 'Workshop Feature Lab must keep the complete Component Registry represented');
+
+  for (const marker of [
+    '# @input-mode password', '# @input-mask "AA-000"', '# @number-edit',
+    '# @input-mode date', '# @input-mode time', '# @input-mode calendar',
+    '# @listbox-mode checked', '# @slider-mode progress', '# @slider-mode scrollbar',
+    '# @button-mode link', '# @table-columns 150:left, 180:left, 120:center',
+    '# @panel-mode group', '# @panel-scroll auto', '# @panel-split vertical 42', '# @panel-split-break',
+    'state info', 'state success', 'state muted', 'state warning',
+    'menu "Lab":', 'confirm "Feature Lab"', 'open file "Choose a Patch file"', 'save file "Choose a Patch save name"'
+  ]) assert.ok(example.includes(marker), marker);
+
   const runtime = new PatchInterpreter();
   runtime.run(example);
 
   let result = triggerWindowEvent(runtime, 'components_button', 'clicked');
   assert.equal(result.ui.find(window => window.id === 'components')?.visible, true);
-  assert.equal(result.state.gallery_status, 'Current Ready Component Registry 0.10 subset opened');
+  assert.equal(result.state.gallery_status, 'Studio Feature Lab opened · complete current Studio/Web surface');
 
   result = triggerWindowEvent(runtime, 'gallery_text', 'changed', { value: 'Edited sample' });
   assert.equal(result.state.gallery_text, 'Edited sample');
-  result = triggerWindowEvent(runtime, 'gallery_enabled', 'changed', { value: false });
-  assert.equal(result.state.gallery_enabled, false);
-  result = triggerWindowEvent(runtime, 'gallery_mode', 'changed', { value: 'Review' });
-  assert.equal(result.state.gallery_mode, 'Review');
-  result = triggerWindowEvent(runtime, 'gallery_color', 'changed', { value: 'Green' });
-  assert.equal(result.state.gallery_color, 'Green');
+  result = triggerWindowEvent(runtime, 'gallery_memo', 'changed', { value: 'Multiline review' });
+  assert.equal(result.state.gallery_memo, 'Multiline review');
+  result = triggerWindowEvent(runtime, 'gallery_mask', 'changed', { value: 'PX-100' });
+  assert.equal(result.state.gallery_mask, 'PX-100');
+  result = triggerWindowEvent(runtime, 'gallery_number', 'changed', { value: '84' });
+  assert.equal(result.state.gallery_number, '84');
+  result = triggerWindowEvent(runtime, 'gallery_date', 'changed', { value: '2026-10-01' });
+  assert.equal(result.state.gallery_date, '2026-10-01');
+  result = triggerWindowEvent(runtime, 'gallery_time', 'changed', { value: '09:15' });
+  assert.equal(result.state.gallery_time, '09:15');
+  result = triggerWindowEvent(runtime, 'gallery_calendar', 'changed', { value: '2026-10-02' });
+  assert.equal(result.state.gallery_calendar, '2026-10-02');
+
   result = triggerWindowEvent(runtime, 'gallery_features', 'changed', { value: ['Designer', 'Runtime'] });
   assert.deepEqual(result.state.gallery_features, ['Designer', 'Runtime']);
-  result = triggerWindowEvent(runtime, 'gallery_level', 'changed', { value: 80 });
-  assert.equal(result.state.gallery_level, 80);
-  result = triggerWindowEvent(runtime, 'gallery_table', 'changed', { value: ['Table', 'changed', 'Ready'] });
-  assert.equal(result.state.gallery_status, 'Table selection handled');
-  result = triggerWindowEvent(runtime, 'gallery_tree', 'changed', { value: ['Registry 0.10 native subset', 'Data', 'TreeView'] });
-  assert.equal(result.state.gallery_status, 'TreeView selection handled');
+  result = triggerWindowEvent(runtime, 'gallery_scroll', 'changed', { value: 70 });
+  assert.equal(result.state.gallery_scroll, 70);
+  result = triggerWindowEvent(runtime, 'gallery_link', 'clicked');
+  assert.equal(result.state.gallery_status, 'LinkLabel clicked through ordinary Button semantics');
+
+  result = triggerWindowEvent(runtime, 'gallery_table', 'changed', { value: ['TreeView', 'path list', 'Studio/Web'] });
+  assert.equal(result.state.gallery_status, 'Advanced Table row selected');
+  result = triggerWindowEvent(runtime, 'gallery_tree', 'changed', { value: ['Component Registry 0.10', 'Data', 'TreeView'] });
+  assert.equal(result.state.gallery_status, 'TreeView path selected');
+  result = triggerWindowEvent(runtime, 'gallery_resource_button', 'clicked');
+  assert.equal(result.state.gallery_status, 'ImageList-backed Button clicked');
+
+  result = triggerWindowEvent(runtime, 'gallery_menu_enabled', 'clicked');
+  assert.equal(result.state.gallery_enabled, false);
+  result = triggerWindowEvent(runtime, 'gallery_confirm_result', 'confirmed');
+  assert.equal(result.state.gallery_status, 'Confirmation accepted and persisted');
+  result = triggerWindowEvent(runtime, 'gallery_open_result', 'chosen', { value: 'sample.patch' });
+  assert.equal(result.state.gallery_path, 'sample.patch');
+
   result = triggerWindowEvent(runtime, 'gallery_clock', 'ticked');
   assert.equal(result.state.gallery_ticks, 1);
+  assert.equal(result.state.gallery_progress, 50);
   result = triggerWindowEvent(runtime, 'gallery_refresh', 'clicked');
   assert.equal(result.state.gallery_ticks, 2);
-  assert.match(result.state.gallery_status, /pulse 2/);
+  assert.equal(result.state.gallery_progress, 100);
+  assert.match(result.state.gallery_status, /all demonstrations ready/);
 });
 
 test('Workshop reset restores the complete application model', () => {
@@ -303,6 +352,16 @@ test('Workshop reset restores the complete application model', () => {
   assert.equal(result.state.diagnostic_runs, 0);
   assert.equal(result.state.diagnostic_ticks, 0);
   assert.equal(result.state.gallery_ticks, 0);
+  assert.equal(result.state.gallery_memo, 'Feature Lab notes');
+  assert.equal(result.state.gallery_secret, '');
+  assert.equal(result.state.gallery_mask, '');
+  assert.equal(result.state.gallery_number, '42');
+  assert.equal(result.state.gallery_date, '2026-09-25');
+  assert.equal(result.state.gallery_time, '14:30');
+  assert.equal(result.state.gallery_calendar, '2026-09-25');
+  assert.equal(result.state.gallery_progress, 40);
+  assert.equal(result.state.gallery_scroll, 25);
+  assert.equal(result.state.gallery_path, 'No file selected');
   assert.equal(result.state.ticket.id, 'WD-104');
   assert.equal(result.state.ticket.quote, 40);
   assert.equal(result.state.status, 'Ticket reset to WD-104');
@@ -312,7 +371,7 @@ test('Workshop source marks presentation-only cards locked and keeps application
   for (const id of [
     'desk_header', 'ticket_card', 'queue_card', 'side_card',
     'details_header', 'details_card', 'canvas_card', 'rates_card',
-    'gallery_header', 'inputs_card', 'graphics_card', 'data_card'
+    'gallery_header'
   ]) {
     assert.match(example, new RegExp(`# @locked\\n\\s*shape rounded as ${id}\\b`), `${id} must not become Designer selection noise`);
   }
@@ -321,7 +380,8 @@ test('Workshop source marks presentation-only cards locked and keeps application
     'create thing ticket:', 'create thing saved_customer:', 'create thing reorder_request:',
     'make calculate_quote():', 'make load_ticket(row):', 'make quote_ticket():',
     'change selected_job:', 'change selected_part:',
-    'do load_ticket(value)', 'do select_part(value)', 'do prepare_reorder()', 'do save_customer()'
+    'do load_ticket(value)', 'do select_part(value)', 'do prepare_reorder()', 'do save_customer()',
+    'window "Studio Feature Lab" as components', 'tabs as feature_tabs', 'Component Registry 0.10'
   ]) assert.ok(example.includes(marker), marker);
 
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
@@ -339,9 +399,9 @@ test('Workshop Desk builds as a Standalone Window Web App with the working seven
     assert.match(out, /standalone single-file Web App/);
     const built = fs.readFileSync(outputPath, 'utf8');
     for (const marker of [
-      'Workshop Desk', 'Workshop settings', 'Job details', 'Inventory Center', 'Customer Profile', 'Workshop Diagnostics', 'Component Gallery',
+      'Workshop Desk', 'Workshop settings', 'Job details', 'Inventory Center', 'Customer Profile', 'Workshop Diagnostics', 'Studio Feature Lab',
       'runtime_shape', 'gallery_shape', 'workshop_clock', 'diagnostics_clock', 'gallery_clock', 'ticket_canvas', 'gallery_canvas',
-      'calculate_quote', 'load_ticket', 'saved_customer', 'reorder_request'
+      'calculate_quote', 'load_ticket', 'saved_customer', 'reorder_request', 'patch-menu-bar', 'patch-calendar-grid', 'patch-splitcontainer'
     ]) assert.match(built, new RegExp(marker));
     assert.match(built, /data:image\/png;base64/);
   } finally {
