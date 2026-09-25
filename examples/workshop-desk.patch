@@ -43,14 +43,441 @@ create list gallery_features = ["Designer"]
 create number gallery_level = 60
 create text gallery_status = "Component gallery ready"
 create number gallery_ticks = 0
+create text ticket_id = "WD-104"
+create list selected_job = ["WD-104", "Ada", "Bench A", "Open"]
+create list selected_part = ["Parts", "Input", "Keyboard"]
+create number service_fee = 15
+create number customer_saves = 0
+create number diagnostic_ticks = 0
+create thing ticket:
+  id = "WD-104"
+  customer_name = "Ada"
+  item_name = "Keyboard"
+  quantity = 1
+  rush = false
+  priority_name = "Normal"
+  payment = "Card"
+  notes_text = ""
+  services_selected = ["Diagnostics"]
+  bench = "Bench A"
+  state = "Open"
+  quote = 40
+  revision = 0
+create thing saved_customer:
+  name = "Ada"
+  email = "ada@example.com"
+  tier = "Gold"
+  marketing = true
+  channels = ["Email"]
+  note = "Priority account"
+  saves = 0
+create thing reorder_request:
+  part = "Keyboard"
+  zone = "Main store"
+  quantity = 5
+  prepared = false
+
+make price_services():
+  change service_fee:
+    set = 0
+  if services == ["Diagnostics"]:
+    change service_fee:
+      set = 15
+  if services == ["Warranty"]:
+    change service_fee:
+      set = 0
+  if services == ["Install"]:
+    change service_fee:
+      set = 20
+  if services == ["Pickup"]:
+    change service_fee:
+      set = 10
+  if services == ["Diagnostics", "Warranty"]:
+    change service_fee:
+      set = 15
+  if services == ["Diagnostics", "Install"]:
+    change service_fee:
+      set = 35
+  if services == ["Diagnostics", "Pickup"]:
+    change service_fee:
+      set = 25
+  if services == ["Warranty", "Install"]:
+    change service_fee:
+      set = 20
+  if services == ["Warranty", "Pickup"]:
+    change service_fee:
+      set = 10
+  if services == ["Install", "Pickup"]:
+    change service_fee:
+      set = 30
+  if services == ["Diagnostics", "Warranty", "Install"]:
+    change service_fee:
+      set = 35
+  if services == ["Diagnostics", "Warranty", "Pickup"]:
+    change service_fee:
+      set = 25
+  if services == ["Diagnostics", "Install", "Pickup"]:
+    change service_fee:
+      set = 45
+  if services == ["Warranty", "Install", "Pickup"]:
+    change service_fee:
+      set = 30
+  if services == ["Diagnostics", "Warranty", "Install", "Pickup"]:
+    change service_fee:
+      set = 45
+
+make calculate_quote():
+  do price_services()
+  change ticket_total:
+    set = base_rate * qty + service_fee
+  if rush:
+    change ticket_total:
+      add rush_fee
+  if priority == "High":
+    change ticket_total:
+      add 10
+  if priority == "Critical":
+    change ticket_total:
+      add 25
+
+make persist_ticket():
+  change ticket:
+    set id = ticket_id
+    set customer_name = customer
+    set item_name = item
+    set quantity = qty
+    set rush = rush
+    set priority_name = priority
+    set payment = pay
+    set notes_text = notes
+    set services_selected = services
+    set bench = ticket_bench
+    set state = ticket_state
+    set quote = ticket_total
+    set revision = quote_revision
+
+make load_customer_profile():
+  if customer == "Ada":
+    change customer_email:
+      set = "ada@example.com"
+    change customer_tier:
+      set = "Gold"
+    change customer_marketing:
+      set = true
+    change customer_channels:
+      set = ["Email"]
+    change customer_note:
+      set = "Priority account"
+  if customer == "Grace":
+    change customer_email:
+      set = "grace@example.com"
+    change customer_tier:
+      set = "Platinum"
+    change customer_marketing:
+      set = true
+    change customer_channels:
+      set = ["Email", "Portal"]
+    change customer_note:
+      set = "Design team"
+  if customer == "Linus":
+    change customer_email:
+      set = "linus@example.com"
+    change customer_tier:
+      set = "Silver"
+    change customer_marketing:
+      set = false
+    change customer_channels:
+      set = ["Portal"]
+    change customer_note:
+      set = "Engineering account"
+  if customer == "Margaret":
+    change customer_email:
+      set = "margaret@example.com"
+    change customer_tier:
+      set = "Standard"
+    change customer_marketing:
+      set = false
+    change customer_channels:
+      set = ["Phone"]
+    change customer_note:
+      set = "Call before pickup"
+
+make load_ticket(row):
+  change selected_job:
+    set = row
+  if row == ["WD-104", "Ada", "Bench A", "Open"]:
+    change ticket_id:
+      set = "WD-104"
+    change customer:
+      set = "Ada"
+    change item:
+      set = "Keyboard"
+    change qty:
+      set = 1
+    change rush:
+      set = false
+    change priority:
+      set = "Normal"
+    change pay:
+      set = "Card"
+    change services:
+      set = ["Diagnostics"]
+    change ticket_bench:
+      set = "Bench A"
+    change ticket_state:
+      set = "Open"
+    change quote_revision:
+      set = 0
+  if row == ["WD-105", "Grace", "Bench B", "Quoted"]:
+    change ticket_id:
+      set = "WD-105"
+    change customer:
+      set = "Grace"
+    change item:
+      set = "Trackpad"
+    change qty:
+      set = 2
+    change rush:
+      set = false
+    change priority:
+      set = "High"
+    change pay:
+      set = "Account"
+    change services:
+      set = ["Diagnostics", "Pickup"]
+    change ticket_bench:
+      set = "Bench B"
+    change ticket_state:
+      set = "Quoted"
+    change quote_revision:
+      set = 1
+  if row == ["WD-106", "Linus", "Bench A", "Ready"]:
+    change ticket_id:
+      set = "WD-106"
+    change customer:
+      set = "Linus"
+    change item:
+      set = "Display panel"
+    change qty:
+      set = 1
+    change rush:
+      set = true
+    change priority:
+      set = "Critical"
+    change pay:
+      set = "Card"
+    change services:
+      set = ["Warranty", "Install"]
+    change ticket_bench:
+      set = "Bench A"
+    change ticket_state:
+      set = "Ready"
+    change quote_revision:
+      set = 2
+  if row == ["WD-107", "Margaret", "Overflow", "Waiting"]:
+    change ticket_id:
+      set = "WD-107"
+    change customer:
+      set = "Margaret"
+    change item:
+      set = "Display cable"
+    change qty:
+      set = 3
+    change rush:
+      set = false
+    change priority:
+      set = "Normal"
+    change pay:
+      set = "Cash"
+    change services:
+      set = ["Pickup"]
+    change ticket_bench:
+      set = "Overflow"
+    change ticket_state:
+      set = "Waiting"
+    change quote_revision:
+      set = 0
+  do load_customer_profile()
+  do calculate_quote()
+  do persist_ticket()
+
+make select_part(path):
+  change selected_part:
+    set = path
+  if path == ["Parts", "Input", "Keyboard"]:
+    change item:
+      set = "Keyboard"
+  if path == ["Parts", "Input", "Trackpad"]:
+    change item:
+      set = "Trackpad"
+  if path == ["Parts", "Displays", "Panel"]:
+    change item:
+      set = "Display panel"
+  if path == ["Parts", "Displays", "Cable"]:
+    change item:
+      set = "Display cable"
+  if path == ["Tools", "Driver"]:
+    change item:
+      set = "Precision driver"
+  if path == ["Tools", "Solder"]:
+    change item:
+      set = "Solder"
+  if path == ["Tools", "Meter"]:
+    change item:
+      set = "Meter"
+  change inventory_filter:
+    set = item
+  do calculate_quote()
+  do persist_ticket()
+
+make quote_ticket():
+  do calculate_quote()
+  change quote_revision:
+    add 1
+  change ticket_state:
+    set = "Quoted"
+  do persist_ticket()
+  change status:
+    set = ticket_id + " quoted at " + ticket_total + " · revision " + quote_revision
+
+make save_customer():
+  change customer_saves:
+    add 1
+  change saved_customer:
+    set name = customer
+    set email = customer_email
+    set tier = customer_tier
+    set marketing = customer_marketing
+    set channels = customer_channels
+    set note = customer_note
+    set saves = customer_saves
+  change customer_status:
+    set = customer + " profile saved · revision " + customer_saves
+  change status:
+    set = "Customer profile persisted for " + customer
+
+make prepare_reorder():
+  change reorder_request:
+    set part = item
+    set zone = inventory_zone
+    set quantity = reorder_qty
+    set prepared = true
+  change inventory_status:
+    set = "Reorder prepared · " + item + " · " + inventory_zone + " · qty " + reorder_qty
+  change status:
+    set = "Inventory reorder prepared for " + item
+
+make reset_workshop():
+  change customer:
+    set = "Ada"
+  change item:
+    set = "Keyboard"
+  change qty:
+    set = 1
+  change rush:
+    set = false
+  change priority:
+    set = "Normal"
+  change pay:
+    set = "Card"
+  change notes:
+    set = ""
+  change services:
+    set = ["Diagnostics"]
+  change notifications:
+    set = true
+  change default_bench:
+    set = "Bench A"
+  change stations:
+    set = ["Bench A", "Bench B"]
+  change density:
+    set = "Comfortable"
+  change labor_limit:
+    set = 50
+  change heartbeat:
+    set = 0
+  change ticket_id:
+    set = "WD-104"
+  change ticket_bench:
+    set = "Bench A"
+  change ticket_state:
+    set = "Open"
+  change quote_revision:
+    set = 0
+  change selected_job:
+    set = ["WD-104", "Ada", "Bench A", "Open"]
+  change selected_part:
+    set = ["Parts", "Input", "Keyboard"]
+  change inventory_filter:
+    set = "All stock"
+  change inventory_zone:
+    set = "Main store"
+  change reorder_qty:
+    set = 5
+  change inventory_status:
+    set = "Inventory synchronized"
+  change customer_saves:
+    set = 0
+  do load_customer_profile()
+  change customer_status:
+    set = "Customer profile ready"
+  change saved_customer:
+    set name = "Ada"
+    set email = "ada@example.com"
+    set tier = "Gold"
+    set marketing = true
+    set channels = ["Email"]
+    set note = "Priority account"
+    set saves = 0
+  change reorder_request:
+    set part = "Keyboard"
+    set zone = "Main store"
+    set quantity = 5
+    set prepared = false
+  change diagnostic_mode:
+    set = "Runtime"
+  change trace_enabled:
+    set = true
+  change diagnostic_interval:
+    set = 5
+  change diagnostic_runs:
+    set = 0
+  change diagnostic_ticks:
+    set = 0
+  change diagnostic_status:
+    set = "All systems ready"
+  change gallery_text:
+    set = "Workshop sample"
+  change gallery_enabled:
+    set = true
+  change gallery_mode:
+    set = "Ready"
+  change gallery_color:
+    set = "Blue"
+  change gallery_features:
+    set = ["Designer"]
+  change gallery_level:
+    set = 60
+  change gallery_status:
+    set = "Component gallery ready"
+  change gallery_ticks:
+    set = 0
+  do calculate_quote()
+  do persist_ticket()
+  change status:
+    set = "Ticket reset to WD-104"
+
 
 window "Workshop Desk" as main size 1080, 720:
+  # @locked
   shape rounded as desk_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 18 opacity 1 at 16, 12 size 1048, 76
   picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 28, 24 size 52, 52
   text "Workshop Desk" at 96, 20 size 280, 28
   text "{status}" at 96, 50 size 500, 24
-  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
+  text "{ticket_id} · quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
   text "Current Ready · IR 1.9 · runtime v1.10" at 620, 50 size 420, 22
+
+  # @locked
 
   shape rounded as ticket_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 100 size 1048, 248
   text "Ticket" at 32, 112 size 120, 24
@@ -71,6 +498,8 @@ window "Workshop Desk" as main size 1080, 720:
   text "Services" at 780, 220 size 90, 20
   listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 780, 244 size 260, 84
 
+  # @locked
+
   shape rounded as queue_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 360 size 640, 292
   text "Queue" at 32, 372 size 120, 22
   table "Ticket", "Customer", "Bench", "State" as board at 32, 402 size 608, 230:
@@ -78,6 +507,8 @@ window "Workshop Desk" as main size 1080, 720:
     row "WD-105", "Grace", "Bench B", "Quoted"
     row "WD-106", "Linus", "Bench A", "Ready"
     row "WD-107", "Margaret", "Overflow", "Waiting"
+
+  # @locked
 
   shape rounded as side_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 668, 360 size 396, 292
   text "Parts & tools" at 684, 372 size 180, 22
@@ -104,7 +535,7 @@ window "Workshop Desk" as main size 1080, 720:
   button "Components" as components_button at 864, 622 size 180, 28
 
   # @layout anchor left right bottom
-  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22
+  text "Seven-Form working app · queue, quote, customer and inventory state persist through explicit change; Components shows the Current Ready native subset." at 16, 660 size 1048, 22
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 692 size 1080, 28
 
@@ -131,9 +562,12 @@ window "Workshop settings" as settings size 720, 520:
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
 window "Job details" as details size 640, 560:
+  # @locked
   shape rounded as details_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 16 opacity 1 at 16, 12 size 608, 68
-  text "Job details" at 32, 22 size 240, 26
+  text "Job details · {ticket_id}" at 32, 22 size 300, 26
   text "{status}" at 32, 48 size 560, 22
+
+  # @locked
 
   shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
   text "Customer: {customer}" at 32, 108 size 270, 22
@@ -145,9 +579,13 @@ window "Job details" as details size 640, 560:
   text "State: {ticket_state}" at 330, 160 size 270, 22
   text "Current quote: {ticket_total}" at 330, 186 size 270, 22
 
+  # @locked
+
   shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
   text "Ticket canvas" at 32, 256 size 200, 20
   paintbox as ticket_canvas at 32, 282 size 264, 146
+
+  # @locked
 
   shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
   panel as runtime_panel at 340, 260 size 268, 168:
@@ -156,7 +594,7 @@ window "Job details" as details size 640, 560:
     text "Quote revision {quote_revision}"
     shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
 
-  button "Add inspection" as details_quote at 16, 460 size 180, 36
+  button "Recalculate quote" as details_quote at 16, 460 size 180, 36
   button "Mark ready" as details_ready at 208, 460 size 180, 36
   button "Close details" as close_details at 400, 460 size 180, 36
 
@@ -242,7 +680,7 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
     tab "Quality":
       text "Designer materializes one active Form while preserving source-backed shells."
       text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."
-      text "Diagnostic runs: {diagnostic_runs}"
+      text "Diagnostic runs: {diagnostic_runs} · runtime pulses: {diagnostic_ticks}"
     tab "Environment":
       text "Browser, Offline Studio and generated Web App share the same source."
       text "Native capability gates remain fail-closed for unsupported resources."
@@ -260,10 +698,13 @@ window "Workshop Diagnostics" as diagnostics size 840, 620:
   statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
 
 window "Component Gallery" as components size 900, 640:
+  # @locked
   shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 868, 64
   text "Component Gallery" at 32, 22 size 280, 26
   text "{gallery_status}" at 330, 22 size 530, 26
   text "Current Ready native subset" at 32, 48 size 360, 20
+
+  # @locked
 
   shape rounded as inputs_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 88 size 430, 292
   text "Inputs & choices" at 32, 100 size 220, 22
@@ -279,6 +720,8 @@ window "Component Gallery" as components size 900, 640:
   text "Features" at 236, 304 size 120, 16
   listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 236, 322 size 190, 44
 
+  # @locked
+
   shape rounded as graphics_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 458, 88 size 426, 292
   text "Graphics & containers" at 474, 100 size 280, 22
   picture as gallery_picture from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Gallery picture" at 474, 132 size 64, 64
@@ -290,6 +733,8 @@ window "Component Gallery" as components size 900, 640:
 
   imagelist as gallery_images size 20, 20:
     image mark from "patch-resource:workshop.mark"
+
+  # @locked
 
   shape rounded as data_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 392 size 868, 158
   text "Data controls" at 32, 404 size 180, 22
@@ -326,64 +771,78 @@ window "Component Gallery" as components size 900, 640:
 when customer changed:
   change customer:
     set = value
+  do load_customer_profile()
+  do persist_ticket()
   change status:
-    set = "Customer changed"
-  change customer_status:
-    set = "Selected customer changed"
+    set = "Loaded customer profile for " + customer
 
 when item changed:
   change item:
     set = value
+  do calculate_quote()
+  do persist_ticket()
   change status:
-    set = "Item description updated"
+    set = "Item updated · estimate " + ticket_total
 
 when pay changed:
   change pay:
     set = value
+  do persist_ticket()
   change status:
     set = "Payment method changed"
 
 when priority changed:
   change priority:
     set = value
+  do calculate_quote()
+  do persist_ticket()
   change status:
-    set = "Priority changed"
+    set = "Priority changed · estimate " + ticket_total
 
 when rush changed:
   change rush:
     set = value
+  do calculate_quote()
+  do persist_ticket()
   change status:
-    set = "Rush bench preference changed"
+    set = "Rush preference changed · estimate " + ticket_total
 
 when qty changed:
   change qty:
     set = value
+  do calculate_quote()
+  do persist_ticket()
   change status:
-    set = "Quantity changed"
+    set = "Quantity changed · estimate " + ticket_total
 
 when notes changed:
   change notes:
     set = value
+  do persist_ticket()
   change status:
-    set = "Notes updated"
+    set = "Ticket notes updated"
 
 when services changed:
   change services:
     set = value
+  do calculate_quote()
+  do persist_ticket()
   change status:
-    set = "Services updated"
+    set = "Services changed · estimate " + ticket_total
 
 when board changed:
+  do load_ticket(value)
   change status:
-    set = "Queue selection changed · open Details to continue"
+    set = "Loaded " + ticket_id + " from queue · estimate " + ticket_total
 
 when parts changed:
+  do select_part(value)
   change status:
-    set = "Parts selection changed · open Inventory to continue"
+    set = "Working item changed to " + item + " · Inventory is ready"
 
 when workshop_logo clicked:
   change status:
-    set = "Workshop mark clicked"
+    set = "Workshop Desk project mark · source-backed UI"
 
 when workshop_clock ticked:
   change heartbeat:
@@ -393,44 +852,31 @@ when ticket_canvas paint:
   draw clear #f8fafc
   draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
   draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
-  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
   if rush:
     draw line 12, 58 to 258, 58 stroke #dc2626 width 3
-  draw text "Live quote" at 12, 78 color #111827 size 16
+  draw text ticket_id at 12, 78 color #111827 size 16
   draw text ticket_state at 126, 78 color #334155 size 16
 
 when quote_button clicked:
-  change ticket_total:
-    add 25
-    add 15
-  change quote_revision:
-    add 1
-  change ticket_state:
-    set = "Quoted"
-  change status:
-    set = "Base rate and inspection added"
+  do quote_ticket()
 
 when details_quote clicked:
-  change ticket_total:
-    add 15
-  change quote_revision:
-    add 1
-  change ticket_state:
-    set = "Quoted"
-  change status:
-    set = "Inspection fee added to quote"
+  do quote_ticket()
 
 when complete_button clicked:
   change ticket_state:
     set = "Ready"
+  do persist_ticket()
   change status:
-    set = "Ticket marked ready"
+    set = ticket_id + " marked ready"
 
 when details_ready clicked:
   change ticket_state:
     set = "Ready"
+  do persist_ticket()
   change status:
-    set = "Ticket marked ready"
+    set = ticket_id + " marked ready"
 
 when settings_button clicked:
   open settings
@@ -441,17 +887,17 @@ when details_button clicked:
 when inventory_button clicked:
   open inventory
   change inventory_status:
-    set = "Inventory opened from Workshop Desk"
+    set = "Inventory opened for " + item
 
 when customer_button clicked:
   open customer_profile
   change customer_status:
-    set = "Customer profile opened from Workshop Desk"
+    set = "Customer profile opened for " + customer
 
 when diagnostics_button clicked:
   open diagnostics
   change diagnostic_status:
-    set = "Diagnostics opened from Workshop Desk"
+    set = "Diagnostics opened · last completed runs " + diagnostic_runs
 
 when components_button clicked:
   open components
@@ -482,8 +928,9 @@ when default_bench changed:
     set = value
   change ticket_bench:
     set = value
+  do persist_ticket()
   change status:
-    set = "Default bench changed"
+    set = "Default bench changed to " + ticket_bench
 
 when stations changed:
   change stations:
@@ -513,27 +960,24 @@ when inventory_zone changed:
   change inventory_zone:
     set = value
   change inventory_status:
-    set = "Inventory zone changed"
+    set = "Inventory zone changed to " + inventory_zone
 
 when reorder_qty changed:
   change reorder_qty:
     set = value
   change inventory_status:
-    set = "Reorder quantity changed"
+    set = "Reorder quantity changed to " + reorder_qty
 
 when inventory_grid changed:
   change inventory_status:
-    set = "Inventory row selected"
+    set = "Inventory row selected · prepare reorder uses current item " + item
 
 when inventory_tree changed:
   change inventory_status:
     set = "Inventory tree selection changed"
 
 when reorder_button clicked:
-  change inventory_status:
-    set = "Reorder prepared"
-  change status:
-    set = "Inventory reorder prepared"
+  do prepare_reorder()
 
 when inventory_details clicked:
   open details
@@ -580,10 +1024,7 @@ when customer_jobs changed:
     set = "Customer job row selected"
 
 when customer_save clicked:
-  change customer_status:
-    set = "Customer profile saved"
-  change status:
-    set = "Customer profile saved"
+  do save_customer()
 
 when customer_job clicked:
   open details
@@ -599,7 +1040,7 @@ when diagnostic_mode changed:
   change diagnostic_mode:
     set = value
   change diagnostic_status:
-    set = "Diagnostic mode changed"
+    set = "Diagnostic mode changed to " + diagnostic_mode
 
 when trace_enabled changed:
   change trace_enabled:
@@ -620,13 +1061,17 @@ when diagnostic_checks changed:
 when diagnostic_run clicked:
   change diagnostic_runs:
     add 1
-  change diagnostic_status:
-    set = "Diagnostic checks completed"
+  if trace_enabled:
+    change diagnostic_status:
+      set = "Trace checks passed in " + diagnostic_mode + " mode · run " + diagnostic_runs
+  else:
+    change diagnostic_status:
+      set = "Runtime checks passed in " + diagnostic_mode + " mode · run " + diagnostic_runs
   change status:
     set = "Diagnostics completed"
 
 when diagnostics_clock ticked:
-  change diagnostic_runs:
+  change diagnostic_ticks:
     add 1
 
 when diagnostic_settings clicked:
@@ -701,7 +1146,7 @@ when gallery_refresh clicked:
   change gallery_ticks:
     add 1
   change gallery_status:
-    set = "Gallery refreshed"
+    set = "Gallery refreshed · pulse " + gallery_ticks
 
 when close_components clicked:
   close components
@@ -709,77 +1154,4 @@ when close_components clicked:
     set = "Component Gallery closed"
 
 when reset_button clicked:
-  change customer:
-    set = "Ada"
-  change item:
-    set = "Keyboard"
-  change qty:
-    set = 1
-  change rush:
-    set = false
-  change priority:
-    set = "Normal"
-  change pay:
-    set = "Card"
-  change notes:
-    set = ""
-  change services:
-    set = ["Diagnostics"]
-  change heartbeat:
-    set = 0
-  change ticket_total:
-    set = 40
-  change quote_revision:
-    set = 0
-  change ticket_bench:
-    set = "Bench A"
-  change ticket_state:
-    set = "Open"
-  change inventory_filter:
-    set = "All stock"
-  change inventory_zone:
-    set = "Main store"
-  change reorder_qty:
-    set = 5
-  change inventory_status:
-    set = "Inventory synchronized"
-  change customer_email:
-    set = "ada@example.com"
-  change customer_tier:
-    set = "Gold"
-  change customer_marketing:
-    set = true
-  change customer_channels:
-    set = ["Email"]
-  change customer_note:
-    set = "Priority account"
-  change customer_status:
-    set = "Customer profile ready"
-  change diagnostic_mode:
-    set = "Runtime"
-  change trace_enabled:
-    set = true
-  change diagnostic_interval:
-    set = 5
-  change diagnostic_runs:
-    set = 0
-  change diagnostic_status:
-    set = "All systems ready"
-  change gallery_text:
-    set = "Workshop sample"
-  change gallery_enabled:
-    set = true
-  change gallery_mode:
-    set = "Ready"
-  change gallery_color:
-    set = "Blue"
-  change gallery_features:
-    set = ["Designer"]
-  change gallery_level:
-    set = 60
-  change gallery_status:
-    set = "Component gallery ready"
-  change gallery_ticks:
-    set = 0
-  change status:
-    set = "Ticket reset"
+  do reset_workshop()
