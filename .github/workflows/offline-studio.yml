@@ -317,37 +317,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x64 build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-Windows-X64
           path: release/windows-x64
       - name: Download Windows ARM64 build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-Windows-ARM64
           path: release/windows-arm64
       - name: Download macOS Apple Silicon build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-macOS-ARM64
           path: release/macos-arm64
       - name: Download macOS Intel runtime kit
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-macOS-X64
           path: release/macos-x64
       - name: Download Linux x64 build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-Linux-X64
           path: release/linux-x64
       - name: Download Linux ARM64 build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-Linux-ARM64
           path: release/linux-arm64
       - name: Download portable compatibility build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-portable-node18
           path: release/portable
@@ -413,7 +413,7 @@ jobs:
       contents: write
     steps:
       - name: Download verified release bundle
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: patch-offline-studio-release-bundle
           path: release
