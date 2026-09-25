@@ -30,7 +30,7 @@ test('Workshop Desk is a synchronized multi-file Project-v4 fixture', () => {
   assert.equal(bundle.project.kind, 'window');
   assert.equal(bundle.project.entry, 'main.patch');
   assert.equal(bundle.project.build.target, 'web');
-  assert.deepEqual(bundle.files.map(file => file.path), ['main.patch', 'forms.patch', 'logic.patch']);
+  assert.deepEqual(bundle.files.map(file => file.path), ['main.patch', 'model.patch', 'logic.patch']);
   assert.deepEqual(bundle.resources.map(resource => resource.id), ['workshop.mark']);
 
   for (const file of bundle.files) {
