@@ -34,7 +34,7 @@ on:
         options: [unsigned, require]
         default: unsigned
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - .github/workflows/native-distribution.yml
       - src/native-current-contract.js
