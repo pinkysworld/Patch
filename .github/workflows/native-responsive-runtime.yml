@@ -2,7 +2,7 @@ name: Patch Native Responsive Runtime
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - .github/workflows/native-responsive-runtime.yml
       - native-runtime/sealed-responsive-v09.hpp
