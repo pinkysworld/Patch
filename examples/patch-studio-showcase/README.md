@@ -2,16 +2,17 @@
 
 `patch-studio-showcase.patchproject` is the canonical acceptance project for the **complete current Patch Studio authoring surface** and is also expected to look like a finished RAD demo rather than a raw control test sheet.
 
-It complements, rather than replaces, `examples/workshop-desk.patch`:
+It complements, rather than replaces, the Workshop fixtures:
 
-- **Workshop Desk** is the compact Current Ready desktop/native acceptance application. It must stay buildable on the promoted Windows/macOS/Linux native line.
-- **Patch Studio Showcase** is the complete Studio project. It intentionally includes Studio/Web-only controls and cross-target functionality even when no single export target currently supports every feature at once.
+- **Workshop Desk** (`examples/workshop-desk.patchproject`) is the working Project-v4 Studio/Web application. Its controls support one coherent ticket, customer, inventory and diagnostics workflow.
+- **Workshop Desk native** (`examples/workshop-desk-native.patch`) is the separate Current Ready desktop acceptance fixture and stays within Native GUI IR 1.9 / payload v19 / runtime v1.10.
+- **Patch Studio Showcase** is the exhaustive Studio feature project. Its declared Web target is executable and covers the complete current Studio/Web authoring surface.
 
 ## Visual structure
 
 The Showcase uses six Forms with a consistent card/dashboard layout:
 
-- **Patch Studio Showcase** is the primary workspace and a running review desk. Save profile stores the account on a Thing through `save_profile`. `score_review` takes a ranged bonus, repeats to fold `count`, and branches on the experience level. `reset_showcase` restores the demo. The same Form still groups account inputs, preferences, secondary details and project actions. The hero shows the saved Thing beside the draft name.
+- **Patch Studio Showcase** is the primary reviewer workspace. Save profile stores the reviewer state on a Thing through `save_profile` and branches only where the workflow needs it. `reset_showcase` restores the acceptance fixture. The same Form groups input presentations, preferences, Project-v4 details and navigation into the feature labs without artificial scoring.
 - **Component Gallery** separates data/component contracts, graphics, project resources and the container demonstration. The same Panel combines GroupBox Stage 1 with ScrollBox Stage 1 and places one Panel Stage-2 child below the visible viewport so real scrolling is exercised without adding another loose demo card.
 - **Dialog Lab** isolates result-bearing dialog workflows and makes the transient-result versus explicit-`change` boundary visible.
 - **Split Lab** isolates SplitContainer Stage 1 as a two-pane source-backed Panel with a real pointer/keyboard divider, keeping the initial ratio in source and runtime divider movement transient.
@@ -49,7 +50,7 @@ The Showcase is a project-v4 multi-file bundle with a real project PNG resource 
 
 ## Target boundary
 
-The project is primarily a **Studio Run acceptance project**, not a promise that every feature can be exported to one target today.
+The project is a **Studio Run and Standalone Web acceptance project**. Its configured Web target must build from the complete Project-v4 source without test-only feature stripping.
 
 Current important boundaries include:
 
@@ -58,10 +59,10 @@ Current important boundaries include:
 - GroupBox changes Panel presentation only. Its children remain ordinary Panel children and persistent application state still changes only through explicit `change`.
 - ScrollBox changes only Panel viewport behavior. Its scroll offset is transient UI state, emits no Patch event and is not persistent application state.
 - SplitContainer Stage 1 keeps orientation, pane boundary and initial ratio visible in source. Runtime divider movement is bounded transient UI state, emits no Patch event and does not mutate application state.
-- Standalone Window Web does not yet claim the complete Menu/Dialog runtime contract. In particular decorated menus with separators, shortcuts and enabled/checked bindings fail closed.
-- Current Ready native remains the right export target for the promoted native control subset, and Workshop Desk is the canonical buildable acceptance app for that path.
+- Standalone Window Web v0.10 renders source-backed menus, separators, portable shortcuts, enabled/checked bindings, informational dialogs, confirmation results and browser file-result dialogs. Result values remain transient until an explicit Patch `change` stores them.
+- Current Ready native remains a separate, narrower target boundary. The dedicated `workshop-desk-native.patch` fixture owns that acceptance path rather than forcing the richer Workshop or Showcase to pretend they are native-compatible.
 
-CI checks both sides: the full Showcase must compile and retain all current Studio features, while target-specific slices must build only where the target contract actually supports them.
+CI requires the complete Showcase to compile and build its declared Web target while retaining all current Studio features.
 
 ## Maintenance rule
 
@@ -69,6 +70,6 @@ CI checks both sides: the full Showcase must compile and retain all current Stud
 
 CI deliberately enforces this for the Component Registry and for the current presentation contracts. If a new registered control is added without representation here, `tests/studio-showcase.test.js` fails. A Component Registry version bump also requires updating the visible registry marker in the Showcase.
 
-Keep the primary dashboard readable: preserve the header, Account & input card, Preferences & state card, Details & semantics region, Quick actions Panel and dedicated supporting Forms. A technically valid but visually crowded control dump is considered a regression of the Showcase fixture.
+Keep the primary dashboard readable: preserve the header, Reviewer & input modes card, Review preferences card, Project & semantics region, Quick actions Panel and dedicated supporting Forms. A technically valid but visually crowded control dump is considered a regression of the Showcase fixture.
 
 When a target gains support for a feature that currently fails closed, update the Showcase target-boundary tests and this document rather than keeping obsolete exceptions.
