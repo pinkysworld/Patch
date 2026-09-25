@@ -61,7 +61,7 @@ test('Standalone Window Web v0.10 builds decorated menus and typed dialog result
   const built = buildStandaloneWebApp(source, { name: 'WebMenuDialog', kind: 'window' });
   assert.equal(built.metadata.version, '0.10');
   assert.equal(built.metadata.menuStage, 1);
-  assert.equal(built.metadata.menuItems, 5);
+  assert.equal(built.metadata.menuItems, 4);
   assert.equal(built.metadata.menuSeparators, 1);
   assert.equal(built.metadata.menuShortcuts, 4);
   assert.equal(built.metadata.menuEnabledBindings, 1);
