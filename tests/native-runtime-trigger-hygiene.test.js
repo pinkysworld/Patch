@@ -22,6 +22,15 @@ const retiredManualWorkflows = [
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
 const formal = fs.readFileSync('.github/workflows/formal.yml', 'utf8');
+const developmentWorkflows = new Map([
+  ['Patch CI', fs.readFileSync('.github/workflows/ci.yml', 'utf8')],
+  ['Offline Studio', fs.readFileSync('.github/workflows/offline-studio.yml', 'utf8')],
+  ['Native GUI Unified', fs.readFileSync('.github/workflows/native-gui-unified.yml', 'utf8')],
+  ['Runtime Templates', fs.readFileSync('.github/workflows/runtime-templates.yml', 'utf8')],
+  ['Offline Compiler', fs.readFileSync('.github/workflows/offline-compiler.yml', 'utf8')],
+  ['Reproducibility Bundle', fs.readFileSync('.github/workflows/reproducibility-bundle.yml', 'utf8')]
+]);
+const codeql = fs.readFileSync('.github/workflows/codeql.yml', 'utf8');
 
 test('native runtime workflows do not rebuild for site-only build plumbing', () => {
   for (const [platform, workflow] of workflows) {
@@ -43,10 +52,25 @@ test('macOS native runtime is not coupled to the Pages workflow itself', () => {
   assert.equal(workflows.get('macos').includes('.github/workflows/pages.yml'), false);
 });
 
-test('each native runtime still self-triggers when its workflow changes', () => {
-  assert.match(workflows.get('win32'), /\.github\/workflows\/native-win32-runtime\.yml/);
-  assert.match(workflows.get('linux'), /\.github\/workflows\/native-linux-runtime\.yml/);
-  assert.match(workflows.get('macos'), /\.github\/workflows\/native-macos-runtime\.yml/);
+test('historical v0.8 runtime workflows are manual-only audits', () => {
+  for (const [platform, workflow] of workflows) {
+    assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/m, platform);
+    assert.doesNotMatch(workflow, /\n\s*(?:push|pull_request):/, platform);
+  }
+});
+
+test('development PR updates do not restart the expensive workflow fleet', () => {
+  for (const [name, workflow] of developmentWorkflows) {
+    assert.doesNotMatch(workflow, /types:\s*\[[^\]]*synchronize[^\]]*\]/, name);
+    assert.match(workflow, /workflow_dispatch:/, `${name} keeps an explicit manual validation path`);
+  }
+});
+
+test('CodeQL is integration/scheduled/manual rather than per-PR synchronization', () => {
+  assert.doesNotMatch(codeql, /\n\s*pull_request:/);
+  assert.match(codeql, /push:\s*\n\s*branches:\s*\[main\]/);
+  assert.match(codeql, /schedule:/);
+  assert.match(codeql, /workflow_dispatch:/);
 });
 
 test('frozen direct-native compatibility workflows are manual-only', () => {
