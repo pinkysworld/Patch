@@ -782,11 +782,11 @@ window "Studio Feature Lab" as components size 980, 700:
         row "TreeView", "path list", "Studio/Web"
         row "Table", "advanced columns", "Studio/Web"
       tree as gallery_tree:
-        node "Component Registry 0.10" image gallery_images.mark hint "Feature Lab root" state info
-          node "Inputs" image gallery_images.mark hint "Input presentations" state success
-            node "Memo" image gallery_images.mark hint "Multiline text" state muted
-          node "Data" image gallery_images.mark hint "Structured controls" state warning
-            node "TreeView" image gallery_images.mark hint "Node metadata" state success
+        node "Component Registry 0.10" hint "Feature Lab root" state info
+          node "Inputs" hint "Input presentations" state success
+            node "Memo" hint "Multiline text" state muted
+          node "Data" hint "Structured controls" state warning
+            node "TreeView" hint "Node metadata" state success
     tab "Containers":
       text "GroupBox, ScrollBox and SplitContainer are shown below the tabs because container controls stay top-level in Tabs Stage 1."
       button "Focus container demos" as gallery_container_focus
