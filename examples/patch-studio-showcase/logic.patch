@@ -311,6 +311,33 @@ when close_calendar_lab clicked:
   change status:
     set = "Returned from Calendar Lab"
 
+when menu_tree clicked:
+  open tree_lab
+  change tree_status:
+    set = "Tree Lab opened from menu"
+
+when gallery_tree_lab clicked:
+  open tree_lab
+  change tree_status:
+    set = "Tree Lab opened from Component Gallery"
+
+when outline_tree changed:
+  change tree_path:
+    set = value
+  change tree_status:
+    set = "Tree path stored"
+
+when tree_gallery clicked:
+  open components
+  close tree_lab
+  change gallery_status:
+    set = "Returned from Tree Lab"
+
+when close_tree_lab clicked:
+  close tree_lab
+  change status:
+    set = "Returned from Tree Lab"
+
 when scroll_position changed:
   change scroll_position:
     set = value

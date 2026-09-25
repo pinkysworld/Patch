@@ -74,7 +74,7 @@ when add_button clicked:
       <section class="handbook-card"><h3>3. Object Inspector</h3><p>Edit source-backed properties, layout, events and structural data. Unsupported operations fail closed instead of silently writing hidden state.</p></section>
       <section class="handbook-card"><h3>4. Source remains primary</h3><p>Undo/redo, duplication, z-order, layout, Form operations and structural editors all resolve back to Patch source rather than a second persistent form model.</p></section>
     </div>
-    <p class="handbook-note">For a complete six-Form stress example, load <strong>Workshop Desk</strong> from Patch Studio or inspect the repository example.</p>
+    <p class="handbook-note">For a complete seven-Form stress example, load <strong>Workshop Desk</strong> from Patch Studio or inspect the repository example.</p>
     <div class="actions"><a href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch">Open Workshop Desk</a></div>
   </article>
 
@@ -134,8 +134,8 @@ patch build app.patch --target web
 patch doctor --json</pre>
     <div class="handbook-grid">
       <section class="handbook-card"><h3>Web</h3><p>Patch can build standalone Console and Window Web applications for supported source.</p></section>
-      <section class="handbook-card"><h3>Desktop</h3><p>The current native Ready line is Native GUI IR 1.7, payload v17 and runtime v1.8. Target support remains component-specific and fail-closed.</p></section>
-      <section class="handbook-card"><h3>Offline Studio</h3><p>Stage 1 supports offline authoring, Designer/Object Inspector and Run. Host-native Build inside the IDE is still the Stage 2 gap; the separate offline compiler remains the current local native linking path.</p></section>
+      <section class="handbook-card"><h3>Desktop</h3><p>The current native Ready line is Native GUI IR 1.9 / payload v19 / runtime v1.10. Button ImageList images and application/Form icons are Current Ready on Windows, macOS and Linux. PNG/JPEG Picture, Shape and PaintBox, including draw image, are Current Ready. WebP/SVG stay deferred under <code>native-picture-formats/1.0</code>. Studio/Web-only controls stay fail-closed on that line. Payload v17/runtime v1.8 is an explicit Offline Compiler compatibility underlay, not the default.</p></section>
+      <section class="handbook-card"><h3>Offline Studio</h3><p>Stage 1 supports offline authoring, Designer/Object Inspector and Run on every published distribution. Stage 2 R0.2 host-native Window Build inside the IDE is available for Windows x64, macOS Apple Silicon and Linux x64. Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1 for installed native Build.</p></section>
     </div>
     <div class="actions"><a href="./downloads.html">Downloads and build choices</a><a href="./docs.html#build-guide">Build reference</a></div>
   </article>

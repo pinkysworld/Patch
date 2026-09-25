@@ -98,6 +98,7 @@ window "Component Gallery" as components size 1080, 760:
     slider 0..100 as scroll_position step 5 at 18, 368 size 312, 28
     # @button-mode link
     button "LinkLabel action" as gallery_link at 18, 318 size 180, 34
+    button "Tree Lab" as gallery_tree_lab at 18, 410 size 150, 40
 
   button "Close Gallery" as close_gallery at 24, 690 size 180, 40
   statusbar "{gallery_status}" as gallery_statusbar at 0, 732 size 1080, 28
@@ -168,3 +169,29 @@ window "Calendar Lab" as calendar_lab size 760, 620:
   button "Back to Gallery" as calendar_gallery at 44, 536 size 180, 40
   button "Close Calendar Lab" as close_calendar_lab at 240, 536 size 190, 40
   statusbar "{calendar_status}" as calendar_statusbar at 0, 592 size 760, 28
+
+window "Tree Lab" as tree_lab size 820, 560:
+  # @locked
+  shape rounded as tree_header fill #eff6ff stroke #bfdbfe stroke-width 1 radius 20 opacity 1 at 24, 18 size 772, 84
+  text "Tree Lab" at 44, 36 size 280, 32
+  text "Node images, hints and tones stay on the node. The selected path is stored only by change." at 44, 68 size 540, 22
+  text "{tree_status}" at 594, 42 size 180, 38
+
+  # @locked
+  shape rounded as tree_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 18 opacity 1 at 24, 124 size 772, 312
+  imagelist as tree_icons size 16, 16:
+    image folder from "patch-resource:showcase.logo"
+    image file from "patch-resource:showcase.logo"
+  tree as outline_tree at 44, 148 size 392, 264:
+    node "Workspace" image tree_icons.folder hint "Project root" state info
+      node "src" image tree_icons.folder hint "Source folder" state success
+        node "parser.js" image tree_icons.file hint "Parser implementation" state warning
+      node "docs" image tree_icons.folder hint "Documentation" state muted
+        node "notes.md" image tree_icons.file hint "Release notes" state danger
+  text "Selected path" at 456, 160 size 300, 22
+  text "{tree_path}" at 456, 190 size 312, 72
+  text "Choosing a node emits the root-to-node path. The handler persists that list with change." at 456, 276 size 312, 64
+
+  button "Back to Gallery" as tree_gallery at 44, 466 size 180, 40
+  button "Close Tree Lab" as close_tree_lab at 240, 466 size 180, 40
+  statusbar "{tree_status}" as tree_statusbar at 0, 532 size 820, 28

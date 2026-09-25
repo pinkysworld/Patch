@@ -27,7 +27,13 @@ test('core control DOM identity is fingerprinted and specialized control drift f
 });
 
 test('control reconciliation validates the stable top-level key sequence before mutation', () => {
-  assert.match(renderer, /const rendered = \[\.\.\.body\.children\]\.filter\(child => child\.dataset\.patchControlKey\)/);
+  const table = fs.readFileSync('web/table-stage1.js', 'utf8');
+  assert.match(renderer, /const rendered = \[\.\.\.body\.children\]\.filter\(isRuntimeCoreReconcileChild\)/);
+  assert.match(renderer, /isRuntimeCoreReconcileChild/);
+  assert.match(table, /function isRuntimeCoreReconcileChild\(child\)/);
+  assert.match(table, /patchRuntimeSelectionKind === 'table'/);
+  assert.match(table, /patch-table-stage1-control/);
   assert.match(renderer, /if \(rendered\.length !== expected\.length\) return null/);
   assert.match(renderer, /rendered\[index\]\.dataset\.patchControlKey !== expected\[index\]\.key/);
+  assert.match(renderer, /existingElement\.replaceWith\(nextElement\)/);
 });

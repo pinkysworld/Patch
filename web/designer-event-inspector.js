@@ -220,7 +220,7 @@ function renderEventsPanel() {
   if (!panel) return;
   const control = selectedControl();
   if (!control) {
-    panel.innerHTML = '<p class="designer-events-empty"><strong>No object selected.</strong><br>Select a named control to inspect its Patch events.</p>';
+    panel.innerHTML = '<p class="designer-events-empty">Select a named control to inspect its Patch events.</p>';
     return;
   }
   const spec = designerEventSpec(control.type);

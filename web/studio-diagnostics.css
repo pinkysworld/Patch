@@ -10,13 +10,23 @@
 }
 
 #diagnosticsState {
-  max-width: 220px;
-  overflow: hidden;
+  max-width: min(100%, 420px);
+  overflow: visible;
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.result-pane pre,
+#output,
+#changes,
+#ir {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .diagnostics-copy-fallback {

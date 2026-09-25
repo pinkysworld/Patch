@@ -32,13 +32,21 @@ export function buildStandaloneWebApp(source, options = {}) {
   return buildStandaloneConsoleWebApp(source, { ...options, name, kind: 'console', entry });
 }
 
+export function resolveStandaloneListboxSelection(cachedModel, cachedSelected, modelValue) {
+  const model = Array.isArray(modelValue) ? modelValue.map(item => String(item)) : [];
+  const previous = Array.isArray(cachedModel) ? cachedModel.map(item => String(item)) : null;
+  const unchanged = !!previous && previous.length === model.length && previous.every((item, index) => item === model[index]);
+  const selected = unchanged && Array.isArray(cachedSelected) ? cachedSelected.map(item => String(item)) : [...model];
+  return { model: [...model], selected };
+}
+
 function addWindowListboxMultiselect(built) {
   if (!hasListBackedListbox(built.compiled?.ast ?? [])) return built;
   let html = built.html;
 
   const selectionNeedle = 'const tabSelections=new Map();';
   if (!html.includes(selectionNeedle)) throw new Error('Standalone Window ListBox selection hook is unavailable.');
-  html = html.replace(selectionNeedle, `${selectionNeedle}\nconst listboxSelections=new Map();`);
+  html = html.replace(selectionNeedle, `${selectionNeedle}\nconst listboxSelections=new Map();\nconst listboxSelectionModels=new Map();\n${resolveStandaloneListboxSelection.toString()}`);
 
   const validationNeedle = "if((type==='combo'||type==='listbox')&&typeof payload.value!=='string')throw new PatchAppError(\"The 'changed' action for \"+type+\" '\"+control+\"' needs a text event-local value.\");";
   const validationReplacement = "if(type==='combo'&&typeof payload.value!=='string')throw new PatchAppError(\"The 'changed' action for combo '\"+control+\"' needs a text event-local value.\");if(type==='listbox'){const current=state.get(control);if(Array.isArray(current)){if(!Array.isArray(payload.value)||!payload.value.every(item=>typeof item==='string'))throw new PatchAppError(\"The 'changed' action for listbox '\"+control+\"' needs a text-list event-local value because it is list state.\");}else if(typeof payload.value!=='string')throw new PatchAppError(\"The 'changed' action for listbox '\"+control+\"' needs a text event-local value.\");}";
@@ -46,7 +54,7 @@ function addWindowListboxMultiselect(built) {
   html = html.replace(validationNeedle, validationReplacement);
 
   const renderNeedle = "if(control.type==='combo'||control.type==='listbox'){const el=document.createElement('select');if(control.type==='listbox')el.size=Math.min(8,Math.max(2,(control.options??[]).length));for(const option of control.options??[]){const item=document.createElement('option');item.value=option;item.textContent=option;el.appendChild(item);}el.value=String(control.value??'');el.addEventListener('change',()=>safeTrigger(control.id,'changed',{value:el.value}));return el;}";
-  const renderReplacement = "if(control.type==='combo'||control.type==='listbox'){const el=document.createElement('select');const multi=control.type==='listbox'&&Array.isArray(control.value);const key=windowId+':'+(control.id||controlIndex);let selected=[];if(control.type==='listbox'){el.size=Math.min(8,Math.max(2,(control.options??[]).length));if(multi){el.multiple=true;el.setAttribute('aria-multiselectable','true');selected=listboxSelections.has(key)?listboxSelections.get(key):[...control.value];if(!listboxSelections.has(key))listboxSelections.set(key,[...selected]);}}for(const option of control.options??[]){const item=document.createElement('option');item.value=option;item.textContent=option;if(multi)item.selected=selected.includes(option);el.appendChild(item);}if(!multi)el.value=String(control.value??'');el.addEventListener('change',()=>{const value=multi?[...el.selectedOptions].map(item=>item.value):el.value;if(multi)listboxSelections.set(key,[...value]);safeTrigger(control.id,'changed',{value});});return el;}";
+  const renderReplacement = "if(control.type==='combo'||control.type==='listbox'){const el=document.createElement('select');const multi=control.type==='listbox'&&Array.isArray(control.value);const key=windowId+':'+(control.id||controlIndex);let selected=[];if(control.type==='listbox'){el.size=Math.min(8,Math.max(2,(control.options??[]).length));if(multi){el.multiple=true;el.setAttribute('aria-multiselectable','true');const choice=resolveStandaloneListboxSelection(listboxSelectionModels.get(key),listboxSelections.get(key),control.value);selected=choice.selected;listboxSelections.set(key,[...selected]);listboxSelectionModels.set(key,[...choice.model]);}}for(const option of control.options??[]){const item=document.createElement('option');item.value=option;item.textContent=option;if(multi)item.selected=selected.includes(option);el.appendChild(item);}if(!multi)el.value=String(control.value??'');el.addEventListener('change',()=>{const value=multi?[...el.selectedOptions].map(item=>item.value):el.value;if(multi)listboxSelections.set(key,[...value]);safeTrigger(control.id,'changed',{value});});return el;}";
   if (!html.includes(renderNeedle)) throw new Error('Standalone Window ListBox renderer hook is unavailable.');
   html = html.replace(renderNeedle, renderReplacement);
 

@@ -23,6 +23,8 @@ create text calendar_status = "Calendar ready"
 create text gallery_status = "Component Gallery ready"
 create text dialog_status = "Dialogs ready"
 create text split_status = "SplitContainer ready"
+create list tree_path = ["Workspace"]
+create text tree_status = "Tree Lab ready"
 
 window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showcase.logo":
   menu "File":
@@ -33,6 +35,7 @@ window "Patch Studio Showcase" as main size 1180, 820 icon "patch-resource:showc
   menu "View":
     item "Component Gallery" as menu_gallery
     item "Dialog Lab" as menu_dialogs
+    item "Tree Lab" as menu_tree
   menu "Help":
     item "About Showcase" as menu_about shortcut "F1"
 

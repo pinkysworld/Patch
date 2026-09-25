@@ -9,6 +9,9 @@ test('public Studio and offline PWA package Button ImageList consumer modules', 
   const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const worker = fs.readFileSync('web/sw.js', 'utf8');
+  const buttonImage = fs.readFileSync('src/button-image.js', 'utf8');
+  assert.match(buttonImage, /This is the pre-v18 compatibility reject/);
+  assert.doesNotMatch(buttonImage, /until a versioned native contract transports them/);
   assert.match(parser, /from '\.\/button-image\.js'/);
   assert.match(designer, /from '\.\/button-image\.js'/);
   assert.match(toolbox, /installButtonImageInspector/);

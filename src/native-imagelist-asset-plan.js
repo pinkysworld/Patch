@@ -19,11 +19,12 @@ export class NativeImageListAssetPlanError extends Error {
 /**
  * Prepare the resource payload needed by native Button ImageList consumers.
  *
- * This is intentionally a pretransport contract. It resolves and validates the
- * exact PNG/JPEG resources that a future Native GUI IR/runtime line must carry,
- * but it does not widen current Native GUI IR 1.7 support. Current desktop
- * lowering must continue to fail closed until Win32/AppKit/GTK consume this
- * plan through a versioned IR/runtime contract.
+ * This remains the pretransport planner `native-imagelist-asset-plan/0.1`.
+ * It does not itself widen a native contract, and its `nativeGuiReady: false`
+ * flag marks that planner role only. Current Ready is Native GUI IR 1.9 /
+ * payload v19 / runtime v1.10, which already transports Button ImageList images
+ * on Windows, macOS and Linux. Desktop lowering on that line must not fail
+ * closed for those bindings. Lines before IR 1.8 still fail closed.
  */
 export function planNativeImageListAssets(windowNode, resources = []) {
   if (!windowNode || windowNode.kind !== 'window' || !Array.isArray(windowNode.body)) {

@@ -1,5 +1,5 @@
 import { buildFrozenNativeGuiIR, flattenFrozenNativeGuiControls } from './native-frozen-contract.js';
-import { buildCurrentNativeGuiIR, flattenCurrentNativeGuiControls } from './native-current-contract.js';
+import { assertCurrentNativeStudioOnlyMetadata, buildCurrentNativeGuiIR, flattenCurrentNativeGuiControls } from './native-current-contract.js';
 
 const RETIRED_PLAN_OPTIONS = ['tableV09', 'menuV10', 'menuV11', 'listV12'];
 
@@ -10,6 +10,7 @@ export function buildNativeGuiPlan(compiled, options = {}) {
       throw new Error(`Retired native contract option '${key}' is not a product build plan. Use current (Slider) or frozen (TreeView).`);
     }
   }
+  assertCurrentNativeStudioOnlyMetadata(compiled);
   const features = inspectNativeGuiFeatures(compiled?.ast);
   const forceSlider = Boolean(options.sliderV14);
   const forceChrome = Boolean(options.chromeV15);

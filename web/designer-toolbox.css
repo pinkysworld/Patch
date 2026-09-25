@@ -12,8 +12,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 5px;
-  min-height: 26px;
-  padding: 2px 5px;
+  min-height: 32px;
+  padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: var(--surface-subtle);
@@ -30,8 +30,8 @@
 .designer-add-control-picker select {
   width: 100%;
   min-width: 0;
-  height: 24px;
-  min-height: 24px;
+  height: 32px;
+  min-height: 32px;
   padding: 2px 6px;
   border-radius: 5px;
   font-size: 10px;
@@ -195,8 +195,8 @@
   #designer .designer-toolbar > button[id^="add"] {
     width: 32px;
     min-width: 32px;
-    height: 30px;
-    min-height: 30px;
+    height: 32px;
+    min-height: 32px;
   }
   #designer .designer-toolbar > button[id^="add"]::after {
     left: 38px;
@@ -254,17 +254,13 @@
   #designer .designer-canvas {
     scroll-padding: 28px;
     overscroll-behavior: contain;
-    background-color: color-mix(in srgb, var(--surface-subtle) 86%, var(--surface) 14%);
+    background-color: #e4e5e8;
   }
   #designer .designer-canvas .patch-window {
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--border-strong) 66%, transparent),
-      0 14px 32px color-mix(in srgb, var(--text) 10%, transparent);
-  }
-  #designer .designer-canvas .patch-window:focus-within {
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--text) 30%, transparent),
-      0 16px 36px color-mix(in srgb, var(--text) 13%, transparent);
+    background: #f7f7f8;
+    color: #18181b;
+    border: 1px solid #3f3f46;
+    box-shadow: 0 10px 24px rgba(24, 24, 27, .14);
   }
   #designer .designer-toolbar {
     min-height: 42px;
@@ -315,8 +311,8 @@
   }
   .designer-component-search input,
   .designer-add-control-picker select {
-    min-height: 28px;
-    height: 28px;
+    min-height: 32px;
+    height: 32px;
     font-size: 11px;
   }
   .designer-nonvisual-tray {
@@ -335,6 +331,12 @@
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  #designer .designer-canvas {
+    background-color: #2a2b30;
+  }
+}
+
 @media (forced-colors: active) {
   .designer-component-search,
   .designer-add-control-picker,
@@ -345,4 +347,11 @@
     outline: 2px solid Highlight;
   }
   #designer.designer-view::after { background: CanvasText; box-shadow: none; }
+  #designer .designer-canvas { background-color: Canvas; background-image: none; }
+  #designer .designer-canvas .patch-window {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
 }

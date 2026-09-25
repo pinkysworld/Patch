@@ -93,6 +93,20 @@ rejectAll('Downloads beta36 current links', downloads, [
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html'
 ]);
 
+const tutorials = read('_site/tutorials.html');
+requireAll('Tutorials current native contract', tutorials, [
+  `data-patch-version="${pkg.version}"`,
+  'The current native Ready line is Native GUI IR 1.9 / payload v19 / runtime v1.10',
+  'Stage 2 R0.2 host-native Window Build inside the IDE is available for Windows x64, macOS Apple Silicon and Linux x64',
+  'seven-Form'
+]);
+rejectAll('Tutorials stale current contract', tutorials, [
+  'The current native Ready line is Native GUI IR 1.7',
+  'Host-native Build inside the IDE is still the Stage 2 gap',
+  'six-Form',
+  'Ready IR 1.3 / v1.4'
+]);
+
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, ['patch-designer-selection-change','currentDesignerSelection','installDesignerSelectionBridge']);
 const coreSelection = read('_site/designer-core-selection.js');

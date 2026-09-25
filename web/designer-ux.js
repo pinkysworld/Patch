@@ -154,7 +154,7 @@ function enhanceInspector() {
   if (!inspector) return;
   const empty = inspector.querySelector('#designerInspectorEmpty');
   if (empty) {
-    empty.innerHTML = '<strong>Select a control to edit it.</strong><br>Properties stay in visible Patch source. Use the canvas, then adjust properties or layout here.';
+    empty.textContent = 'Select a control on the canvas to edit its source-backed properties.';
   }
   const location = inspector.querySelector('#designerInspectorLocation');
   if (location && !inspector.querySelector('#designerInspectorState')) {

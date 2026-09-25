@@ -17,7 +17,8 @@ test('SPEC status is synchronized exactly to the current product and Change IR',
   const ir = compiler.match(/PATCH_IR_VERSION\s*=\s*'([^']+)'/)?.[1];
   assert.ok(ir, 'compiler must expose a Change IR version marker');
   assert.match(spec, new RegExp(`Change IR \\*\\*${ir.replace('.', '\\.')}`));
-  assert.match(spec, /Native GUI IR 1\.7 \/ sealed payload v17 \/ native runtime v1\.8/);
+  assert.match(spec, /Native GUI IR 1\.9 \/ sealed payload v19 \/ native runtime v1\.10/);
+  assert.match(spec, /Payload v17 \/ runtime v1\.8 is the explicit Offline Compiler compatibility underlay, not the default/);
   assert.doesNotMatch(spec, /0\.2\.0-beta\.8|Change IR 0\.6|Beta 8 source\/evidence/);
 });
 
@@ -65,18 +66,23 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /native-picture-formats\/1\.0/);
   assert.match(spec, /WebP and SVG remain deferred/);
   assert.match(spec, /ImageList is nonvisual source-backed metadata/);
-  assert.match(spec, /Native GUI IR 1\.4 still fail-closes ImageList and Button image bindings/);
+  assert.match(spec, /Current Ready transports ImageList and Button image bindings/);
+  assert.match(spec, /older Native GUI IR 1\.4 compatibility line fail-closes ImageList and Button image bindings/);
   assert.match(spec, /window-icon\/1\.0/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
-  assert.match(paper, /current native product contract: \*\*Native GUI IR 1\.3 \/ sealed payload v13 \/ runtime v1\.4\*\*/);
+  assert.match(paper, /manuscript's recorded snapshot: \*\*Native GUI IR 1\.3 \/ sealed payload v13 \/ runtime v1\.4\*\*/);
+  assert.match(paper, /current native product contract: \*\*Native GUI IR 1\.9 \/ sealed payload v19 \/ runtime v1\.10\*\*/);
   assert.match(paper, /frozen TreeView compatibility contract: \*\*Native GUI IR 1\.2 \/ sealed payload v12 \/ runtime v1\.3\*\*/);
   assert.match(paper, /formal runtime-correspondence milestone: \*\*beta\.32\*\*/);
   assert.match(paper, /does not widen the beta\.32 Lean claim/);
   assert.match(paper, /historical include-chain bases, not the Ready runtime/);
   const tex = fs.readFileSync('paper/main.tex', 'utf8');
   assert.match(tex, /Native GUI IR 1\.3/);
+  assert.match(tex, /manuscript's recorded snapshot/);
+  assert.match(tex, /current product contract is Native GUI IR 1\.9 \/ sealed payload v19 \/ runtime v1\.10/);
+  assert.match(tex, /does not widen the beta\.32 claim/);
   assert.match(tex, /fail closed on Things/);
   assert.doesNotMatch(tex, /Native GUI IR 0\.7 does not model persistent list state, so current native Window paths fail closed/);
 });

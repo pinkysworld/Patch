@@ -16,22 +16,54 @@ import {
   showDesignerInspectorError
 } from './designer-selection.js';
 
-const code = document.querySelector('#code');
-const designerCanvas = document.querySelector('#designerCanvas');
-const appView = document.querySelector('#app');
-const addTable = document.querySelector('#addTable');
+const doc = typeof document === 'undefined' ? null : document;
+const code = doc?.querySelector?.('#code') ?? null;
+const designerCanvas = doc?.querySelector?.('#designerCanvas') ?? null;
+const appView = doc?.querySelector?.('#app') ?? null;
+const addTable = doc?.querySelector?.('#addTable') ?? null;
 const observed = new Map();
 const appListboxSelections = new Map();
 let scheduled = false;
 
-installStyles();
-installDesignerSelectionBridge(designerCanvas);
-installTool();
-observe(designerCanvas, true);
-observe(appView, false);
-code?.addEventListener('input', scheduleSync);
-code?.addEventListener('change', scheduleSync);
-scheduleSync();
+export function isRuntimeCoreReconcileChild(child) {
+  const key = child?.dataset?.patchControlKey;
+  if (!key) return false;
+  if (child.dataset.patchRuntimeSelectionKind === 'table') return false;
+  if (child.classList?.contains?.('patch-table-stage1-control') === true) return false;
+  return true;
+}
+
+export function resolveMultiListboxSelection(modelValue, cachedValue) {
+  if (Array.isArray(modelValue)) return modelValue.map(item => String(item));
+  if (Array.isArray(cachedValue)) return cachedValue.map(item => String(item));
+  return null;
+}
+
+export function getAppListboxSelection(key) {
+  const value = appListboxSelections.get(String(key));
+  return Array.isArray(value) ? [...value] : undefined;
+}
+
+export function setAppListboxSelection(key, values) {
+  const selected = Array.isArray(values) ? values.map(item => String(item)) : [];
+  appListboxSelections.set(String(key), selected);
+  return [...selected];
+}
+
+export function clearAppListboxSelections() {
+  appListboxSelections.clear();
+}
+
+if (doc) {
+  installStyles();
+  installDesignerSelectionBridge(designerCanvas);
+  installTool();
+  observe(designerCanvas, true);
+  observe(appView, false);
+  code?.addEventListener('input', scheduleSync);
+  code?.addEventListener('change', scheduleSync);
+  scheduleSync();
+}
 
 function installTool() {
   addTable?.addEventListener('click', event => {
@@ -172,6 +204,8 @@ function syncContainer(container, designer) {
     for (const stale of existingTables.values()) stale.remove();
   });
 
+  if (typeof container.__patchRestoreRuntimeTransient === 'function') container.__patchRestoreRuntimeTransient();
+
   if (designer) restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement, {
     isLive: selection => listDesignerControls(code.value).some(item =>
       item.windowIndex === selection.windowIndex &&
@@ -181,25 +215,29 @@ function syncContainer(container, designer) {
   });
 }
 
-function syncMultiListboxes(node, element, context) {
+export function syncMultiListboxes(node, element, context) {
   if (!node || !element) return;
   if (node.kind === 'uiControl') {
     if (node.control !== 'listbox' || !node.id || !context.listInitials.has(node.id)) return;
     const select = element.matches?.('select') ? element : element.querySelector?.('select');
     if (!select) return;
     const key = `${context.windowIndex}:${context.path}:${node.id}`;
-    if (!appListboxSelections.has(key)) appListboxSelections.set(key, [...(context.listInitials.get(node.id) ?? [])]);
-    const selected = appListboxSelections.get(key) ?? [];
+    const modelValue = readRenderedListboxSelection(select);
+    const cachedValue = getAppListboxSelection(key);
+    const selected = resolveMultiListboxSelection(modelValue, cachedValue);
+    if (Array.isArray(selected)) setAppListboxSelection(key, selected);
     select.multiple = true;
     select.setAttribute('aria-multiselectable', 'true');
     select.dataset.patchMultiListbox = 'true';
-    for (const option of select.options) option.selected = selected.includes(option.value);
+    if (Array.isArray(modelValue) && Array.isArray(selected)) {
+      for (const option of select.options) option.selected = selected.includes(option.value);
+    }
     if (!context.designer && select.dataset.patchMultiListboxBound !== 'true') {
       select.dataset.patchMultiListboxBound = 'true';
       select.addEventListener('change', event => {
         event.stopImmediatePropagation();
         const value = [...select.selectedOptions].map(option => option.value);
-        appListboxSelections.set(key, [...value]);
+        setAppListboxSelection(key, value);
         if (!context.changedHandlers.has(node.id)) return;
         select.dispatchEvent(new CustomEvent('patch-studio-table-changed', {
           bubbles: true,
@@ -228,6 +266,17 @@ function syncMultiListboxes(node, element, context) {
       path: `${context.path}.${activeIndex}.${index}`
     });
     renderedIndex += 1;
+  }
+}
+
+function readRenderedListboxSelection(select) {
+  const rendered = select?.dataset?.patchRenderedSelection;
+  if (typeof rendered !== 'string' || rendered === '') return undefined;
+  try {
+    const parsed = JSON.parse(rendered);
+    return Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
   }
 }
 

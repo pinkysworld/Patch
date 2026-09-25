@@ -42,4 +42,4 @@ The layout-action surface stores no `localStorage` or `sessionStorage` applicati
 
 The controls are ordinary keyboard-focusable buttons with visible focus treatment and forced-colors support. On narrow screens the action grid becomes a single column. The JavaScript and stylesheet are included in the content-addressed public Studio build and the offline PWA cache.
 
-This is a Studio/product feature only. It does not change Patch syntax, Change IR **0.10**, Native GUI IR **1.3** / payload **v13** / runtime **v1.4**, the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, or the beta.32 formal-assurance boundary.
+This is a Studio/product feature only. It does not change Patch syntax, Change IR **0.10**, Current Ready Native GUI IR **1.9** / payload **v19** / runtime **v1.10**, the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, or the beta.32 formal-assurance boundary. Native GUI IR **1.3** / payload **v13** / runtime **v1.4** remains the historical Slider line.

@@ -23,6 +23,12 @@ test('Patch handbook exposes dedicated tutorial and example pages', () => {
   assert.match(tutorials, /Use Patch Studio like a RAD IDE/);
   assert.match(tutorials, /Recipes and bounded Change Contracts/);
   assert.match(tutorials, /Check, run and build your software/);
+  assert.match(tutorials, /The current native Ready line is Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10/);
+  assert.match(tutorials, /Stage 2 R0\.2 host-native Window Build inside the IDE is available for Windows x64, macOS Apple Silicon and Linux x64/);
+  assert.match(tutorials, /seven-Form/);
+  assert.doesNotMatch(tutorials, /The current native Ready line is Native GUI IR 1\.7/);
+  assert.doesNotMatch(tutorials, /Host-native Build inside the IDE is still the Stage 2 gap/);
+  assert.doesNotMatch(tutorials, /six-Form/);
   assert.match(examples, /Starter examples/);
   assert.match(examples, /GUI component examples/);
   assert.match(examples, /Formal-assurance examples/);
@@ -41,6 +47,9 @@ test('handbook is part of the generated and offline site closure', () => {
   assert.ok(buildSite.includes("'docs-handbook.css'"));
   assert.ok(serviceWorker.includes("'./docs-handbook.css'"));
   assert.match(handbookCss, /\.handbook-tabs/);
+  assert.doesNotMatch(handbookCss, /#1b1e24|--panel/);
+  assert.match(handbookCss, /\.learning-step[\s\S]*background:\s*var\(--surface-subtle\)/);
+  assert.doesNotMatch(fs.readFileSync('web/docs.html', 'utf8'), /#1b1e24|--panel/);
   assert.match(handbookCss, /\.example-matrix/);
 });
 

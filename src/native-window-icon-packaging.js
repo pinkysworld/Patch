@@ -23,18 +23,21 @@ export class NativeWindowIconPackagingError extends Error {
 }
 
 /**
- * Prepare deterministic application-icon packaging artifacts for the
- * experimental Native GUI IR 1.9 / payload v19 / runtime v1.10 line.
+ * Pre-promotion application-icon packaging planner (`native-window-icon-packaging/0.1`).
  *
- * This does not promote the current product contract. Runtime v1.10 can decode
- * PNG/JPEG Form icons, while cross-platform application packaging v0.1 is
- * deliberately stricter: the application icon must be one square PNG at a
- * standard 16/32/64/128/256 logical size so the same project resource can be
- * represented without a platform-specific image conversion dependency.
+ * This is not the Current Ready package plan. Current Ready Windows, macOS and
+ * Linux packaging is `native-window-icon-package-v110.js`
+ * (`native-window-icon-package-v110/0.2`). This planner still prepares
+ * deterministic icon artifacts and leaves `currentProductPromoted` false. It
+ * does not rewrite the Windows PE resource table; the v1.10 package plan does
+ * that embedding.
  *
- * Windows returns a valid PNG-backed .ico file but does not yet rewrite the PE
- * resource table of the token-free single EXE. macOS returns a valid .icns
- * resource contract, and Linux returns hicolor PNG + .desktop metadata.
+ * Runtime icon bytes may be PNG or JPEG. Cross-platform application packaging
+ * v0.1 is stricter: the application icon must be one square PNG at a standard
+ * 16/32/64/128/256 logical size so the same project resource can be represented
+ * without a platform-specific image conversion dependency. macOS returns a
+ * valid .icns resource contract, and Linux returns hicolor PNG + .desktop
+ * metadata.
  */
 export function planNativeWindowIconPackaging(ir, resources = [], options = {}) {
   const adapted = adaptNativeWindowIconsForV19Backend(ir, resources);

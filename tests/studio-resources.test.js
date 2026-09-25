@@ -13,12 +13,15 @@ import {
   resourceBytes,
   studioResourceLocator,
   studioResourceSourceExpression,
+  sha256Hex,
   validateStudioResource,
   validateStudioResources,
   verifyStudioResource
 } from '../src/studio-resources.js';
 
 const encoder = new TextEncoder();
+const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=';
+const PIXEL_SHA256 = '98884e721ec2f605f3788f2bc39a61de305ff4f4fcaf26b6f4eabeebcd6c0fb4';
 
 async function svgResource(id = 'app.logo') {
   return buildStudioImageResource({
@@ -95,6 +98,41 @@ test('Studio resource builder enforces the per-resource size ceiling before pers
     () => buildStudioImageResource({ id: 'too.large', mediaType: 'image/png', bytes }),
     error => error instanceof StudioResourceError && error.code === 'STUDIO_RESOURCE_TOO_LARGE'
   );
+});
+
+test('SHA-256 matches the empty-bytes and abc vectors', async () => {
+  assert.equal(await sha256Hex(new Uint8Array()), 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+  assert.equal(await sha256Hex(encoder.encode('abc')), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+});
+
+test('published PIXEL resource digest matches its bytes and still validates', async () => {
+  const pixel = {
+    id: 'icons.pixel',
+    path: 'assets/pixel.png',
+    mediaType: 'image/png',
+    size: 68,
+    sha256: PIXEL_SHA256,
+    data: PIXEL
+  };
+  assert.equal(await sha256Hex(base64ToBytes(PIXEL)), PIXEL_SHA256);
+  const validated = validateStudioResource(pixel);
+  assert.equal(validated.sha256, PIXEL_SHA256);
+  assert.deepEqual(validateStudioResources([pixel]), [validated]);
+  assert.deepEqual(await verifyStudioResource(pixel), validated);
+});
+
+test('validateStudioResource rejects a 64-hex digest that does not match the resource bytes', async () => {
+  const resource = await svgResource();
+  assert.throws(
+    () => validateStudioResource({ ...resource, sha256: 'f'.repeat(64) }),
+    error => error instanceof StudioResourceError && error.code === 'STUDIO_RESOURCE_HASH_MISMATCH'
+  );
+  assert.throws(
+    () => validateStudioResource({ ...resource, sha256: 'g'.repeat(64) }),
+    error => error.code === 'STUDIO_RESOURCE_HASH'
+  );
+  assert.deepEqual(validateStudioResources([resource]), [resource]);
+  assert.deepEqual(await verifyStudioResource(resource), { ...resource });
 });
 
 test('resource lookup validates collection integrity before returning a logical id', async () => {

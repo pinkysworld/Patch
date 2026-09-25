@@ -50,6 +50,9 @@ test('Studio homepage advertises promoted native R1 features instead of fail-clo
   assert.doesNotMatch(surfaces.studioWeb, /awaits release\/digest\/Offline-Compiler promotion/i);
   assert.match(surfaces.studioWeb, /Button ImageList and application\/Form icons are supported on the Current Ready desktop line/);
   assert.match(surfaces.studioWeb, /Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10 is the current Ready desktop line/);
+  assert.match(surfaces.beta36, /Stage 2 R0\.2 host-native Window Build is already available inside the installed IDE for Windows x64, macOS Apple Silicon and Linux x64/);
+  assert.doesNotMatch(surfaces.beta36, /Host-native desktop Build directly inside the installed IDE remains the explicit Stage 2 boundary/);
+  assert.doesNotMatch(surfaces.beta36, /Native GUI IR 1\.7 is the current|current Native GUI IR 1\.7/i);
 });
 
 test('offline and target docs do not regress to old current runtime release tags', () => {

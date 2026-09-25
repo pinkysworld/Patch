@@ -129,7 +129,7 @@ export function resolveButtonImageBinding(lists, binding, line = null) {
 export function nativeButtonImageUnsupportedMessage(node, line = null) {
   if (!node?.imageListId || !node?.imageItem) return null;
   const where = line == null ? 'native GUI Button' : `line ${line}: native GUI Button`;
-  return `${where} does not transport image ${node.imageListId}.${node.imageItem}. ImageList consumers remain fail-closed on desktop until a versioned native contract transports them.`;
+  return `${where} does not transport image ${node.imageListId}.${node.imageItem}. This is the pre-v18 compatibility reject: ImageList consumers remain fail-closed on desktop native lines before Native GUI IR 1.8.`;
 }
 
 export function hasButtonImageBinding(node) {

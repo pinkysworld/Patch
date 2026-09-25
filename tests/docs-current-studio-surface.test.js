@@ -90,6 +90,8 @@ test('Table reorder/duplicate documentation matches the shared source-backed act
   assert.match(tableActionsWeb, /updateDesignerTableData/);
   assert.match(tableActionsWeb, /updateDesignerTabPageTableData/);
   assert.match(tableActionsDoc, /Change IR 0\.10/);
+  assert.match(tableActionsDoc, /current Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10 product line/);
+  assert.doesNotMatch(tableActionsDoc, /current Native GUI IR 1\.7/);
 });
 
 test('Studio keeps core structural controls on one shared transient primary selection layer', () => {

@@ -93,13 +93,9 @@ Patch has two rolling offline channels:
 
 ### Patch Studio Offline IDE
 
-`offline-studio-v0.2` currently publishes:
+`offline-studio-v0.2` currently publishes Windows x64, Windows ARM64, macOS Apple Silicon, a macOS Intel runtime kit, Linux x64, Linux ARM64 and a portable Node 18+ bundle, plus `offline-studio-manifest.json` and `SHA256SUMS`.
 
-- Windows x64: `PatchStudio-windows-x64.exe`
-- macOS Apple Silicon: `PatchStudio-macos-arm64`
-- Linux x64: `PatchStudio-linux-x64`
-
-Stage 1 provides offline authoring, Designer/Run, and existing browser-local build targets. Host-native desktop compilation directly from inside the installed IDE is still the Stage 2 goal.
+Stage 1 on every published distribution provides offline authoring, Designer/Run and browser-local build targets. Stage 2 R0.2 host-native Window Build inside the IDE is already available for Windows x64, macOS Apple Silicon and Linux x64. Windows ARM64, Linux ARM64, the macOS Intel runtime kit and the portable Node bundle do not expose that installed Build. Open Stage 2 work is those remaining hosts once matching compiler/runtime distributions exist, a possible Console bridge action, richer diagnostics, artifact-pane integration and an explicit local-versus-remote selector. See [`docs/OFFLINE_STUDIO.md`](docs/OFFLINE_STUDIO.md).
 
 ### Offline Compiler
 

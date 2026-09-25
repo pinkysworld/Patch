@@ -52,7 +52,7 @@ test('Designer reveals newly added Forms and controls and grows moved controls i
 test('Designer toolbox and Form controls remain compact IDE-style controls', () => {
   for (const marker of [
     '.designer-toolbar > button',
-    'min-height: 26px',
+    'min-height: 32px',
     '.forms-toolbar-group',
     '#patchAddForm::before',
     'content: "+"',

@@ -1,6 +1,6 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
-import { formatPatchTreeNodeDeclaration, parseTreeNodeImageBinding } from './tree-node-presentation.js';
+import { formatPatchTreeNodeDeclaration, normalizeTreeNodeHint, normalizeTreeNodeState, parseTreeNodeImageBinding } from './tree-node-presentation.js';
 
 const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree']);
 
@@ -232,9 +232,13 @@ function normalizeTreeNodes(nodes) {
   return nodes.map(node => {
     if (!node || typeof node !== 'object') throw new Error('TreeView node is invalid.');
     const binding = parseTreeNodeImageBinding(node.imageListId || node.imageItem ? String(node.imageListId ?? '') + '.' + String(node.imageItem ?? '') : '');
+    const hint = normalizeTreeNodeHint(node.hint);
+    const state = normalizeTreeNodeState(node.state);
     return {
       labelExpr: normalizeExpression(node.labelExpr, 'Tree node label'),
       ...(binding ? { imageListId: binding.imageListId, imageItem: binding.imageItem } : {}),
+      ...(hint ? { hint } : {}),
+      ...(state ? { state } : {}),
       children: normalizeTreeNodes(node.children ?? [])
     };
   });
@@ -282,6 +286,8 @@ function cloneTreeNodes(nodes) {
   return (nodes ?? []).map(node => ({
     labelExpr: node.labelExpr,
     ...(node.imageListId && node.imageItem ? { imageListId: node.imageListId, imageItem: node.imageItem } : {}),
+    ...(node.hint ? { hint: node.hint } : {}),
+    ...(node.state ? { state: node.state } : {}),
     children: cloneTreeNodes(node.children ?? [])
   }));
 }

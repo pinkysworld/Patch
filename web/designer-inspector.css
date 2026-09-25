@@ -77,8 +77,8 @@
   left: 10px;
   width: 34px;
   min-width: 34px;
-  height: 30px;
-  min-height: 30px;
+  height: 32px;
+  min-height: 32px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -218,17 +218,33 @@
   font-size: 10px;
   line-height: 1.45;
 }
-.designer-inspector .inspector-field {
+.designer-inspector label.inspector-field {
   display: grid;
-  gap: 5px;
-  margin: 0 0 11px;
+  grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
   color: var(--muted);
   font-size: 10px;
   font-weight: 750;
 }
-.designer-inspector .inspector-field input {
+.designer-inspector .inspector-field {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 11px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+.designer-inspector .inspector-field input,
+.designer-inspector .inspector-field select,
+.designer-inspector .inspector-field textarea {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 32px;
   height: 32px;
   padding: 6px 8px;
@@ -236,20 +252,65 @@
   color: var(--text);
   font-size: 11px;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.designer-inspector .inspector-field input[type="checkbox"],
+.designer-inspector .inspector-field input[type="radio"] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
 }
 .designer-inspector .inspector-readonly {
-  min-height: 30px;
+  min-height: 32px;
   display: flex;
   align-items: center;
-  width: fit-content;
-  min-width: 66px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 4px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--surface);
   color: var(--text);
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.designer-inspector #designerInspectorIdField {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+}
+.designer-inspector #designerInspectorId {
+  font-size: 13px;
   font-weight: 750;
+}
+.designer-inspector .designer-object-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 800;
+}
+.designer-inspector .designer-object-picker select {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text);
+  font-weight: 750;
+}
+.designer-inspector .inspector-hint,
+.designer-inspector .inspector-state,
+.designer-inspector #designerInspectorError {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .designer-inspector .inspector-actions {
   position: sticky;
@@ -264,7 +325,7 @@
   backdrop-filter: blur(8px);
 }
 .designer-inspector .inspector-actions button {
-  min-height: 30px;
+  min-height: 32px;
   padding: 5px 8px;
   border-radius: 7px;
   font-size: 10px;
@@ -359,11 +420,11 @@
   }
   #designer .designer-toolbar > button[id^="add"] {
     position: static;
-    flex: 0 0 30px;
-    width: 30px;
-    min-width: 30px;
-    height: 28px;
-    min-height: 28px;
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
   }
   #designer .designer-toolbar > button[id^="add"]::after {
     display: none !important;

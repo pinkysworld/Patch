@@ -1,7 +1,8 @@
 /**
  * HISTORICAL INCLUDE-CHAIN BASE — sealed payload v8 with explicit payload-v7 compatibility.
  * This is not the Ready runtime. Product code imports native-current-contract.js
- * (payload v13 / runtime v1.4) or native-frozen-contract.js (payload v12 / runtime v1.3).
+ * (Native GUI IR 1.9 / payload v19 / runtime v1.10) or native-frozen-contract.js
+ * (Native GUI IR 1.2 / payload v12 / runtime v1.3).
  */
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 import { flattenNativeGuiControlsV08, validateNativeGuiIRV08 } from './native-gui-ir-v08.js';

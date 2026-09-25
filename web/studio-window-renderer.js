@@ -1,7 +1,8 @@
 import { pictureResourceDataUri } from '../src/webapp.js';
-import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
+import { clearRuntimeSelections, getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { getStudioProjectResources } from './project-lifecycle.js';
+import { clearAppListboxSelections, isRuntimeCoreReconcileChild } from './table-stage1.js';
 
 export const PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0.2';
 
@@ -79,7 +80,7 @@ function reconcileRuntimeCoreControls(container, shell, windows, model, windowIn
     const context = runtimeCoreControlContext(container, windows, tabSelections, model, windowIndex, controlIndex, dispatch);
     expected.push({ control, context, key: runtimeControlKey(control, context) });
   });
-  const rendered = [...body.children].filter(child => child.dataset.patchControlKey);
+  const rendered = [...body.children].filter(isRuntimeCoreReconcileChild);
   if (rendered.length !== expected.length) return null;
   for (let index = 0; index < expected.length; index += 1) {
     if (rendered[index].dataset.patchControlKey !== expected[index].key) return null;
@@ -288,6 +289,18 @@ function restoreRuntimeTransientState(container, state) {
   }
 }
 
+function commitRuntimeTransientRestore(container, transient) {
+  const restore = () => restoreRuntimeTransientState(container, transient);
+  container.__patchRestoreRuntimeTransient = restore;
+  restoreRuntimeTransientState(container, transient);
+  queueMicrotask(() => {
+    queueMicrotask(() => {
+      if (container.__patchRestoreRuntimeTransient === restore) delete container.__patchRestoreRuntimeTransient;
+      restoreRuntimeTransientState(container, transient);
+    });
+  });
+}
+
 function reconcileRuntimeWindows(container, windows, dispatch) {
   const tabSelections = container.__patchTabSelections ??= new Map();
   if (!windows?.length) {
@@ -350,7 +363,7 @@ function reconcileRuntimeWindows(container, windows, dispatch) {
   container.dataset.patchRuntimeReconciledForms = String(reconciledForms);
   container.dataset.patchRuntimeReusedControls = String(reusedControls);
   container.dataset.patchRuntimeReplacedControls = String(replacedControls);
-  restoreRuntimeTransientState(container, transient);
+  commitRuntimeTransientRestore(container, transient);
 }
 
 function renderRuntimeWindowsAfterEvent(container, windows, dispatch) {
@@ -373,7 +386,7 @@ function renderRuntimeWindowsAfterEvent(container, windows, dispatch) {
   container.dataset.patchRuntimeReconciledForms = '0';
   container.dataset.patchRuntimeReusedControls = '0';
   container.dataset.patchRuntimeReplacedControls = String(rebuiltControls);
-  restoreRuntimeTransientState(container, transient);
+  commitRuntimeTransientRestore(container, transient);
 }
 
 function createControlElement(control, context) {
@@ -751,6 +764,9 @@ export function createStudioWindowRenderer({ dispatch } = {}) {
   return Object.freeze({
     version: PATCH_STUDIO_WINDOW_RENDERER_VERSION,
     renderInitial(container, windows) {
+      clearAppListboxSelections();
+      if (container?.__patchTabSelections instanceof Map) container.__patchTabSelections.clear();
+      if (container) clearRuntimeSelections(container);
       renderWindows(container, windows, true, {}, dispatch);
       container.dataset.patchRuntimeRenderMode = resolveStudioRuntimeRenderMode(globalThis.location?.search ?? '');
     },

@@ -225,7 +225,7 @@ Implemented relative to the working manuscript:
 - eight-case semantic-authority ablation plus internally authored checkout/loyalty and usage/quota cases;
 - process-isolated `development` / `hosted-ci` / `controlled` measurement protocol and commit-bound reproducibility bundle;
 - public `paper.html` reading copy with Lean/trust/measurement tables;
-- product artifact including Patch Studio bundle v3 and current/frozen native contracts (IR 1.3 / v13 / v1.4 current; IR 1.2 / v12 / v1.3 frozen), **outside** the Lean theorem.
+- product artifact including Patch Studio bundle v3 and native contracts recorded by the manuscript (IR 1.3 / v13 / v1.4 is that recorded snapshot; IR 1.2 / v12 / v1.3 stays frozen). The current product contract is IR 1.9 / v19 / v1.10 and remains **outside** the Lean theorem.
 
 ## Next research gates
 

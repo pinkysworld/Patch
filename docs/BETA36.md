@@ -120,7 +120,7 @@ The rolling `offline-studio-v0.2` Stage 1 line verifies self-contained SEA IDE e
 
 All six host-specific distributions must carry the same deterministic Studio manifest before release assembly proceeds. The generic portable bundle is a compatibility path, not a claim of a native FreeBSD IDE binary.
 
-All Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets. Host-native desktop Build directly inside the installed IDE remains the explicit Stage 2 boundary.
+All Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets. Stage 2 R0.2 host-native Window Build is already available inside the installed IDE for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources, Linux desktop artifacts and structured compiler diagnostics. Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle stay fail-closed for installed host-native Build. Still open: those remaining hosts only after matching compiler/runtime distributions exist, a possible separate Console bridge action, richer multi-error diagnostics, artifact-pane integration and an explicit local-versus-remote selector.
 
 Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
 

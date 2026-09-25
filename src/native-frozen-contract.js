@@ -17,9 +17,10 @@ import {
  * Stable product-facing entry point for the frozen TreeView compatibility contract.
  *
  * Current Ready/offline builds import `native-current-contract.js` instead.
- * This facade exists so IR 1.2 / payload v12 / runtime v1.3 has one boundary,
- * matching the current Slider line, while versioned modules remain the
- * executable compatibility implementation.
+ * This facade is the frozen TreeView line, IR 1.2 / payload v12 / runtime v1.3.
+ * It is not the current Slider line. Slider entered on IR 1.3 / payload v13 /
+ * runtime v1.4 and is preserved by Current Ready IR 1.9 / payload v19 / runtime v1.10.
+ * Versioned modules remain the executable compatibility implementation.
  */
 export const PATCH_FROZEN_NATIVE_CONTRACT_ID = 'native-gui-1.2/payload-12/runtime-1.3';
 export const PATCH_FROZEN_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V12_VERSION;

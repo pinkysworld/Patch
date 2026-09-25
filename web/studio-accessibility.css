@@ -40,6 +40,13 @@
   outline-offset: 2px !important;
 }
 
+.designer-canvas .designer-control:focus-visible,
+.designer-canvas .patch-window:focus-visible,
+.designer-canvas .patch-window-title:focus-visible {
+  outline: 3px solid #18181b !important;
+  outline-offset: 2px !important;
+}
+
 .tab[aria-selected="true"] {
   background: var(--soft);
   color: var(--text);

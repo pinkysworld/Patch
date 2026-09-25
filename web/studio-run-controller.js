@@ -59,7 +59,7 @@ export function createStudioRunLifecycle(options = {}) {
   }
 
   function trigger(control, event, payload = {}) {
-    if (!runtime) return false;
+    if (running || !runtime) return false;
     try {
       const result = triggerEvent(runtime, control, event, payload);
       onEventSuccess(result);

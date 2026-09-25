@@ -1,8 +1,8 @@
 /**
  * HISTORICAL INCLUDE-CHAIN BASE — Native GUI IR 0.7.
  * This is not the Ready runtime. Product code imports native-current-contract.js
- * (IR 1.3 / payload v13 / runtime v1.4) or native-frozen-contract.js
- * (IR 1.2 / payload v12 / runtime v1.3).
+ * (IR 1.9 / payload v19 / runtime v1.10) or native-frozen-contract.js
+ * (IR 1.2 / payload v12 / runtime v1.3, the frozen TreeView line, not the current Slider line).
  */
 import { buildFormLayoutManifest, formControlDefaultLayout } from './form-layout.js';
 import { validateWindowRuntimeSupport } from './window-build.js';

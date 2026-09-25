@@ -95,24 +95,24 @@ export function formatTreeNodeState(value) {
 
 export function parsePatchTreeNodeDeclaration(value) {
   const source = String(value ?? '').trim();
-  const match = source.match(/^node\s+(.+?)(?:\s+image\s+([A-Za-z_]\w*\.[A-Za-z_]\w*))?(?:\s+hint\s+("(?:\\.|[^"\\])*"))?(?:\s+state\s+([A-Za-z][A-Za-z-]*))?\s*$/i);
-  if (!match) {
-    throw new PatchTreeNodePresentationError(
-      'TreeView node syntax is node <label> [image list.item] [hint "text"] [state muted|info|success|warning|danger].',
-      'TREE_NODE_SOURCE_SYNTAX'
-    );
-  }
-  const labelExpr = String(match[1] ?? '').trim();
+  const header = /^node\b/i.exec(source);
+  if (!header) throw treeNodeSourceSyntax();
+  let index = header[0].length;
+  if (index < source.length && !/\s/.test(source[index])) throw treeNodeSourceSyntax();
+  index = skipSpace(source, index);
+  if (index >= source.length) throw treeNodeSourceSyntax();
+
+  const keywordAt = findTreeNodeClause(source, index);
+  const labelExpr = source.slice(index, keywordAt < 0 ? source.length : keywordAt).trim();
   if (!labelExpr) throw new PatchTreeNodePresentationError('TreeView node label cannot be empty.', 'TREE_NODE_LABEL');
-  const binding = parseTreeNodeImageBinding(match[2]);
-  const hint = parseTreeNodeHintLiteral(match[3]);
-  const state = normalizeTreeNodeState(match[4]);
+
+  const clauses = parseTreeNodeClauses(source, keywordAt < 0 ? source.length : keywordAt);
   return Object.freeze({
     labelExpr,
-    imageListId: binding?.imageListId ?? null,
-    imageItem: binding?.imageItem ?? null,
-    ...(hint ? { hint } : {}),
-    ...(state ? { state } : {})
+    imageListId: clauses.imageListId,
+    imageItem: clauses.imageItem,
+    ...(clauses.hint ? { hint: clauses.hint } : {}),
+    ...(clauses.state ? { state: clauses.state } : {})
   });
 }
 
@@ -196,6 +196,114 @@ export function resolveTreeNodeImageBinding(lists, node, line = null) {
     width: Number(list.logicalWidth) || 16,
     height: Number(list.logicalHeight) || 16
   });
+}
+
+const TREE_NODE_CLAUSE_ORDER = ['image', 'hint', 'state'];
+
+function treeNodeSourceSyntax() {
+  return new PatchTreeNodePresentationError(
+    'TreeView node syntax is node <label> [image list.item] [hint "text"] [state muted|info|success|warning|danger].',
+    'TREE_NODE_SOURCE_SYNTAX'
+  );
+}
+
+function skipSpace(source, index) {
+  while (index < source.length && /\s/.test(source[index])) index += 1;
+  return index;
+}
+
+function quotedTextLength(source, index) {
+  if (source[index] !== '"') return 0;
+  const match = /^"(?:\\.|[^"\\])*"/.exec(source.slice(index));
+  return match ? match[0].length : 0;
+}
+
+function clauseAt(source, index) {
+  if (index > 0 && !/\s/.test(source[index - 1])) return null;
+  const match = /^(image|hint|state)(?=\s|$)/i.exec(source.slice(index));
+  if (!match) return null;
+  return { name: match[1].toLowerCase(), length: match[1].length };
+}
+
+function findTreeNodeClause(source, from) {
+  for (let index = from; index < source.length;) {
+    if (source[index] === '"') {
+      const length = quotedTextLength(source, index);
+      if (!length) return -1;
+      index += length;
+      continue;
+    }
+    if (clauseAt(source, index)) return index;
+    index += 1;
+  }
+  return -1;
+}
+
+function readToken(source, index) {
+  const match = /^\S+/.exec(source.slice(index));
+  return match ? match[0] : '';
+}
+
+function readHintLiteral(source, index) {
+  if (index >= source.length) return '';
+  if (source[index] === '"') {
+    const length = quotedTextLength(source, index);
+    return length ? source.slice(index, index + length) : source.slice(index);
+  }
+  return readToken(source, index);
+}
+
+function requireImageBinding(token) {
+  const binding = parseTreeNodeImageBinding(token);
+  if (!binding) {
+    throw new PatchTreeNodePresentationError(
+      'TreeView node image binding must be ImageList.item such as tree_icons.folder.',
+      'TREE_NODE_IMAGE_SYNTAX'
+    );
+  }
+  return binding;
+}
+
+function parseTreeNodeClauses(source, index) {
+  let stage = 0;
+  let imageListId = null;
+  let imageItem = null;
+  let hint;
+  let state;
+  while (index < source.length) {
+    index = skipSpace(source, index);
+    if (index >= source.length) break;
+    const clause = clauseAt(source, index);
+    if (!clause) throw treeNodeSourceSyntax();
+    const position = TREE_NODE_CLAUSE_ORDER.indexOf(clause.name);
+    if (position < stage) throw treeNodeSourceSyntax();
+    stage = position + 1;
+    index = skipSpace(source, index + clause.length);
+    if (clause.name === 'image') {
+      const token = readToken(source, index);
+      const binding = requireImageBinding(token);
+      imageListId = binding.imageListId;
+      imageItem = binding.imageItem;
+      index += token.length;
+    } else if (clause.name === 'hint') {
+      const literal = readHintLiteral(source, index);
+      const parsed = parseTreeNodeHintLiteral(literal);
+      if (!parsed) {
+        throw new PatchTreeNodePresentationError(
+          'TreeView node hint must be a quoted text literal such as hint "Open source folder".',
+          'TREE_NODE_HINT_SYNTAX'
+        );
+      }
+      hint = parsed;
+      index += literal.length;
+    } else {
+      const token = readToken(source, index);
+      if (!token) throw treeNodeSourceSyntax();
+      state = normalizeTreeNodeState(token);
+      index += token.length;
+    }
+  }
+  return { imageListId, imageItem, hint, state };
 }
 
 function trimOrNull(value) {

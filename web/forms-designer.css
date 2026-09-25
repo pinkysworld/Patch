@@ -149,8 +149,8 @@ html {
 }
 .designer-toolbar > button,
 .designer-toolbar #addCheckbox {
-  min-height: 26px;
-  height: 26px;
+  min-height: 32px;
+  height: 32px;
   padding: 3px 7px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -192,8 +192,8 @@ html {
 }
 .forms-toolbar-group select,
 .forms-toolbar-group input {
-  min-height: 26px;
-  height: 26px;
+  min-height: 32px;
+  height: 32px;
   padding: 3px 5px;
   border-radius: 6px;
   font-size: 10px;
@@ -205,10 +205,10 @@ html {
 #patchFormHeight { width: 43px; }
 #patchAddForm,
 #patchApplyForm {
-  min-width: 27px;
-  width: 27px;
-  min-height: 26px;
-  height: 26px;
+  min-width: 32px;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -362,12 +362,12 @@ html {
 @media (max-width: 640px) {
   .topbar .toolbar button,
   .topbar .toolbar select {
-    min-height: 30px;
+    min-height: 32px;
   }
   .designer-toolbar > button,
   .designer-toolbar #addCheckbox {
-    min-height: 28px;
-    height: 28px;
+    min-height: 32px;
+    height: 32px;
   }
   .forms-toolbar-group label:nth-of-type(n+2),
   #patchApplyForm { display: none; }

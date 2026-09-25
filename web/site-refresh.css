@@ -47,7 +47,7 @@ body {
 }
 
 .site-tabs::after {
-  content: "0.2 beta.35+";
+  content: "0.2 beta.36+";
   flex: 0 0 auto;
   margin-left: auto;
   padding: 5px 9px;

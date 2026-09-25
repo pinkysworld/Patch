@@ -361,8 +361,8 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     loadButton: document.querySelector('#loadSample')?.textContent ?? '',
     brand: document.querySelector('.brand-mark')?.dataset?.patchBrandMark ?? ''
   }))()`, 3500);
-  assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all six Forms after settling');
-  assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded six-Form showcase source');
+  assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all seven Forms after settling');
+  assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded seven-Form showcase source');
   assert.equal(stable.loadButton, 'Load example');
   assert.equal(stable.brand, 'compiler-p-v1');
 

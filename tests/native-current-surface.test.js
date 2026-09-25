@@ -65,6 +65,8 @@ test('README and public website expose the native contract boundary without requ
   const docsPage = read('web/docs.html');
   const downloads = read('web/downloads.html');
   assert.match(readme, /native-current-contract\.js/);
+  assert.match(readme, /Stage 2 R0\.2 host-native Window Build inside the IDE is already available for Windows x64, macOS Apple Silicon and Linux x64/);
+  assert.doesNotMatch(readme, /still the Stage 2 goal/);
   assert.match(readme, /native-frozen-contract\.js/);
   assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
   assert.match(downloads, /Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10/);

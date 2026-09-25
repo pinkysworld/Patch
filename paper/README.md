@@ -11,7 +11,8 @@ The manuscript is synchronized to the current research/product split:
 - product artifact: **Patch 0.2.0-beta.35**;
 - semantic IR: **Change IR 0.10**;
 - formal runtime-correspondence milestone: **beta.32**;
-- current native product contract: **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**;
+- manuscript's recorded snapshot: **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**;
+- current native product contract: **Native GUI IR 1.9 / sealed payload v19 / runtime v1.10**;
 - frozen TreeView compatibility contract: **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3**;
 - beta.33-beta.35+ product engineering does not widen the beta.32 Lean claim.
 
@@ -19,9 +20,9 @@ The manuscript is synchronized to the current research/product split:
 
 The artifact also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
 
-Beta.35+ product work now includes the canonical multi-file Studio project bundle v3, list-backed multi-select ListBox parity, hierarchical TreeView and Slider across browser and supported Windows/macOS/Linux direct-native and token-free Ready/offline paths. Current token-free desktop Window packaging uses Native GUI IR 1.3, sealed payload v13 and runtime v1.4. The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains frozen compatibility evidence. Unversioned Native GUI IR 0.7 / payload v6 files are historical include-chain bases, not the Ready runtime. These GUI/runtime additions remain outside the beta.32 formal runtime-correspondence claim. Thing records are prototype-free own-field product values in the interpreter and Window Web runtime; they are outside the beta.32 Lean fragment, and direct Wasm/C99 fail closed on them.
+Beta.35+ product work recorded in this manuscript includes the canonical multi-file Studio project bundle v3, list-backed multi-select ListBox parity, hierarchical TreeView and Slider across browser and supported Windows/macOS/Linux direct-native and token-free Ready/offline paths. The manuscript's recorded snapshot of that token-free desktop Window packaging is Native GUI IR 1.3, sealed payload v13 and runtime v1.4. The current product contract is Native GUI IR 1.9 / sealed payload v19 / runtime v1.10. The Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains frozen compatibility evidence. Unversioned Native GUI IR 0.7 / payload v6 files are historical include-chain bases, not the Ready runtime. These GUI/runtime additions remain outside the beta.32 formal runtime-correspondence claim. Thing records are prototype-free own-field product values in the interpreter and Window Web runtime; they are outside the beta.32 Lean fragment, and direct Wasm/C99 fail closed on them.
 
-`main.tex` names that current/frozen native split and the prototype-free Thing boundary in the product-artifact section. It no longer describes current native Window paths as Native GUI IR 0.7 list-state fail-closed. Later Studio diagnostics (`file:line` over composed v3 sources), `patch doctor` host-C99 execution on Unix, Change-Signature semantic cloning and Command Palette recipe-parameter symbols are product engineering; they do not appear as new Lean theorems.
+`main.tex` names that manuscript snapshot, the current product contract and the prototype-free Thing boundary in the product-artifact section. It no longer describes current native Window paths as Native GUI IR 0.7 list-state fail-closed. Later Studio diagnostics (`file:line` over composed v3 sources), `patch doctor` host-C99 execution on Unix, Change-Signature semantic cloning and Command Palette recipe-parameter symbols are product engineering; they do not appear as new Lean theorems.
 
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 
@@ -104,8 +105,9 @@ The beta.35+ product artifact has moved ahead of the formal runtime-corresponden
 
 - Patch Studio multi-file project bundle v3;
 - browser App Preview and Standalone Web support for list-backed multi-select ListBox, TreeView and Slider;
-- Native GUI IR 1.3 with hierarchical TreeView and Slider;
-- sealed payload v13 / runtime v1.4 for current token-free Ready/offline Windows, macOS and Linux Window applications;
+- Native GUI IR 1.3 with hierarchical TreeView and Slider, as the manuscript's recorded snapshot;
+- sealed payload v13 / runtime v1.4 for that recorded snapshot, not as the current product contract;
+- current product contract: Native GUI IR 1.9 / sealed payload v19 / runtime v1.10, which does not widen the beta.32 claim;
 - frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView compatibility evidence;
 - preserved Table/Grid, responsive layout, list-state and Menu semantics from the frozen earlier native contracts;
 - SHA-256-verified browser runtime templates and a separately checksummed offline compiler distribution;

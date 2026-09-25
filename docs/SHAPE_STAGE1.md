@@ -36,15 +36,17 @@ These descriptors are projections of the same normalized Shape model. They are n
 
 ## Current boundary
 
-Shape Stage 1 is source-backed in Patch Studio, Standalone Web and the current native Ready/offline line:
+Shape Stage 1 is source-backed in Patch Studio, Standalone Web and the current native Ready/offline line. It was introduced on:
 
 - Native GUI IR **1.5**
 - sealed payload **v15** (`PSHP` trailer over payload v14)
 - runtime **v1.6** (Win32 GDI+, AppKit `NSBezierPath`, GTK cairo)
 
+Current Ready preserves that contract on Native GUI IR **1.9** / payload **v19** / runtime **v1.10**.
+
 Native drawing uses the same `0 0 100 100` mapping as `patchShapeSvgDescriptor()`, with `non-scaling-stroke` semantics so `strokeWidth` stays in device pixels. Shape exposes no Patch events. Panel may contain Shape; Shape cannot nest another Shape.
 
-Frozen Native GUI IR 1.4 remains fail-closed for Shape source. PaintBox Stage 1 clear/line/rectangle/ellipse/text is native on Native GUI IR 1.6 / payload v16 / runtime v1.7. PaintBox `draw image` is native on the current Native GUI IR 1.7 / payload v17 / runtime v1.8 line.
+Frozen Native GUI IR 1.4 remains fail-closed for Shape source. PaintBox Stage 1 clear/line/rectangle/ellipse/text is native on Native GUI IR 1.6 / payload v16 / runtime v1.7 and is preserved by Current Ready. PaintBox `draw image` is native on Current Ready. It was introduced on Native GUI IR 1.7 / payload v17 / runtime v1.8, which remains the explicit Offline Compiler compatibility underlay, not the default.
 
 ## Source-backed rule
 

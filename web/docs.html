@@ -11,9 +11,6 @@
   <link rel="stylesheet" href="./site-navigation.css">
   <link rel="stylesheet" href="./site-pages.css">
   <link rel="stylesheet" href="./docs-handbook.css">
-  <style>
-    .learning-path{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:18px 0 8px}.learning-step,.tutorial-card,.reference-card{border:1px solid var(--border,#343943);border-radius:12px;padding:16px;background:var(--panel,#1b1e24)}.learning-step span,.tutorial-card .level{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:6px}.learning-step h3,.tutorial-card h3,.reference-card h3{margin:.2rem 0 .5rem}.tutorial-grid,.reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.tutorial-card pre,.docs-example pre{white-space:pre;overflow:auto;max-width:100%;border-radius:9px}.docs-example{margin:18px 0;padding:16px;border:1px solid var(--border,#343943);border-radius:12px;background:var(--panel,#1b1e24)}.docs-example h3{margin-top:0}.docs-example .example-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.docs-example .example-actions a{font-weight:650}.docs-note{padding:12px 14px;border-left:4px solid currentColor;background:color-mix(in srgb,currentColor 7%,transparent);border-radius:6px;margin:14px 0}.docs-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.docs-steps{counter-reset:step;list-style:none;padding:0}.docs-steps>li{counter-increment:step;position:relative;padding:0 0 18px 44px}.docs-steps>li:before{content:counter(step);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1px solid currentColor;font-weight:700}.quick-ref{width:100%;border-collapse:collapse}.quick-ref th,.quick-ref td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#343943)}.quick-ref code{white-space:nowrap}.docs-jumps{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg,#15171c) 94%,transparent);backdrop-filter:blur(8px)}@media(max-width:720px){.quick-ref{display:block;overflow-x:auto}.docs-jumps{position:static}}
-  </style>
 </head>
 <body>
 <nav class="site-tabs" aria-label="Patch website">
@@ -27,17 +24,11 @@
   <nav class="handbook-tabs" aria-label="Patch handbook">
     <a href="./docs.html" aria-current="page">Overview</a><a href="./tutorials.html">Tutorials</a><a href="./examples.html">Examples</a><a href="./language.html">Language reference</a><a href="./downloads.html">Build &amp; downloads</a>
   </nav>
-  <section class="page-hero">
+  <section class="page-hero docs-hero">
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.36+</p>
       <h1>Learn Patch by building software.</h1>
       <p>Start with a three-line program, build a real window, add state and events, then move into recipes, Change Contracts, multi-form applications and native builds. The reference material remains on the same page when you need the exact current product boundary.</p>
-      <div class="learning-path" aria-label="Patch learning path">
-        <article class="learning-step"><span>1 · 5 minutes</span><h3>First program</h3><p>Create state, show output and run it in Patch Studio.</p></article>
-        <article class="learning-step"><span>2 · 10 minutes</span><h3>First GUI</h3><p>Build a Counter window with a Button, event and explicit change.</p></article>
-        <article class="learning-step"><span>3 · 20 minutes</span><h3>Real app structure</h3><p>Use Things, lists, conditions, recipes, Forms and the RAD Designer.</p></article>
-        <article class="learning-step"><span>4 · ship it</span><h3>Build software</h3><p>Create Web and supported desktop artifacts, or use the Offline Studio beta.</p></article>
-      </div>
     </div>
     <pre class="page-code">create number count = 0
 
@@ -45,6 +36,12 @@ change count:
   add 1
 
 show count</pre>
+    <div class="learning-path" aria-label="Patch learning path">
+      <article class="learning-step"><span>1 · 5 minutes</span><h3>First program</h3><p>Create state, show output and run it in Patch Studio.</p></article>
+      <article class="learning-step"><span>2 · 10 minutes</span><h3>First GUI</h3><p>Build a Counter window with a Button, event and explicit change.</p></article>
+      <article class="learning-step"><span>3 · 20 minutes</span><h3>Real app structure</h3><p>Use Things, lists, conditions, recipes, Forms and the RAD Designer.</p></article>
+      <article class="learning-step"><span>4 · ship it</span><h3>Build software</h3><p>Create Web and supported desktop artifacts, or use the Offline Studio beta.</p></article>
+    </div>
   </section>
 
   <div class="docs-commandbar" role="search" aria-label="Filter Patch documentation">
@@ -271,7 +268,7 @@ when fruits changed:
       <article class="tutorial-card"><span class="level">Assurance</span><h3>Change capabilities</h3><p>Thing state plus a bounded semantic capability.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/change-capabilities.patch"><strong>change-capabilities.patch</strong><span>Magnitude-aware authority.</span></a></article>
       <article class="tutorial-card"><span class="level">GUI</span><h3>Checkbox</h3><p>Boolean state and a changed event.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/checkbox-window.patch"><strong>checkbox-window.patch</strong><span>Boolean UI state.</span></a></article>
       <article class="tutorial-card"><span class="level">GUI</span><h3>ComboBox</h3><p>Text selection through a source-backed choice control.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/combo-window.patch"><strong>combo-window.patch</strong><span>Selection event example.</span></a></article>
-      <article class="tutorial-card"><span class="level">Full showcase</span><h3>Workshop Desk</h3><p>Six Forms and the broad integrated cross-platform component surface.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch"><strong>workshop-desk.patch</strong><span>Large reference application used by real Chrome and Ready tests.</span></a></article>
+      <article class="tutorial-card"><span class="level">Full showcase</span><h3>Workshop Desk</h3><p>Seven Forms and the broad integrated cross-platform component surface.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch"><strong>workshop-desk.patch</strong><span>Large reference application used by real Chrome and Ready tests.</span></a></article>
     </div>
   </section>
 

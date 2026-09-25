@@ -28,4 +28,4 @@ Normal project recovery/autosave remains independent from this command.
 
 `web/designer-form-delete-model.js` owns the deterministic source transformation. `web/designer-form-delete.js` provides confirmation, command availability and active-Form handoff. Both modules are included in the content-addressed public Patch Studio build and offline PWA cache.
 
-This authoring feature does not change Patch syntax, Change IR **0.10**, Native GUI IR **1.2**, sealed payload **v12**, native runtime **v1.3**, or the beta.32 formal runtime-correspondence boundary.
+This authoring feature does not change Patch syntax, Change IR **0.10**, Current Ready Native GUI IR **1.9** / payload **v19** / runtime **v1.10**, the frozen TreeView line Native GUI IR **1.2** / payload **v12** / runtime **v1.3**, or the beta.32 formal runtime-correspondence boundary.

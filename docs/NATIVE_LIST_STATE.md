@@ -1,6 +1,6 @@
 # Native list state and multi-select ListBox
 
-Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics without changing the existing text-backed ListBox contract. That ABI remains part of the current Native GUI IR **1.2** / sealed payload **v12** / runtime **v1.3** desktop line.
+Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics without changing the existing text-backed ListBox contract. That ABI remains part of Current Ready Native GUI IR **1.9** / sealed payload **v19** / runtime **v1.10**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** is the frozen TreeView line, not the current desktop line.
 
 This document describes the list-state extension itself and distinguishes its original compatibility versions from the current Ready/offline consumer contract.
 
@@ -54,7 +54,8 @@ The additive Native GUI IR history is:
 - Native GUI IR 1.0: source-backed MenuItem enabled/checked state;
 - Native GUI IR 1.1: persistent text-list state and list-backed multi-select ListBox;
 - Native GUI IR 1.2: frozen hierarchical TreeView extension, preserving the 1.1 list-state ABI;
-- Native GUI IR 1.3: current Ready/offline line, preserving TreeView and adding Slider. Product import is `native-current-contract.js`; frozen TreeView remains `native-frozen-contract.js`.
+- Native GUI IR 1.3: historical Slider line, preserving TreeView and adding Slider;
+- Native GUI IR 1.9: current Ready/offline line. Product import is `native-current-contract.js`; frozen TreeView remains `native-frozen-contract.js`.
 
 ## Direct native backend
 
@@ -86,18 +87,19 @@ That v10/v1.1 line remains frozen and independently tested. It is no longer the 
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.2**;
-- sealed payload **v12**;
-- native runtime **v1.3**.
+- Native GUI IR **1.9**;
+- sealed payload **v19**;
+- native runtime **v1.10**.
 
-Payload v12 preserves typed list state, multi-select ListBox events and list mutations while also carrying the later Menu and TreeView contracts. Patch Studio Ready app download, the downloadable offline compiler and ordinary local `patch link` therefore all preserve the same list-state semantics through the current v12/v1.3 line.
+Payload v19 preserves typed list state, multi-select ListBox events and list mutations while also carrying the later Menu, TreeView, Slider, Chrome, Shape, PaintBox, Button ImageList and application/Form icon contracts. Patch Studio Ready app download, the downloadable offline compiler and ordinary local `patch link` therefore all preserve the same list-state semantics through the current v19/v1.10 line. Payload v12/runtime v1.3 remains the frozen TreeView line. Payload v17/runtime v1.8 remains the explicit Offline Compiler compatibility underlay, not the default.
 
 The version progression is deliberately additive:
 
 - payload v9/runtime v1.0: frozen Table line;
 - payload v10/runtime v1.1: frozen persistent-list/multi-select line;
 - payload v11/runtime v1.2: frozen Menu+list line;
-- payload v12/runtime v1.3: current TreeView-capable line preserving Table, Menu and list semantics.
+- payload v12/runtime v1.3: frozen TreeView-capable line preserving Table, Menu and list semantics;
+- payload v19/runtime v1.10: current Ready/offline line preserving those list semantics.
 
 ## Supported native list operations
 
@@ -117,12 +119,14 @@ Initial native list state and literal list `set` values use literal lists of quo
 
 ## Runtime integrity
 
-Patch Studio Pages now gates the current runtime-v1.3 assets. Deployment requires:
+Patch Studio Pages now gates the current runtime-v1.10 assets. Deployment requires:
 
-- `native-win32-runtime-v1.3`;
-- `native-macos-runtime-v1.3`;
-- `native-linux-runtime-v1.3`;
+- `native-win32-runtime-v1.10`;
+- `native-macos-runtime-v1.10`;
+- `native-linux-runtime-v1.10`;
 - the compatibility/Console `studio-runtime-v0.6` release.
+
+Frozen TreeView runtime tags remain `native-win32-runtime-v1.3`, `native-macos-runtime-v1.3` and `native-linux-runtime-v1.3`. They are not the current Ready templates.
 
 Pages reads the GitHub-recorded SHA-256 digest for every exact runtime asset, independently hashes the downloaded bytes and writes the verified result into `runtime-manifest.json`. The browser verifies the selected runtime again with Web Crypto before token-free sealing.
 
@@ -130,7 +134,7 @@ This is byte-integrity validation of the published runtime path. It is not Windo
 
 ## Current fail-closed boundaries
 
-The obsolete v10 limitation on advanced Menu decoration is retained only as a compatibility property of payload v10. Current payload v12/runtime v1.3 supports the later Menu separators, portable shortcuts and source-backed `enabled`/`checked` state inherited from payload v11/runtime v1.2, plus hierarchical TreeView.
+The obsolete v10 limitation on advanced Menu decoration is retained only as a compatibility property of payload v10. Current payload v19/runtime v1.10 supports the later Menu separators, portable shortcuts and source-backed `enabled`/`checked` state inherited from payload v11/runtime v1.2, plus hierarchical TreeView. Frozen payload v12/runtime v1.3 already carried that Menu and TreeView composition and remains the frozen TreeView line.
 
 An application explicitly linked against a legacy payload fails closed when it requests features newer than that payload. FreeBSD Window/GUI remains unsupported; FreeBSD Console continues through the portable C99/offline path.
 

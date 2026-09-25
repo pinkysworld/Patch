@@ -630,6 +630,8 @@ function cloneTreeNodes(nodes = []) {
       cloned.imageListId = node.imageListId;
       cloned.imageItem = node.imageItem;
     }
+    if (node.hint) cloned.hint = node.hint;
+    if (node.state) cloned.state = node.state;
     return cloned;
   });
 }

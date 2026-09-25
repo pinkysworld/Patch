@@ -95,11 +95,8 @@
 .result-pane .designer-canvas {
   min-height: clamp(600px, 70vh, 860px);
   max-height: none;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--border) 24%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--border) 24%, transparent) 1px, transparent 1px);
-  background-size: 16px 16px;
-  background-position: 0 0;
+  background-color: #e4e5e8;
+  background-image: none;
 }
 
 .result-pane #designer .designer-toolbar {

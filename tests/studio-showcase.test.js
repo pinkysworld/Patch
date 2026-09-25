@@ -100,6 +100,13 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
   assert.match(forms, /shape line as gallery_separator fill transparent stroke #94a3b8 stroke-width 1 radius 0 opacity 1/);
   assert.match(forms, /window "Split Lab" as split_lab size 820, 560/);
   assert.match(forms, /window "Calendar Lab" as calendar_lab size 760, 620/);
+  assert.match(forms, /window "Tree Lab" as tree_lab size 820, 560/);
+  assert.match(forms, /imagelist as tree_icons size 16, 16:\n    image folder from "patch-resource:showcase\.logo"/);
+  assert.match(forms, /node "Workspace" image tree_icons\.folder hint "Project root" state info/);
+  assert.match(forms, /node "parser\.js" image tree_icons\.file hint "Parser implementation" state warning/);
+  assert.match(forms, /node "docs" image tree_icons\.folder hint "Documentation" state muted/);
+  assert.match(forms, /node "notes\.md" image tree_icons\.file hint "Release notes" state danger/);
+  assert.match(forms, /state success/);
   assert.match(forms, /row "Calendar", "Inline month-grid Input", "Studio\/Web"/);
   assert.match(forms, /panel as split_demo[^\n]*:\n    # @panel-split vertical 42[\s\S]*?# @panel-split-break/);
   assert.match(forms, /button "Dialog Lab" as gallery_dialogs at 182, 210 size 148, 40/);
@@ -170,6 +177,7 @@ test('Patch Studio Showcase covers structural RAD, dialogs, resources and explic
   assert.doesNotMatch(composition.source, /when gallery_panel scrolled:/);
   assert.doesNotMatch(composition.source, /when split_demo (?:changed|resized|split):/);
   assert.match(composition.source, /when gallery_canvas paint:/);
+  assert.match(composition.source, /when outline_tree changed:\n  change tree_path:\n    set = value/);
 });
 
 test('complete Showcase preserves explicit fail-closed export boundaries instead of hiding unsupported target features', () => {

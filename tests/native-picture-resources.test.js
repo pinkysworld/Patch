@@ -20,7 +20,7 @@ const RESOURCE = Object.freeze({
   path: 'resources/logo.png',
   mediaType: 'image/png',
   size: 1,
-  sha256: '0'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 
@@ -42,7 +42,7 @@ test('native Picture resource resolver clones IR and embeds deterministic data U
     resourceId: 'app.logo',
     mediaType: 'image/png',
     size: 1,
-    sha256: '0'.repeat(64),
+    sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
     policy: 'native-picture-formats/1.0'
   });
   const picture = resolved.ir.forms[0].controls.find(control => control.type === 'picture');

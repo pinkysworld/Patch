@@ -30,7 +30,7 @@ const APP_ICON = Object.freeze({
   path: 'resources/app.png',
   mediaType: 'image/png',
   size: 1,
-  sha256: '0'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 const ABOUT_ICON = Object.freeze({
@@ -38,7 +38,7 @@ const ABOUT_ICON = Object.freeze({
   path: 'resources/about.jpg',
   mediaType: 'image/jpeg',
   size: 1,
-  sha256: '1'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 const OPEN = Object.freeze({
@@ -46,7 +46,7 @@ const OPEN = Object.freeze({
   path: 'resources/open.png',
   mediaType: 'image/png',
   size: 1,
-  sha256: '2'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 const RESOURCES = Object.freeze([APP_ICON, ABOUT_ICON, OPEN]);

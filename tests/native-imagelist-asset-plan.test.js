@@ -20,7 +20,7 @@ const OPEN = Object.freeze({
   path: 'resources/open.png',
   mediaType: 'image/png',
   size: 1,
-  sha256: '0'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 
@@ -29,7 +29,7 @@ const SAVE = Object.freeze({
   path: 'resources/save.jpg',
   mediaType: 'image/jpeg',
   size: 1,
-  sha256: '1'.repeat(64),
+  sha256: '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d',
   data: 'AA=='
 });
 

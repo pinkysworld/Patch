@@ -15,12 +15,9 @@ const PATCH_NAME = /^[A-Za-z_]\w*$/;
 const RESOURCE_ID = /^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*$/;
 
 /**
- * Native GUI IR 1.8 is an additive Button ImageList transport over IR 1.7.
- *
- * The current product contract intentionally remains IR 1.7 until a matching
- * desktop runtime consumes this metadata on Win32, AppKit and GTK. IR 1.8 can
- * therefore be developed and tested without weakening the current fail-closed
- * native Button-image boundary.
+ * Native GUI IR 1.8 adds Button ImageList transport on top of IR 1.7.
+ * Current Ready is IR 1.9 / payload v19 / runtime v1.10 and preserves this
+ * layer. IR 1.4 compatibility builds still fail closed on Button images.
  */
 export function buildNativeGuiIRV18(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {

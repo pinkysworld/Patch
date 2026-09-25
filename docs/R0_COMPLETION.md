@@ -60,7 +60,7 @@ Existing R0 work already provides:
 - active Form fully materialized while inactive Forms remain lightweight shells;
 - source-backed selection/Object Inspector/Project Tree continuity across Form transitions;
 - declaration-only specialized Designer readers;
-- six-Form Workshop Desk acceptance coverage;
+- seven-Form Workshop Desk acceptance coverage;
 - 10-Form / 200-control large-project acceptance and timing coverage.
 
 ### Incremental runtime rendering

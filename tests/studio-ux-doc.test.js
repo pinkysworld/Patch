@@ -12,6 +12,8 @@ test('Studio UX notes retain the source-backed workspace and visible-scrollbar g
   assert.match(doc, /workspace is first|visually dominant/i);
   assert.match(doc, /Ln · Col/i);
   assert.match(doc, /status bar stays visible/i);
+  assert.match(doc, /IR 1\.9 \/ v1\.10/);
+  assert.doesNotMatch(doc, /IR 1\.7 \/ runtime v1\.8/);
   assert.match(doc, /Editor tabs/i);
   assert.match(doc, /project bundle v4/i);
 });

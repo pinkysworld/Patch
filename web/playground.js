@@ -272,7 +272,7 @@ function refreshDesigner(requestedFormIndex = null) {
       : requestedFormIndex;
     const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);
     studioWindowRenderer.renderDesigner(designerCanvas, preview.ui, { materialization });
-    if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
+    if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This console project has no Form to design.</p>';
   } catch (err) {
     designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
   }

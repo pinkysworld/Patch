@@ -43,6 +43,7 @@ import {
 import { NativeGuiError } from './native-gui-frozen-lower.js';
 import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 import { resolveNativePictureResources } from './native-picture-resources.js';
+import { countTreeNodeHints, countTreeNodeImages, countTreeNodeStates } from './tree-node-presentation.js';
 
 /**
  * Stable product-facing entry point for the current Patch native GUI contract.
@@ -63,14 +64,7 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
 });
 
 export function buildCurrentNativeGuiIR(compiled) {
-  assertCurrentNativeInputPresentation(compiled?.ast);
-  assertCurrentNativeButtonPresentation(compiled?.ast);
-  assertCurrentNativeListboxPresentation(compiled?.ast);
-  assertCurrentNativeSliderPresentation(compiled?.ast);
-  assertCurrentNativePanelPresentation(compiled?.ast);
-  assertCurrentNativePanelScroll(compiled?.ast);
-  assertCurrentNativePanelSplit(compiled?.ast);
-  assertCurrentNativePanelLayout(compiled?.ast);
+  assertCurrentNativeStudioOnlyMetadata(compiled);
   return buildNativeGuiIRV19(compiled);
 }
 export const validateCurrentNativeGuiIR = validateNativeGuiIRV19;
@@ -125,6 +119,50 @@ export function currentNativeContract() {
     runtime: PATCH_CURRENT_NATIVE_RUNTIME_VERSION,
     runtimeTags: PATCH_CURRENT_NATIVE_RUNTIME_TAGS
   });
+}
+
+const TREE_NODE_IMAGES_MESSAGE = 'TreeView node images Stage 1 are Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport ImageList bindings on TreeView nodes; validation fails closed rather than silently discarding node icons.';
+const TREE_NODE_HINTS_MESSAGE = 'TreeView node hints Stage 2 are Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport per-node tooltip metadata; validation fails closed rather than silently discarding hints.';
+const TREE_NODE_STATES_MESSAGE = 'TreeView node state presentation Stage 3 is Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not transport per-node state-tone metadata; validation fails closed rather than silently discarding state presentation.';
+const ADVANCED_TABLE_COLUMNS_MESSAGE = 'Advanced Table columns Stage 1 is Studio/Web only. Current Ready native GUI 1.9/19/1.10 does not encode source-backed per-column width/alignment; validation fails closed rather than silently discarding the column presentation.';
+
+export function assertCurrentNativeStudioOnlyMetadata(compiled) {
+  const nodes = compiled?.ast;
+  assertCurrentNativeInputPresentation(nodes);
+  assertCurrentNativeButtonPresentation(nodes);
+  assertCurrentNativeListboxPresentation(nodes);
+  assertCurrentNativeSliderPresentation(nodes);
+  assertCurrentNativePanelPresentation(nodes);
+  assertCurrentNativePanelScroll(nodes);
+  assertCurrentNativePanelSplit(nodes);
+  assertCurrentNativePanelLayout(nodes);
+  assertCurrentNativeTreeAndTablePresentation(nodes);
+}
+
+function assertCurrentNativeTreeAndTablePresentation(nodes) {
+  let treeNodeImages = 0;
+  let treeNodeHints = 0;
+  let treeNodeStates = 0;
+  let advancedTableColumns = 0;
+  const visit = list => {
+    for (const node of list ?? []) {
+      if (node?.kind === 'uiControl' && node.control === 'tree') {
+        treeNodeImages += countTreeNodeImages(node.treeNodes);
+        treeNodeHints += countTreeNodeHints(node.treeNodes);
+        treeNodeStates += countTreeNodeStates(node.treeNodes);
+      }
+      if (node?.kind === 'uiControl' && node.control === 'table' && Array.isArray(node.tableColumnPresentation) && node.tableColumnPresentation.length > 0) {
+        advancedTableColumns += 1;
+      }
+      if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) visit(node.body);
+      if (node?.kind === 'tabs') for (const page of node.body ?? []) visit(page.body);
+    }
+  };
+  visit(nodes);
+  if (treeNodeImages) throw new NativeGuiError(TREE_NODE_IMAGES_MESSAGE);
+  if (treeNodeHints) throw new NativeGuiError(TREE_NODE_HINTS_MESSAGE);
+  if (treeNodeStates) throw new NativeGuiError(TREE_NODE_STATES_MESSAGE);
+  if (advancedTableColumns) throw new NativeGuiError(ADVANCED_TABLE_COLUMNS_MESSAGE);
 }
 
 function assertCurrentNativeInputPresentation(nodes) {
