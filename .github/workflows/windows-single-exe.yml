@@ -21,7 +21,7 @@ on:
         required: false
         default: manual
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - .github/workflows/windows-single-exe.yml
       - scripts/build-native-win32.js

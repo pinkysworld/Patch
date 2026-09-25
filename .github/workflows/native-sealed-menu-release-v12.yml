@@ -2,7 +2,7 @@ name: Patch Native Sealed Menu Runtime v1.2 Release
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - .github/workflows/native-sealed-menu-release-v12.yml
       - native-runtime/sealed-menu-v12.hpp

@@ -38,7 +38,7 @@ on:
         required: false
         default: manual
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - scripts/build-native-sea.js
       - scripts/build-native-window.js

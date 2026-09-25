@@ -2,6 +2,7 @@ name: Patch Offline Studio
 
 on:
   pull_request:
+    types: [opened, reopened, ready_for_review]
     paths:
       - 'web/**'
       - 'src/**'

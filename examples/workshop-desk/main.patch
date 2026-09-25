@@ -1,0 +1,394 @@
+create text customer = "Ada"
+create text item = "Keyboard"
+create number qty = 1
+create boolean rush = false
+create text priority = "Normal"
+create text pay = "Card"
+create text notes = ""
+create list services = ["Diagnostics"]
+create text status = "Ready for the next workshop ticket."
+create boolean notifications = true
+create text default_bench = "Bench A"
+create list stations = ["Bench A", "Bench B"]
+create text density = "Comfortable"
+create number labor_limit = 50
+create number heartbeat = 0
+create number ticket_total = 40
+create number base_rate = 25
+create number inspection_fee = 15
+create number rush_fee = 20
+create number quote_revision = 0
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
+create text inventory_filter = "All stock"
+create text inventory_zone = "Main store"
+create number reorder_qty = 5
+create text inventory_status = "Inventory synchronized"
+create text customer_email = "ada@example.com"
+create text customer_tier = "Gold"
+create boolean customer_marketing = true
+create list customer_channels = ["Email"]
+create text customer_note = "Priority account"
+create text customer_status = "Customer profile ready"
+create text diagnostic_mode = "Runtime"
+create boolean trace_enabled = true
+create number diagnostic_interval = 5
+create number diagnostic_runs = 0
+create text diagnostic_status = "All systems ready"
+create text gallery_text = "Workshop sample"
+create boolean gallery_enabled = true
+create text gallery_mode = "Ready"
+create text gallery_color = "Blue"
+create list gallery_features = ["Designer"]
+create number gallery_level = 60
+create text gallery_status = "Component gallery ready"
+create number gallery_ticks = 0
+create text gallery_memo = "Feature Lab notes"
+create text gallery_secret = ""
+create text gallery_mask = ""
+create text gallery_number = "42"
+create text gallery_date = "2026-09-25"
+create text gallery_time = "14:30"
+create text gallery_calendar = "2026-09-25"
+create number gallery_progress = 40
+create number gallery_scroll = 25
+create text gallery_path = "No file selected"
+create text ticket_id = "WD-104"
+create list selected_job = ["WD-104", "Ada", "Bench A", "Open"]
+create list selected_part = ["Parts", "Input", "Keyboard"]
+create number service_fee = 15
+create number customer_saves = 0
+create number diagnostic_ticks = 0
+
+window "Workshop Desk" as main size 1080, 720 icon "patch-resource:workshop.mark":
+  # @locked
+  shape rounded as desk_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 18 opacity 1 at 16, 12 size 1048, 76
+  picture as workshop_logo from "patch-resource:workshop.mark" description "Workshop mark" at 28, 24 size 52, 52
+  text "Workshop Desk" at 96, 20 size 280, 28
+  text "{status}" at 96, 50 size 500, 24
+  text "{ticket_id} · quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28
+  text "Project v4 · Studio/Web · native fixture separate" at 620, 50 size 420, 22
+
+  imagelist as desk_images size 20, 20:
+    image mark from "patch-resource:workshop.mark"
+
+  # @locked
+  shape rounded as ticket_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 100 size 1048, 248
+  text "Ticket" at 32, 112 size 120, 24
+  text "Customer" at 32, 144 size 100, 20
+  combo "Ada", "Grace", "Linus", "Margaret" as customer at 32, 168 size 200, 36
+  text "Item" at 248, 144 size 80, 20
+  input item at 248, 168 size 240, 36
+  text "Quantity {qty}" at 508, 144 size 140, 20
+  slider 1..8 as qty step 1 at 508, 168 size 210, 36
+  checkbox "Rush bench" as rush at 740, 168 size 160, 36
+
+  text "Payment" at 32, 220 size 90, 20
+  radio "Card", "Cash", "Account" as pay at 32, 244 size 220, 84
+  text "Priority" at 272, 220 size 90, 20
+  radio "Normal", "High", "Critical" as priority at 272, 244 size 220, 84
+  text "Notes" at 512, 220 size 80, 20
+  input notes at 512, 244 size 250, 36
+  text "Services" at 780, 220 size 90, 20
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 780, 244 size 260, 84
+
+  # @locked
+  shape rounded as queue_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 360 size 640, 292
+  text "Queue" at 32, 372 size 120, 22
+  table "Ticket", "Customer", "Bench", "State" as board at 32, 402 size 608, 230:
+    row "WD-104", "Ada", "Bench A", "Open"
+    row "WD-105", "Grace", "Bench B", "Quoted"
+    row "WD-106", "Linus", "Bench A", "Ready"
+    row "WD-107", "Margaret", "Overflow", "Waiting"
+
+  # @locked
+  shape rounded as side_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 668, 360 size 396, 292
+  text "Parts & tools" at 684, 372 size 180, 22
+  tree as parts at 684, 400 size 168, 232:
+    node "Parts"
+      node "Input"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Panel"
+        node "Cable"
+    node "Tools"
+      node "Driver"
+      node "Solder"
+      node "Meter"
+  button "Quote" as quote_button at 864, 400 size 180, 32
+  button "Details" as details_button at 864, 438 size 180, 32
+  button "Ready" as complete_button at 864, 476 size 180, 32
+  button "Reset" as reset_button at 864, 514 size 180, 32
+  button "Inventory" as inventory_button at 864, 552 size 86, 30
+  button "Customer" as customer_button at 958, 552 size 86, 30
+  button "Diagnostics" as diagnostics_button at 864, 588 size 86, 30
+  button "Settings" as settings_button at 958, 588 size 86, 30
+  button "Studio Features" as components_button image desk_images.mark at 864, 622 size 180, 28
+
+  # @layout anchor left right bottom
+  text "Seven-Form working app · real workflow in front, complete Studio/Web Feature Lab behind one action." at 16, 660 size 1048, 22
+  timer as workshop_clock interval 5000
+  statusbar "{status}" as desk_status at 0, 692 size 1080, 28
+
+window "Workshop settings" as settings size 720, 520:
+  tabs as prefs at 24, 24 size 672, 400:
+    tab "Workflow":
+      text "Default bench"
+      combo "Bench A", "Bench B", "Overflow" as default_bench
+      checkbox "Notify when a quote changes" as notifications
+      text "Available stations"
+      listbox "Bench A", "Bench B", "Overflow" as stations
+    tab "Limits":
+      text "Labor approval limit {labor_limit}"
+      slider 0..100 as labor_limit step 10
+      text "This tab demonstrates a nested Slider and shared persistent state."
+    tab "Appearance":
+      radio "Compact", "Comfortable", "Spacious" as density
+      text "Density is source-backed application state, not hidden Designer metadata."
+    tab "About":
+      text "Workshop Desk is the working seven-Form Project-v4 Studio/Web application."
+      text "Studio Feature Lab covers the complete current Component Registry 0.10 and R4 Studio/Web presentations."
+      text "Current Ready desktop acceptance is isolated in workshop-desk-native.patch."
+      button "Close" as close_about
+  button "Close settings" as close_settings at 24, 448 size 170, 38
+
+window "Job details" as details size 640, 560:
+  # @locked
+  shape rounded as details_header fill #eef2ff stroke #c7d2fe stroke-width 1 radius 16 opacity 1 at 16, 12 size 608, 68
+  text "Job details · {ticket_id}" at 32, 22 size 300, 26
+  text "{status}" at 32, 48 size 560, 22
+
+  # @locked
+  shape rounded as details_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 92 size 608, 140
+  text "Customer: {customer}" at 32, 108 size 270, 22
+  text "Item: {item}" at 32, 134 size 270, 22
+  text "Quantity: {qty}" at 32, 160 size 270, 22
+  text "Bench: {ticket_bench}" at 32, 186 size 270, 22
+  text "Priority: {priority}" at 330, 108 size 270, 22
+  text "Payment: {pay}" at 330, 134 size 270, 22
+  text "State: {ticket_state}" at 330, 160 size 270, 22
+  text "Current quote: {ticket_total}" at 330, 186 size 270, 22
+
+  # @locked
+  shape rounded as canvas_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 16, 244 size 296, 200
+  text "Ticket canvas" at 32, 256 size 200, 20
+  paintbox as ticket_canvas at 32, 282 size 264, 146
+
+  # @locked
+  shape rounded as rates_card fill #ffffff stroke #dbe3ef stroke-width 1 radius 16 opacity 1 at 324, 244 size 300, 200
+  panel as runtime_panel at 340, 260 size 268, 168:
+    text "Native runtime pulse {heartbeat}"
+    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"
+    text "Quote revision {quote_revision}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+
+  button "Recalculate quote" as details_quote at 16, 460 size 180, 36
+  button "Mark ready" as details_ready at 208, 460 size 180, 36
+  button "Close details" as close_details at 400, 460 size 180, 36
+
+window "Inventory Center" as inventory size 900, 620:
+  text "Inventory Center" at 24, 20 size 280, 30
+  text "{inventory_status}" at 324, 20 size 520, 30
+  text "Filter" at 24, 66 size 90, 22
+  input inventory_filter at 24, 90 size 230, 36
+  text "Zone" at 276, 66 size 90, 22
+  combo "Main store", "Bench A", "Bench B", "Overflow" as inventory_zone at 276, 90 size 220, 36
+  text "Reorder quantity {reorder_qty}" at 520, 66 size 190, 22
+  slider 1..20 as reorder_qty step 1 at 520, 90 size 300, 38
+
+  table "SKU", "Part", "Zone", "Stock", "State" as inventory_grid at 24, 154 size 540, 310:
+    row "KB-001", "Keyboard", "Main store", "12", "Available"
+    row "TP-014", "Trackpad", "Bench A", "4", "Low"
+    row "PN-220", "Display panel", "Bench B", "2", "Reorder"
+    row "CB-119", "Display cable", "Main store", "18", "Available"
+    row "DR-301", "Precision driver", "Bench A", "7", "Available"
+    row "SL-044", "Solder", "Overflow", "3", "Low"
+
+  tree as inventory_tree at 588, 154 size 280, 310:
+    node "Stock"
+      node "Input devices"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Display panel"
+        node "Display cable"
+      node "Tools"
+        node "Precision driver"
+        node "Solder"
+    node "Locations"
+      node "Main store"
+      node "Bench A"
+      node "Bench B"
+      node "Overflow"
+
+  button "Prepare reorder" as reorder_button at 24, 500 size 170, 38
+  button "Open job details" as inventory_details at 210, 500 size 170, 38
+  button "Close inventory" as close_inventory at 396, 500 size 170, 38
+  statusbar "{inventory_status}" as inventory_statusbar at 0, 592 size 900, 28
+
+window "Customer Profile" as customer_profile size 760, 600:
+  text "Customer Profile" at 24, 20 size 280, 30
+  text "{customer_status}" at 318, 20 size 410, 30
+  text "Name" at 24, 68 size 100, 22
+  text "{customer}" at 24, 92 size 220, 36
+  text "Email" at 268, 68 size 100, 22
+  input customer_email at 268, 92 size 300, 36
+  text "Tier" at 590, 68 size 100, 22
+  combo "Standard", "Silver", "Gold", "Platinum" as customer_tier at 590, 92 size 140, 36
+  checkbox "Marketing updates" as customer_marketing at 24, 150 size 190, 36
+  text "Preferred channels" at 238, 150 size 160, 22
+  listbox "Email", "SMS", "Phone", "Portal" as customer_channels at 238, 176 size 220, 110
+  text "Account note" at 482, 150 size 150, 22
+  input customer_note at 482, 176 size 248, 38
+
+  table "Ticket", "Item", "State", "Quote" as customer_jobs at 24, 318 size 706, 150:
+    row "WD-104", "Keyboard", "Open", "40"
+    row "WD-091", "Display panel", "Ready", "210"
+    row "WD-076", "Trackpad", "Closed", "85"
+
+  button "Save profile" as customer_save at 24, 496 size 150, 38
+  button "Open current job" as customer_job at 190, 496 size 170, 38
+  button "Close profile" as close_customer at 376, 496 size 150, 38
+  statusbar "{customer_status}" as customer_statusbar at 0, 572 size 760, 28
+
+window "Workshop Diagnostics" as diagnostics size 840, 620:
+  text "Workshop Diagnostics" at 24, 20 size 300, 30
+  text "{diagnostic_status}" at 338, 20 size 470, 30
+  tabs as diagnostic_tabs at 24, 72 size 792, 270:
+    tab "Runtime":
+      text "Runtime mode"
+      radio "Runtime", "Designer", "Native" as diagnostic_mode
+      checkbox "Trace semantic changes" as trace_enabled
+      text "Sampling interval {diagnostic_interval}s"
+      slider 1..10 as diagnostic_interval step 1
+    tab "Build":
+      text "Offline compiler and sealed runtime readiness"
+      text "Use Downloads for platform compiler and Offline Studio bundles."
+      text "Current desktop Ready runtime contract: v1.10."
+    tab "Quality":
+      text "Designer materializes one active Form while preserving source-backed shells."
+      text "Workshop Desk exercises seven Forms; Studio Feature Lab covers the complete current Studio/Web surface."
+      text "Diagnostic runs: {diagnostic_runs} · runtime pulses: {diagnostic_ticks}"
+    tab "Environment":
+      text "Browser, Offline Studio and generated Web App share the same source."
+      text "Native capability gates remain fail-closed for unsupported resources."
+
+  table "Check", "Surface", "State" as diagnostic_checks at 24, 370 size 540, 150:
+    row "Designer", "Active Form materialization", "Ready"
+    row "Compiler", "Window Web App", "Ready"
+    row "Runtime", "Desktop v1.10", "Ready"
+    row "Offline", "Studio Stage 1", "Ready"
+
+  button "Run checks" as diagnostic_run at 590, 370 size 190, 38
+  button "Open settings" as diagnostic_settings at 590, 418 size 190, 38
+  button "Close diagnostics" as close_diagnostics at 590, 466 size 190, 38
+  timer as diagnostics_clock interval 3000
+  statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
+
+window "Studio Feature Lab" as components size 980, 700:
+  menu "Lab":
+    item "Confirm action..." as gallery_menu_confirm shortcut "Primary+K"
+    item "Open file..." as gallery_menu_open shortcut "Primary+O"
+    item "Save file..." as gallery_menu_save shortcut "Primary+S"
+    separator
+    item "Enabled" as gallery_menu_enabled checked gallery_enabled shortcut "Primary+E"
+  menu "Help":
+    item "About Feature Lab" as gallery_menu_about shortcut "F1"
+
+  # @locked
+  shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 18 opacity 1 at 16, 12 size 948, 64
+  text "Studio Feature Lab" at 32, 22 size 300, 26
+  text "{gallery_status}" at 346, 22 size 590, 26
+  text "Complete current Studio/Web acceptance surface · Component Registry 0.10" at 32, 48 size 700, 20
+
+  text "Project-v4 adds ImageList-backed icons from workshop.mark; the standalone source remains resource-free." at 32, 78 size 820, 18
+
+  imagelist as gallery_images size 20, 20:
+    image mark from "patch-resource:workshop.mark"
+
+  tabs as feature_tabs at 16, 100 size 948, 318:
+    tab "Inputs":
+      text "Text, Memo and all current source-backed Input presentations"
+      input gallery_text
+      memo gallery_memo
+      # @input-mode password
+      input gallery_secret
+      # @input-mask "AA-000"
+      input gallery_mask
+      # @number-edit
+      input gallery_number
+      # @input-mode date
+      input gallery_date
+      # @input-mode time
+      input gallery_time
+    tab "Choices":
+      text "Core choices plus CheckedListBox, ProgressBar, ScrollBar and LinkLabel"
+      checkbox "Enabled" as gallery_enabled
+      radio "Ready", "Review", "Blocked" as gallery_mode
+      combo "Blue", "Green", "Amber", "Red" as gallery_color
+      # @listbox-mode checked
+      listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features
+      slider 0..100 as gallery_level step 10
+      # @slider-mode progress
+      slider 0..100 as gallery_progress step 1
+      # @slider-mode scrollbar
+      slider 0..100 as gallery_scroll step 5
+      # @button-mode link
+      button "LinkLabel action" as gallery_link
+    tab "Calendar":
+      text "Calendar Stage 1 keeps ISO date text in ordinary Patch state"
+      # @input-mode calendar
+      input gallery_calendar
+      text "Selected date {gallery_calendar}"
+    tab "Data":
+      text "Advanced Table columns and TreeView node image, hint and state metadata"
+      # @table-columns 150:left, 180:left, 120:center
+      table "Component", "Contract", "Surface" as gallery_table:
+        row "Memo", "changed(value)", "Studio/Web"
+        row "Calendar", "ISO date text", "Studio/Web"
+        row "TreeView", "path list", "Studio/Web"
+        row "Table", "advanced columns", "Studio/Web"
+      tree as gallery_tree:
+        node "Component Registry 0.10" image gallery_images.mark hint "Feature Lab root" state info
+          node "Inputs" image gallery_images.mark hint "Input presentations" state success
+            node "Memo" image gallery_images.mark hint "Multiline text" state muted
+          node "Data" image gallery_images.mark hint "Structured controls" state warning
+            node "TreeView" image gallery_images.mark hint "Node metadata" state success
+    tab "Containers":
+      text "GroupBox, ScrollBox and SplitContainer are shown below the tabs because container controls stay top-level in Tabs Stage 1."
+      button "Focus container demos" as gallery_container_focus
+    tab "Graphics":
+      text "Project graphics, Separator preset, PaintBox and ImageList-backed Button"
+      picture as gallery_picture from "patch-resource:workshop.mark" description "Workshop Feature Lab picture"
+      # @locked
+      shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1
+      # @locked
+      shape line as gallery_separator fill transparent stroke #94a3b8 stroke-width 1 radius 0 opacity 1
+      paintbox as gallery_canvas
+      button "Resource button" as gallery_resource_button image gallery_images.mark
+
+  # @panel-mode group
+  panel as gallery_group at 16, 432 size 300, 160:
+    text "GroupBox presentation"
+    button "Group action" as gallery_group_action
+
+  panel as gallery_scrollbox at 328, 432 size 300, 160:
+    # @panel-scroll auto
+    text "ScrollBox keeps viewport state transient"
+    button "ScrollBox action" as gallery_scroll_action
+    text "Overflow content exercises a real scroll viewport."
+    text "No hidden application state is created by scrolling."
+
+  panel as gallery_split at 640, 432 size 324, 160:
+    # @panel-split vertical 42
+    text "Navigator pane"
+    button "Navigate" as gallery_split_left
+    # @panel-split-break
+    text "Preview pane"
+    button "Preview" as gallery_split_right
+
+  button "Refresh demo" as gallery_refresh image gallery_images.mark at 620, 620 size 160, 32
+  button "Close Feature Lab" as close_components at 792, 620 size 172, 32
+  timer as gallery_clock interval 2000
+  statusbar "{gallery_status} · progress {gallery_progress}% · pulse {gallery_ticks}" as gallery_statusbar at 0, 672 size 980, 28

@@ -3,7 +3,7 @@ name: Patch Native GUI Unified Build
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - src/native-gui-host.js
       - src/native-current-contract.js

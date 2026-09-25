@@ -46,7 +46,7 @@ Do not silently widen or flatten these labels. Future native features need a new
 
 Product JavaScript imports `src/native-current-contract.js`. The frozen TreeView facade is `src/native-frozen-contract.js`. Older versioned modules are compatibility evidence, not current Ready.
 
-Workshop Desk (`examples/workshop-desk.patch`) is seven Forms.
+Workshop Desk has two explicit fixtures: `examples/workshop-desk.patchproject` is the working seven-Form Studio/Web Project-v4 app and the sole current Studio sample owner; `examples/workshop-desk-native.patch` is the Current Ready native acceptance source. The old beta35 inline Workshop source/upgrader has been retired. Do not widen native v19 merely to keep the richer app native-compatible.
 
 ## Current collaboration state
 
@@ -97,9 +97,9 @@ Remaining unchecked R0 work, from `docs/ROADMAP.md`:
 2. define and implement a versioned Worker boundary for parse/compile/design-model work;
 3. bound any remaining design-time expression evaluation;
 4. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-5. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`;
-6. make Pages deployment release-aware so expected runtime-publication races do not generate failure noise;
-7. reduce CI notification noise and shrink Offline Compiler triggers to the real dependency closure.
+5. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
+
+CI/deployment reliability is closed for R0: PR workflows no longer allocate runners for every `synchronize` event, expensive gates remain manually dispatchable, integration runs remain on `main` where applicable, historical v0.8 native audits are manual-only, and CodeQL runs on `main`, schedule or manual dispatch.
 
 ## R1 status
 

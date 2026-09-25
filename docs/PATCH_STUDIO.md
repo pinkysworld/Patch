@@ -100,7 +100,7 @@ The R0 architecture foundation includes `studio-design-model/0.1`, the bounded d
 
 Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The performance harness includes a deterministic **10-Form / 200-control** stress fixture and real-Chrome Workshop measurements. Main-thread Worker adoption and large Table/Tree virtualization remain measurement-gated rather than being added without evidence.
 
-The post-R0 maintainability work has also extracted the Build controller, Run/runtime lifecycle and Window/control DOM renderer, converged Object Inspector dirty/apply/error paths, removed the obsolete Harbor sample source, and added control-level incremental reconciliation for Table where a canonical transient-state contract exists.
+The post-R0 maintainability work has also extracted the Build controller, Run/runtime lifecycle and Window/control DOM renderer, converged Object Inspector dirty/apply/error paths, removed the obsolete Harbor and beta35 Workshop compatibility sources so Project v4 is the single Workshop sample owner, and added control-level incremental reconciliation for Table where a canonical transient-state contract exists.
 
 ## Nonvisual tray and ImageList
 
@@ -144,11 +144,13 @@ Current Ready **IR 1.9 / payload v19 / runtime v1.10** implements application/Fo
 
 Windows CI verifies the packaged EXE with `ExtractAssociatedIcon` and `--patch-smoke`. Release SHA-256/GitHub digests, source binding, browser lookup and the dual-runtime Offline Compiler gate are also verified.
 
-## Workshop Desk acceptance example
+## Workshop Desk acceptance examples
 
-`examples/workshop-desk.patch` is the main cross-platform RAD showcase and stress fixture. The broader product surface now also has dedicated Button/ImageList and Window-icon fixtures that prove the resource-bearing native path.
+`examples/workshop-desk.patchproject` is the canonical working Project-v4 Studio/Web application and Designer stress fixture. Its entry file keeps all seven Forms together for active-Form switching, while `model.patch` owns Things/recipes and `logic.patch` owns event handlers. One project resource is consumed by application chrome, Picture, PaintBox and ImageList-backed Buttons. The main workflow stays task-oriented; one tabbed Studio Feature Lab carries the complete current Component Registry 0.10 and R4 Studio/Web presentations, including menus and result dialogs.
 
-The Workshop example remains useful as a dense Form/component acceptance application, but Current Ready capability is defined by the canonical component matrix and versioned runtime tests rather than by one showcase source file.
+`examples/workshop-desk-native.patch` is the separate Current Ready desktop fixture. It stays intentionally inside Native GUI IR 1.9 / payload v19 / runtime v1.10 instead of forcing richer Project-v4 semantics through an unsupported native boundary.
+
+Current Ready capability remains defined by the canonical component matrix and versioned runtime tests, not by the richer Studio/Web example.
 
 ## Run and Build
 

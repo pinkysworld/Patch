@@ -26,7 +26,7 @@ when active changed:
   change active:
     set = value
   change status:
-    set = "Account activity changed"
+    set = "Review activity changed"
 
 when access changed:
   change access:
@@ -133,10 +133,10 @@ when menu_pinned clicked:
     set = "Pinned menu state changed explicitly"
 
 when menu_about clicked:
-  dialog "Patch Studio Showcase", "Save profile stores this account on a Thing. Component Registry 0.10 labs open the rest of the Studio/Web surface."
+  dialog "Patch Studio Showcase", "Save profile stores this reviewer state on a Thing. The feature explorer covers the complete current Studio/Web component surface."
 
 when about_button clicked:
-  dialog "About", "Save profile runs a recipe that stores the account, scores the review and branches on whether the account is active."
+  dialog "About", "Save profile runs a recipe that stores the reviewer state on a Thing and branches on whether the review is active."
 
 when menu_open clicked:
   open file "Choose a Patch file" as menu_open_result

@@ -2,7 +2,7 @@ name: Patch Native Sealed Slider Runtime v1.4
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - 'src/sealed-native-gui-v13.js'
       - 'src/native-gui-ir-v13.js'

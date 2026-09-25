@@ -15,7 +15,9 @@ const workspace = read('_site/designer-workspace.js');
 const events = read('_site/designer-event-inspector.js');
 const toolbox = read('_site/designer-toolbox.js');
 const current = read('_site/src/native-current-contract.js');
-const workshop = read('_site/beta35-studio.js');
+const beta35 = read('_site/beta35-studio.js');
+const workshopLoader = read('_site/project-config-restore.js');
+const workshopProject = read('_site/workshop-desk-project.js');
 const sw = read('_site/sw.js');
 
 requireAll('beta36 Studio', index, [
@@ -24,11 +26,17 @@ requireAll('beta36 Studio', index, [
 ]);
 rejectAll('beta36 Studio', index, ['data-patch-version="0.2.0-beta.35"','Ready IR 1.3 / v1.4','viewBox="0 0 22 22"','shape-rendering="crispEdges"']);
 
-requireAll('beta36 Workshop Desk loader', workshop, [
-  'const WORKSHOP_DESK_SAMPLE = `','window "Workshop Desk" as main','window "Workshop settings" as settings',
-  'window "Job details" as details','window "Inventory Center" as inventory','window "Customer Profile" as customer_profile','window "Workshop Diagnostics" as diagnostics',"sample.value === 'workshopDesk'","loadButton.textContent = 'Load example'","loadButton?.addEventListener('click', loadSelectedSample)"
+requireAll('beta36 Workshop Desk Project-v4 loader', workshopLoader, [
+  "import { WORKSHOP_DESK_PROJECT } from './workshop-desk-project.js'",
+  "sample.value !== 'studioShowcase' && sample.value !== 'workshopDesk'",
+  "if (sample.value === 'workshopDesk') loadWorkshopDeskProject()",
+  "loadStudioProject(WORKSHOP_DESK_PROJECT"
 ]);
-rejectAll('beta36 Workshop Desk loader', workshop, ['window "Harbor Desk"','queueMicrotask(loadSelectedSample)']);
+requireAll('beta36 Workshop Desk Project-v4 bundle', workshopProject, [
+  '"format": "patch-studio-project"','"version": 4','"name": "Workshop Desk"',
+  'window \\"Workshop Desk\\" as main','window \\"Studio Feature Lab\\" as components'
+]);
+rejectAll('beta36 beta35 Studio layer', beta35, ['const WORKSHOP_DESK_SAMPLE = `','window "Harbor Desk"','loadWindowSample(WORKSHOP_DESK_SAMPLE)']);
 requireAll('beta36 RAD arrange surface', multi, ['patchAlignRight','patchAlignBottom','patchSameWidth','patchSameHeight','patchDistributeHorizontal','patchDistributeVertical']);
 requireAll('beta36 RAD Object Inspector', workspace, ['Object Inspector','designer-event-inspector.js','designer-focus-order.js','designer-toolbox.js']);
 requireAll('beta36 RAD event inspector', events, ['Properties','Events','Create handler','Open handler']);

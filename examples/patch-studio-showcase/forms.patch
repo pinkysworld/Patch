@@ -2,7 +2,7 @@ window "Component Gallery" as components size 1080, 760:
   # @locked
   shape rounded as gallery_header fill #ecfeff stroke #bae6fd stroke-width 1 radius 20 opacity 1 at 24, 18 size 1032, 84
   text "Component Gallery" at 44, 36 size 360, 32
-  text "Pick a contract, then open the lab that exercises it. Registry 0.10." at 44, 68 size 560, 22
+  text "Pick a contract, then open the lab that exercises it. Component Registry 0.10." at 44, 68 size 560, 22
   text "{gallery_status}" at 700, 42 size 324, 38
 
   # @locked

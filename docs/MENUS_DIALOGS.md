@@ -1,6 +1,6 @@
 # Menus and informational dialogs
 
-Patch has a language, Change IR and native-runtime contract for structural Window menus and informational dialogs. Direct native AOT and the current token-free Ready/offline desktop line support separators, portable keyboard shortcuts and source-backed MenuItem enabled/checked state.
+Patch has a language, Change IR and native-runtime contract for structural Window menus and informational dialogs. Direct native AOT and the current token-free Ready/offline desktop line support separators, portable keyboard shortcuts and source-backed MenuItem enabled/checked state. Standalone Window Web v0.10 now carries the same source-backed menu structure plus the existing informational and result-bearing dialog flows.
 
 ## Syntax
 
@@ -152,6 +152,20 @@ The token-free Ready app and ordinary offline Window linker now use **Native GUI
 The Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains independently tested as the frozen compatibility contract and is Slider fail-closed. The v11/runtime v1.2 Menu+list line remains independently tested below that. Payload v13/runtime v1.4 is the historical Slider line: it does not reinterpret v12, and it is not current Ready. Payload v17/runtime v1.8 remains the explicit Offline Compiler compatibility underlay.
 
 Patch Studio's browser Ready path verifies the v1.10 runtime assets through the deployment SHA-256 manifest before sealing. The downloadable offline compiler defaults to payload v19/runtime v1.10 and smoke-runs responsive, Table, ListBox, Menu, TreeView and Slider apps on its supported desktop hosts.
+
+## Standalone Window Web v0.10
+
+Standalone Window Web v0.10 supports structural menus without stripping source features:
+
+- source order is preserved as a browser menu bar;
+- separators remain structural;
+- `enabled` and `checked` bindings are projected from ordinary Patch Boolean state;
+- portable shortcuts are matched at the document level using the same Primary/Ctrl/Meta/Alt/Shift identity rules;
+- MenuItem activation emits the ordinary named `clicked` event and never toggles persistent state implicitly.
+
+Informational `dialog` uses the browser information-dialog path. Confirmation dialogs emit only `confirmed` or `cancelled`. Open File uses a browser file picker and exposes the browser-visible selected file name as transient `chosen(value)` data. Browsers do not expose an arbitrary local filesystem path. Save File uses the File System Access picker when available and a bounded file-name fallback otherwise. In every case, the returned value remains transient until a handler explicitly performs `change`.
+
+This Web support is additive. It does not widen any native IR/payload/runtime version or the beta.32 formal-assurance boundary.
 
 ## Result-bearing dialogs
 

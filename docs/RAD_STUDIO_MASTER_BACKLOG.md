@@ -165,7 +165,7 @@ Remaining:
 - [x] extract bounded transient runtime selection/state helpers;
 - [x] extract Build controller;
 - [x] keep `playground.js` as orchestration rather than a second framework for the extracted paths;
-- [ ] remove obsolete duplicate Workshop/Harbor compatibility source once migration coverage no longer needs it.
+- [x] remove obsolete duplicate Workshop/Harbor compatibility source; the Studio Workshop sample now has one Project-v4 owner in `project-config-restore.js`.
 
 ## P0.8 CI/deployment reliability
 
@@ -173,7 +173,7 @@ Remaining:
 - [x] retain fail-closed runtime/digest verification;
 - [x] live HTTP/Chrome verification after deploy;
 - [x] deployed Tutorials/Examples handbook surfaces live-smoked after Pages deployment;
-- [x] reduce PR notification noise with draft suppression and one canonical ready-PR Patch CI matrix;
+- [x] reduce PR notification/runner noise: PR workflows opt into explicit `opened`, `reopened` and `ready_for_review` lifecycle events and do not run on every `synchronize`; heavy validation remains manually dispatchable and integration validation remains on `main` where applicable;
 - [x] shrink Offline Compiler triggers/package closure to the real compiler dependency graph.
 
 **R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI. The milestone itself is complete; unchecked entries above are post-R0 follow-ups tracked by #308 unless another owner is named.

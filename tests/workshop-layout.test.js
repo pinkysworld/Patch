@@ -25,36 +25,49 @@ function contains(outer, inner) {
 }
 
 function label(control) {
-  return control.id || control.label || `${control.type}@${control.line}`;
+  return control.id || control.label || control.type + '@' + control.line;
 }
 
-test('Workshop Desk main Form uses a clean non-overlapping dashboard layout', () => {
-  const main = listDesignerWindows(source).find(window => window.id === 'main');
-  assert.ok(main);
-  assert.equal(main.width, 1080);
-  assert.equal(main.height, 720);
-
-  const controls = listDesignerControls(source)
-    .filter(control => control.windowIndex === main.windowIndex)
+function controlsFor(windowIndex) {
+  return listDesignerControls(source)
+    .filter(control => control.windowIndex === windowIndex)
     .map(control => ({ control, rect: geometry(control) }))
     .filter(item => item.rect);
+}
 
-  for (let left = 0; left < controls.length; left += 1) {
-    for (let right = left + 1; right < controls.length; right += 1) {
-      const a = controls[left];
-      const b = controls[right];
-      const contained = (a.control.type === 'shape' && contains(a.rect, b.rect))
-        || (b.control.type === 'shape' && contains(b.rect, a.rect));
-      assert.equal(
-        overlaps(a.rect, b.rect) && !contained,
-        false,
-        `Workshop controls overlap: ${label(a.control)} and ${label(b.control)}`
-      );
+test('every Workshop Form keeps positioned top-level controls inside its declared bounds', () => {
+  const windows = listDesignerWindows(source);
+  assert.equal(windows.length, 7);
+
+  for (const form of windows) {
+    for (const { control, rect } of controlsFor(form.windowIndex)) {
+      assert.equal(rect.x >= 0 && rect.y >= 0, true, form.id + ': ' + label(control) + ' starts outside the Form');
+      assert.equal(rect.x + rect.width <= form.width, true, form.id + ': ' + label(control) + ' exceeds Form width');
+      assert.equal(rect.y + rect.height <= form.height, true, form.id + ': ' + label(control) + ' exceeds Form height');
     }
   }
 });
 
-test('Workshop Desk separates ticket, workflow, data and action regions with deliberate whitespace', () => {
+test('every Workshop Form is free of accidental top-level overlaps', () => {
+  for (const form of listDesignerWindows(source)) {
+    const controls = controlsFor(form.windowIndex);
+    for (let left = 0; left < controls.length; left += 1) {
+      for (let right = left + 1; right < controls.length; right += 1) {
+        const a = controls[left];
+        const b = controls[right];
+        const decorationContainsControl = (a.control.type === 'shape' && contains(a.rect, b.rect))
+          || (b.control.type === 'shape' && contains(b.rect, a.rect));
+        assert.equal(
+          overlaps(a.rect, b.rect) && !decorationContainsControl,
+          false,
+          form.id + ': controls overlap: ' + label(a.control) + ' and ' + label(b.control)
+        );
+      }
+    }
+  }
+});
+
+test('Workshop Desk separates ticket, queue and action regions with deliberate whitespace', () => {
   const controls = listDesignerControls(source).filter(control => control.windowIndex === 0);
   const services = controls.find(control => control.id === 'services');
   const board = controls.find(control => control.id === 'board');
@@ -73,20 +86,12 @@ test('Workshop Desk separates ticket, workflow, data and action regions with del
   assert.equal((components?.y ?? 0) + (components?.height ?? 0) < (status?.y ?? 0), true);
 });
 
-test('Component Gallery keeps visible controls inside a compact non-overlapping surface', () => {
-  const gallery = listDesignerWindows(source).find(window => window.id === 'components');
-  assert.ok(gallery);
-  assert.equal(gallery.width, 900);
-  assert.equal(gallery.height, 640);
-
-  const controls = listDesignerControls(source)
-    .filter(control => control.windowIndex === gallery.windowIndex)
-    .map(control => ({ control, rect: geometry(control) }))
-    .filter(item => item.rect);
-
-  for (const { control, rect } of controls) {
-    assert.equal(rect.x >= 0 && rect.y >= 0, true, `${label(control)} starts outside Component Gallery`);
-    assert.equal(rect.x + rect.width <= gallery.width, true, `${label(control)} exceeds Component Gallery width`);
-    assert.equal(rect.y + rect.height <= gallery.height, true, `${label(control)} exceeds Component Gallery height`);
+test('presentation-only Workshop card Shapes are explicitly locked', () => {
+  for (const id of [
+    'desk_header', 'ticket_card', 'queue_card', 'side_card',
+    'details_header', 'details_card', 'canvas_card', 'rates_card',
+    'gallery_header'
+  ]) {
+    assert.match(source, new RegExp('# @locked\\n\\s*shape rounded as ' + id + '\\b'), id + ' must remain Designer-locked');
   }
 });

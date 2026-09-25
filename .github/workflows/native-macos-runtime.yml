@@ -2,57 +2,7 @@
 # Ready publishes native-macos-runtime-v1.4 via native-sealed-slider-runtime-v14.yml.
 name: Patch Native macOS Runtime v0.8 (historical)
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/native-macos-runtime.yml
-      - native-runtime/appkit-sealed-gui-v07.mm
-      - native-runtime/appkit-sealed-gui-v08.mm
-      - scripts/seal-native-macos.js
-      - src/sealed-native-gui.js
-      - src/native-gui-ir.js
-      - examples/forms-navigation.patch
-      - examples/combo-window.patch
-      - examples/listbox-window.patch
-      - examples/tabs-window.patch
-      - examples/radio-window.patch
-      - examples/menu-dialog-window.patch
-      - examples/result-dialog-window.patch
-      - tests/sealed-native-gui.test.js
-      - tests/sealed-native-accessibility.test.js
-      - tests/combobox-window.test.js
-      - tests/listbox-window.test.js
-      - tests/tabs-window.test.js
-      - tests/radio-window.test.js
-      - tests/menu-dialog-window.test.js
-      - tests/result-dialog-window.test.js
-      - tests/studio-macos-native-gui.test.js
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/native-macos-runtime.yml
-      - native-runtime/appkit-sealed-gui-v07.mm
-      - native-runtime/appkit-sealed-gui-v08.mm
-      - scripts/seal-native-macos.js
-      - src/sealed-native-gui.js
-      - src/native-gui-ir.js
-      - examples/forms-navigation.patch
-      - examples/combo-window.patch
-      - examples/listbox-window.patch
-      - examples/tabs-window.patch
-      - examples/radio-window.patch
-      - examples/menu-dialog-window.patch
-      - examples/result-dialog-window.patch
-      - tests/sealed-native-gui.test.js
-      - tests/sealed-native-accessibility.test.js
-      - tests/combobox-window.test.js
-      - tests/listbox-window.test.js
-      - tests/tabs-window.test.js
-      - tests/radio-window.test.js
-      - tests/menu-dialog-window.test.js
-      - tests/result-dialog-window.test.js
-      - tests/studio-macos-native-gui.test.js
+on:  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

@@ -2,7 +2,7 @@ name: Patch Native Sealed PaintBox Image Runtime v1.8
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
     paths:
       - 'src/sealed-native-gui-v17.js'
       - 'src/native-gui-ir-v17.js'

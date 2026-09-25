@@ -42,17 +42,6 @@ function collectKinds(nodes, out = new Set()) {
   return out;
 }
 
-function webReadyShowcaseSlice() {
-  const main = bundle.files.find(file => file.path === 'main.patch')?.content ?? '';
-  const forms = bundle.files.find(file => file.path === 'forms.patch')?.content ?? '';
-  const withoutMenus = main.replace(
-    /\n  menu "File":[\s\S]*?\n\n  # @locked/,
-    '\n  # @locked'
-  );
-  assert.doesNotMatch(withoutMenus, /^\s*menu\b/m, 'Web-ready Showcase slice must not silently retain unsupported Menu nodes');
-  return `${withoutMenus}\n${forms}\nwhen gallery_canvas paint:\n  draw clear #f8fafc\n  draw image "patch-resource:showcase.logo" at 16, 16 size 48, 48\n`;
-}
-
 test('Patch Studio Showcase is a canonical current project-v4 multi-file fixture', () => {
   assert.equal(bundle.version, PATCH_STUDIO_PROJECT_VERSION);
   assert.equal(bundle.project.name, 'Patch Studio Showcase');
@@ -79,9 +68,9 @@ test('Patch Studio Showcase preserves a presentation-ready dashboard hierarchy i
     assert.match(main, new RegExp(`shape rounded as ${card}`));
   }
   assert.match(main, /panel as actions_panel at 780, 436 size 376, 318/);
-  assert.match(main, /text "Account & input"/);
-  assert.match(main, /text "Preferences & state"/);
-  assert.match(main, /text "Details & semantics"/);
+  assert.match(main, /text "Reviewer & input modes"/);
+  assert.match(main, /text "Review preferences"/);
+  assert.match(main, /text "Project & semantics"/);
   assert.match(main, /text "Quick actions"/);
   assert.doesNotMatch(main, /text "Input presentations"/);
   assert.doesNotMatch(main, /text "Choices and state"/);
@@ -182,27 +171,22 @@ test('Patch Studio Showcase covers structural RAD, dialogs, resources and explic
   assert.match(composition.source, /when outline_tree changed:\n  change tree_path:\n    set = value/);
 });
 
-test('complete Showcase preserves explicit fail-closed export boundaries instead of hiding unsupported target features', () => {
-  assert.throws(
-    () => buildStandaloneWebApp(composition.source, {
-      name: bundle.project.name,
-      kind: bundle.project.kind,
-      entry: bundle.project.entry,
-      resources: bundle.resources
-    }),
-    /Menu decorations|Standalone Window Web App does not yet support:.*menu/i
-  );
-});
-
-test('Web-compatible Showcase slice packages every current Studio/Web-only R4 surface and resources', () => {
-  const built = buildStandaloneWebApp(webReadyShowcaseSlice(), {
-    name: `${bundle.project.name} Web Surface`,
+test('complete Showcase builds its declared Web target with menus, dialogs, R4 surfaces and resources', () => {
+  const built = buildStandaloneWebApp(composition.source, {
+    name: bundle.project.name,
     kind: 'window',
     entry: bundle.project.entry,
     resources: bundle.resources
   });
 
   assert.equal(built.metadata.projectKind, 'window');
+  assert.equal(built.metadata.version, '0.10');
+  assert.equal(built.metadata.menuStage, 1);
+  assert.equal(built.metadata.menuItems >= 6, true);
+  assert.equal(built.metadata.menuSeparators >= 1, true);
+  assert.equal(built.metadata.menuShortcuts >= 3, true);
+  assert.equal(built.metadata.resultDialogStage, 1);
+  assert.equal(built.metadata.resultDialogs >= 3, true);
   assert.equal(built.metadata.memoStage, 1);
   assert.equal(built.metadata.passwordEditStage, 1);
   assert.equal(built.metadata.datePickerStage, 1);
@@ -229,6 +213,10 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.equal(built.metadata.splitContainerStage, 1);
   assert.equal(built.metadata.splitContainerMode, 'source-backed-panel-two-pane');
   assert.equal(built.metadata.splitContainerResizeState, 'transient-runtime-only');
+  assert.match(built.html, /patch-menu-bar/);
+  assert.match(built.html, /runConfirmDialog/);
+  assert.match(built.html, /runOpenFileDialog/);
+  assert.match(built.html, /runSaveFileDialog/);
   assert.match(built.html, /createElement\('textarea'\)/);
   assert.match(built.html, /data-patch-window-passwordedit/);
   assert.match(built.html, /dataset\.patchInputPresentation='date'/);
@@ -253,15 +241,16 @@ test('Web-compatible Showcase slice packages every current Studio/Web-only R4 su
   assert.match(built.html, /PATCH_IMAGE_RESOURCES/);
 });
 
-test('Patch Studio Showcase saves, scores and restores a review profile', () => {
+test('Patch Studio Showcase saves and restores a coherent reviewer profile without artificial scoring', () => {
   const runtime = new PatchInterpreter();
   runtime.run(composition.source);
   const hero = () => runtime.buildUIModel()[0].controls.find(control => String(control.text).startsWith('Saved '));
 
   assert.equal(runtime.state.get('profile').name, 'Ada');
-  assert.equal(runtime.state.get('review_score'), 0);
+  assert.equal(runtime.state.has('review_score'), false);
   assert.equal(runtime.state.get('profile_saves'), 0);
-  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada/);
+  assert.doesNotMatch(composition.source, /score_review|review_score/);
 
   triggerWindowEvent(runtime, 'user_name', 'changed', { value: 'Grace' });
   triggerWindowEvent(runtime, 'nested_code', 'changed', { value: 'PX-100' });
@@ -281,9 +270,8 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(profile.level, 60);
   assert.deepEqual(profile.surfaces, ['Designer', 'Web']);
   assert.equal(runtime.state.get('profile_saves'), 1);
-  assert.equal(runtime.state.get('review_score'), 30);
-  assert.equal(runtime.state.get('status'), 'Saved Grace · Admin · 2026-10-01 · score 30');
-  assert.match(hero().text, /Saved Grace · 2026-10-01 09:15 · editing Grace · score 30/);
+  assert.equal(runtime.state.get('status'), 'Saved review profile · Grace · Admin · 2026-10-01');
+  assert.match(hero().text, /Saved Grace · 2026-10-01 09:15 · editing Grace/);
 
   triggerWindowEvent(runtime, 'active', 'changed', { value: false });
   triggerWindowEvent(runtime, 'level', 'changed', { value: 10 });
@@ -293,7 +281,6 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(profile.active, false);
   assert.equal(profile.level, 10);
   assert.equal(runtime.state.get('profile_saves'), 2);
-  assert.equal(runtime.state.get('review_score'), 15);
   assert.equal(runtime.state.get('status'), 'Saved inactive profile for Grace');
   assert.equal(runtime.state.get('profile_summary'), 'Inactive Grace');
 
@@ -308,7 +295,6 @@ test('Patch Studio Showcase saves, scores and restores a review profile', () => 
   assert.equal(runtime.state.get('completion'), 35);
   assert.equal(runtime.state.get('selected_path'), 'No file selected');
   assert.equal(runtime.state.get('profile_saves'), 0);
-  assert.equal(runtime.state.get('review_score'), 0);
   assert.equal(runtime.state.get('status'), 'Showcase restored to its demo defaults');
-  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada · score 0/);
+  assert.match(hero().text, /Saved Ada · 2026-09-10 14:30 · editing Ada/);
 });

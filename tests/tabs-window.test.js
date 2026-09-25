@@ -118,9 +118,9 @@ test('Patch Studio exposes Tabs in the toolbox and renders a real tablist/tabpan
   assert.match(formsDesigner, /formControlDefaultSize/);
 });
 
-test('Standalone Window Web runtime v0.9 renders Tabs and nested controls', () => {
+test('Standalone Window Web runtime v0.10 renders Tabs and nested controls', () => {
   const built = buildStandaloneWebApp(source, { name: 'TabsDemo', kind: 'window' });
-  assert.equal(built.metadata.version, '0.9');
+  assert.equal(built.metadata.version, '0.10');
   assert.match(built.html, /patch-tabs-list/);
   assert.match(built.html, /patch-tab-button/);
   assert.match(built.html, /patch-tab-panel/);
