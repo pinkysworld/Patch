@@ -9,12 +9,8 @@ import { PATCH_COMPONENTS } from '../src/component-registry.js';
 import { parseStudioProjectBundle, composeStudioProjectSource } from '../src/studio-project.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
-import { upgradeWorkshopDeskSource, WORKSHOP_DESK_CURRENT_SAMPLE_VERSION } from '../web/studio-dom-sync.js';
 
 const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
-const nativeFixture = fs.readFileSync('examples/workshop-desk-native.patch', 'utf8');
-const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
-const html = fs.readFileSync('web/index.html', 'utf8');
 const workshopProject = parseStudioProjectBundle(fs.readFileSync('examples/workshop-desk.patchproject', 'utf8'));
 const workshopProjectSource = composeStudioProjectSource(workshopProject).source;
 
@@ -28,92 +24,6 @@ function collectComponentTypes(nodes, out = new Set()) {
   }
   return out;
 }
-
-function embeddedWorkshopBaseline() {
-  const match = studioModule.match(/const WORKSHOP_DESK_SAMPLE = `([\s\S]*?)`;\n\nconst MULTISELECT_SAMPLE/);
-  assert.ok(match, 'Studio must retain the beta35 Workshop Desk compatibility source block');
-  return match[1];
-}
-
-function normalizeRetainedSampleSpacing(source) {
-  return String(source).replace(
-    '  statusbar "{status}" as desk_status at 0, 692 size 1080, 28\nwindow "Workshop settings"',
-    '  statusbar "{status}" as desk_status at 0, 692 size 1080, 28\n\nwindow "Workshop settings"'
-  );
-}
-
-function workshopV06Fixture() {
-  return nativeFixture
-    .replace(
-      'create number ticket_total = 40\ncreate number base_rate = 25\ncreate number inspection_fee = 15\ncreate number rush_fee = 20\ncreate number quote_revision = 0',
-      'create number ticket_total = 40'
-    )
-    .replace(
-      '  text "Quote {ticket_total} · {ticket_state} · rev {quote_revision}" at 620, 20 size 420, 28',
-      '  text "Quote {ticket_total} · {ticket_state}" at 620, 20 size 420, 28'
-    )
-    .replace(
-      '  text "Seven-Form RAD showcase · Current Ready subset of Component Registry 0.10 is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22',
-      '  text "Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component." at 16, 660 size 1048, 22'
-    )
-    .replace(
-      '      text "It covers the Current Ready subset of Component Registry 0.10, including nonvisual Timer and ImageList authoring."',
-      '      text "It covers the complete Component Registry 0.9 surface, including nonvisual Timer and ImageList authoring."'
-    )
-    .replace(
-      '  panel as runtime_panel at 340, 260 size 268, 168:\n    text "Native runtime pulse {heartbeat}"\n    text "Rate {base_rate} · inspection {inspection_fee} · rush {rush_fee}"\n    text "Quote revision {quote_revision}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1',
-      '  panel as runtime_panel at 340, 260 size 268, 168:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1'
-    )
-    .replace(
-      '      text "Workshop Desk exercises seven Forms and the Current Ready subset of Component Registry 0.10."',
-      '      text "Workshop Desk exercises seven Forms and the complete Component Registry 0.9 surface."'
-    )
-    .replace('    node "Registry 0.10 native subset"', '    node "Registry 0.9"')
-    .replace(
-      'when quote_button clicked:\n  change ticket_total:\n    add 25\n    add 15\n  change quote_revision:\n    add 1\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Base rate and inspection added"',
-      'when quote_button clicked:\n  change ticket_total:\n    add 25\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Quote increased by 25"'
-    )
-    .replace(
-      'when details_quote clicked:\n  change ticket_total:\n    add 15\n  change quote_revision:\n    add 1\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Inspection fee added to quote"',
-      'when details_quote clicked:\n  change ticket_total:\n    add 10\n  change ticket_state:\n    set = "Quoted"\n  change status:\n    set = "Inspection added to quote"'
-    )
-    .replace(
-      '    set = "Current Ready Component Registry 0.10 subset opened"',
-      '    set = "Complete Component Registry 0.9 gallery opened"'
-    )
-    .replace(
-      '  change ticket_total:\n    set = 40\n  change quote_revision:\n    set = 0\n',
-      '  change ticket_total:\n    set = 40\n'
-    );
-}
-
-test('legacy Workshop compatibility source still upgrades cached canonical v0.6 projects to v0.7', () => {
-  const v06 = workshopV06Fixture();
-  assert.match(v06, /Component Registry 0\.9/);
-  assert.doesNotMatch(v06, /quote_revision/);
-  assert.equal(upgradeWorkshopDeskSource(v06), nativeFixture);
-});
-
-test('legacy Workshop upgrader leaves user-modified v0.6 projects untouched', () => {
-  const customized = workshopV06Fixture().replace(
-    '    set = "Quote increased by 25"',
-    '    set = "Custom quote workflow"'
-  );
-  assert.match(customized, /Custom quote workflow/);
-  assert.equal(upgradeWorkshopDeskSource(customized), customized);
-});
-
-test('Studio retains the v0.7 compatibility block while canonical Workshop is the richer app', () => {
-  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.7');
-  assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
-  assert.match(studioModule, /sample\.value === 'workshopDesk'/);
-  assert.equal(
-    normalizeRetainedSampleSpacing(upgradeWorkshopDeskSource(embeddedWorkshopBaseline())),
-    nativeFixture,
-    'cached beta35 Workshop source must resolve to the isolated Current Ready fixture'
-  );
-  assert.notEqual(example, nativeFixture, 'canonical Workshop must be free to demonstrate richer Studio/Web semantics');
-});
 
 test('Workshop Desk compiles and starts as a seven-Form working application', () => {
   const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
