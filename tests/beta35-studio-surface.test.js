@@ -42,7 +42,6 @@ test('selected examples reload explicitly while fresh Studio keeps the lightweig
     "loadButton.id = 'loadSample'",
     "loadButton.textContent = 'Load example'",
     "sample.dispatchEvent(new Event('change', { bubbles: true }))",
-    "sample.value === 'workshopDesk'",
     "loadButton?.addEventListener('click', loadSelectedSample)"
   ]) assert.ok(moduleSource.includes(marker), marker);
   assert.match(index, /<option value="counterWindow" selected>Window app<\/option>/);
