@@ -5,6 +5,7 @@ import {
   persistStudioProjectFromDom
 } from './project-lifecycle.js';
 import { PATCH_STUDIO_SHOWCASE_PROJECT } from './studio-showcase-project.js';
+import { WORKSHOP_DESK_PROJECT } from './workshop-desk-project.js';
 
 const CURRENT_KEYS = ['patchStudio.project.v4', 'patchStudio.project.v3', 'patchStudio.project.v2', 'patchStudio.project.v1'];
 const buildTarget = document.querySelector('#buildTarget');
@@ -12,7 +13,7 @@ const nativeBuildMode = document.querySelector('#nativeBuildMode');
 const sample = document.querySelector('#sample');
 
 installDesignerObserverCoordinator();
-installStudioShowcaseSample();
+installStudioProjectSamples();
 
 // Example selection is an explicit load action, not project persistence. Keep the
 // fast Counter example selected at startup so the large Workshop Desk or complete
@@ -33,7 +34,7 @@ try {
   // project-lifecycle owns corruption/quarantine reporting; startup restoration remains best-effort here.
 }
 
-function installStudioShowcaseSample() {
+function installStudioProjectSamples() {
   if (!sample) return;
   let option = sample.querySelector('option[value="studioShowcase"]');
   if (!option) {
@@ -45,14 +46,15 @@ function installStudioShowcaseSample() {
   }
 
   sample.addEventListener('change', event => {
-    if (sample.value !== 'studioShowcase') return;
+    if (sample.value !== 'studioShowcase' && sample.value !== 'workshopDesk') return;
     event.stopImmediatePropagation();
     try {
-      loadStudioShowcaseProject();
+      if (sample.value === 'workshopDesk') loadWorkshopDeskProject();
+      else loadStudioShowcaseProject();
     } catch (error) {
       const status = document.querySelector('#saveState');
       if (status) {
-        status.textContent = 'Showcase load stopped';
+        status.textContent = sample.value === 'workshopDesk' ? 'Workshop load stopped' : 'Showcase load stopped';
         status.title = error?.message ?? String(error);
       }
     }
@@ -60,7 +62,15 @@ function installStudioShowcaseSample() {
 }
 
 function loadStudioShowcaseProject() {
-  const incoming = parseStudioProjectBundle(PATCH_STUDIO_SHOWCASE_PROJECT);
+  return loadStudioProject(PATCH_STUDIO_SHOWCASE_PROJECT, 'Patch Studio Showcase loaded', 'Complete current Project v4 Studio showcase loaded locally.');
+}
+
+function loadWorkshopDeskProject() {
+  return loadStudioProject(WORKSHOP_DESK_PROJECT, 'Workshop Desk loaded', 'Working Project v4 Workshop Desk loaded with resources and multi-file source.');
+}
+
+function loadStudioProject(projectText, statusText, statusTitle) {
+  const incoming = parseStudioProjectBundle(projectText);
   const entry = incoming.files.find(file => file.path === incoming.project.entry);
   if (!entry) throw new Error(`Showcase entry '${incoming.project.entry}' is missing.`);
 
@@ -110,8 +120,8 @@ function loadStudioShowcaseProject() {
 
   const status = document.querySelector('#saveState');
   if (status) {
-    status.textContent = 'Patch Studio Showcase loaded';
-    status.title = 'Complete current Project v4 Studio showcase loaded locally.';
+    status.textContent = statusText;
+    status.title = statusTitle;
   }
 }
 
