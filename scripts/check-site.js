@@ -22,7 +22,7 @@ if (pkg.version !== '0.2.0-beta.36') throw new Error(`Unexpected Patch site pack
 const requiredFiles = [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/icon.svg','_site/manifest.webmanifest','_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
-  '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js','_site/studio-language-client.js','_site/studio-language-worker.js','_site/src/studio-worker-protocol.js',
+  '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js','_site/studio-preview-virtualization.js','_site/studio-language-client.js','_site/studio-language-worker.js','_site/src/studio-worker-protocol.js',
   '_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-structural-keyboard.js',
   '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
   '_site/designer-event-inspector.js','_site/designer-focus-order.js',

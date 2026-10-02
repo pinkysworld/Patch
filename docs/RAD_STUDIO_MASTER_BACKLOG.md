@@ -125,7 +125,7 @@ Completed:
 
 Remaining:
 
-- [ ] virtualize very large Table/Tree previews where measurements justify it;
+- [x] `studio-preview-virtualization/0.1` windowing for very large Designer Table/Tree previews, retaining full runtime DOM and bounding preview DOM to viewport + overscan;
 - [x] `patch-studio-worker/0.2` protocol plus `studio-language-client/0.1` and browser Worker host for parse/compile/design-model work;
 - [x] `studio-design-model/0.2` design-time evaluation policy bounds each evaluated expression and the aggregate expression surface.
 

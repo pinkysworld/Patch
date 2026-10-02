@@ -84,6 +84,7 @@ Done. Do not reimplement:
 - `studio-design-model/0.2` and bounded `studio-design-cache/0.1`;
 - versioned design-time evaluation policy `0.1` bounds each evaluated expression and the aggregate expression surface;
 - `patch-studio-worker/0.2` is wired into live Designer and Change Contract paths through the browser Worker host/client, with stale-response guards and synchronous fallback;
+- `studio-preview-virtualization/0.1` virtualizes only very large Designer Table/Tree previews, with runtime Table/Tree semantics left untouched;
 - primary `refreshDesigner()` uses the bounded declaration-only design snapshot cache and no longer executes unrelated application behavior;
 - hosted and Offline Studio package the same design-model/cache module closure;
 - `studio-form-materialization/0.1` materializes control DOM only for the active Designer Form;
@@ -97,9 +98,8 @@ Done. Do not reimplement:
 
 Remaining unchecked R0 work, from `docs/ROADMAP.md`:
 
-1. virtualize very large Table/Tree previews where measurements justify it;
-2. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-3. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
+1. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
+2. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
 
 Pages release-awareness and the Offline Compiler dependency closure were already complete. As of 2026-10-02 all repository GitHub Actions are additionally manual-only through `workflow_dispatch` during active development, so normal pushes and PRs consume no Actions minutes.
 
@@ -191,6 +191,7 @@ node src/cli-entry.js doctor --json
 | `src/studio-design-cache.js` | Bounded design snapshot cache |
 | `src/studio-worker-protocol.js` | Versioned parse/compile/design-model request/response boundary and synchronous fallback handler |
 | `web/studio-language-client.js` / `web/studio-language-worker.js` | Browser Worker client/host for live Studio language tasks |
+| `web/studio-preview-virtualization.js` | Shared bounded Table/Tree Designer preview windowing policy |
 | `src/studio-form-materialization.js` | Canonical active-Form Designer materialization policy |
 | `scripts/build-offline-studio.js` | Self-contained Offline Studio builder |
 | `.github/workflows/offline-studio.yml` | Cross-platform Offline Studio build/release contract |
@@ -202,4 +203,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Do the remaining unchecked R0 items first: large Table/Tree preview virtualization, adapter-owned incremental reconciliation, and extracting the rest of runtime lifecycle from `web/playground.js`. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
+Do the remaining unchecked R0 items first: adapter-owned incremental reconciliation and extracting the rest of runtime lifecycle from `web/playground.js`. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.

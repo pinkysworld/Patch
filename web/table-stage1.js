@@ -3,6 +3,13 @@ import { evaluateLoose } from '../src/expression.js';
 import { readWindowTableColumnPresentation } from '../src/table-column-presentation.js';
 import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import {
+  PATCH_STUDIO_PREVIEW_DEFAULT_VIEWPORT,
+  PATCH_STUDIO_PREVIEW_OVERSCAN,
+  PATCH_STUDIO_PREVIEW_TABLE_ROW_HEIGHT,
+  PATCH_STUDIO_PREVIEW_TABLE_THRESHOLD,
+  resolveStudioPreviewWindow
+} from './studio-preview-virtualization.js';
+import {
   addDesignerControl,
   listDesignerControls
 } from '../src/designer.js';
@@ -362,7 +369,7 @@ function createTable(node, options = {}) {
   let selectedIndex = options.interactive ? getRuntimeSelection(options.container, 'table', options.key) : null;
   if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= rows.length) selectedIndex = null;
 
-  rows.forEach((row, rowIndex) => {
+  const createRow = (row, rowIndex) => {
     const tr = document.createElement('tr');
     for (let index = 0; index < (node.columns ?? []).length; index += 1) {
       const td = document.createElement('td');
@@ -390,8 +397,60 @@ function createTable(node, options = {}) {
         body.children[next]?.focus();
       });
     }
+    return tr;
+  };
+
+  const appendSpacer = height => {
+    if (!(height > 0)) return;
+    const tr = document.createElement('tr');
+    tr.className = 'patch-preview-virtual-spacer';
+    tr.setAttribute('aria-hidden', 'true');
+    const td = document.createElement('td');
+    td.colSpan = Math.max(1, (node.columns ?? []).length);
+    td.style.height = `${height}px`;
+    td.style.padding = '0';
+    td.style.border = '0';
+    tr.appendChild(td);
     body.appendChild(tr);
-  });
+  };
+
+  const renderPreviewWindow = () => {
+    const viewport = Math.max(96, (wrap.clientHeight || PATCH_STUDIO_PREVIEW_DEFAULT_VIEWPORT) - PATCH_STUDIO_PREVIEW_TABLE_ROW_HEIGHT);
+    const window = resolveStudioPreviewWindow({
+      itemCount: rows.length,
+      scrollOffset: wrap.scrollTop,
+      viewportSize: viewport,
+      itemExtent: PATCH_STUDIO_PREVIEW_TABLE_ROW_HEIGHT,
+      threshold: PATCH_STUDIO_PREVIEW_TABLE_THRESHOLD,
+      overscan: PATCH_STUDIO_PREVIEW_OVERSCAN
+    });
+    body.replaceChildren();
+    appendSpacer(window.beforeExtent);
+    for (let rowIndex = window.start; rowIndex < window.end; rowIndex += 1) {
+      body.appendChild(createRow(rows[rowIndex], rowIndex));
+    }
+    appendSpacer(window.afterExtent);
+    wrap.dataset.patchVirtualStart = String(window.start);
+    wrap.dataset.patchVirtualEnd = String(window.end);
+  };
+
+  if (!options.interactive && rows.length > PATCH_STUDIO_PREVIEW_TABLE_THRESHOLD) {
+    wrap.dataset.patchPreviewVirtualized = 'table';
+    wrap.dataset.patchVirtualItemCount = String(rows.length);
+    table.setAttribute('aria-rowcount', String(rows.length));
+    let frame = null;
+    wrap.addEventListener('scroll', () => {
+      if (frame !== null) return;
+      const schedule = globalThis.requestAnimationFrame ?? (callback => globalThis.setTimeout(callback, 0));
+      frame = schedule(() => {
+        frame = null;
+        renderPreviewWindow();
+      });
+    }, { passive: true });
+    renderPreviewWindow();
+  } else {
+    rows.forEach((row, rowIndex) => body.appendChild(createRow(row, rowIndex)));
+  }
   table.append(head, body);
   wrap.appendChild(table);
   return wrap;

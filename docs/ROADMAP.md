@@ -71,6 +71,7 @@ Completed foundations include:
 - [x] Designer selection/Object Inspector/structural-editor state survives Form materialization transitions
 - [x] Build controller and Studio Window renderer extracted from the main playground orchestration path
 - [x] versioned `patch-studio-worker/0.2` boundary is live for parse/compile/design-model work through `studio-language-client/0.1` and the browser Worker host
+- [x] `studio-preview-virtualization/0.1` bounds very large Designer Table/Tree DOM to the visible window plus overscan while leaving interactive runtime rendering unchanged
 - [x] design-time expression evaluation is bounded by the versioned policy in `studio-design-model/0.2`, including per-expression and aggregate character budgets
 - [x] Pages deployment is release-aware and preserves fail-closed runtime/digest verification
 - [x] Offline Compiler dependency closure is narrowed to compiler-relevant files
@@ -78,7 +79,6 @@ Completed foundations include:
 
 Remaining R0 work:
 
-- [ ] virtualize very large Table/Tree previews where measurements justify it
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
 - [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
 

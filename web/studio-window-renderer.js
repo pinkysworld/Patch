@@ -3,6 +3,14 @@ import { clearRuntimeSelections, getRuntimeSelection, runtimeSelectionKey, setRu
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { getStudioProjectResources } from './project-lifecycle.js';
 import { clearAppListboxSelections, isRuntimeCoreReconcileChild } from './table-stage1.js';
+import {
+  PATCH_STUDIO_PREVIEW_DEFAULT_VIEWPORT,
+  PATCH_STUDIO_PREVIEW_OVERSCAN,
+  PATCH_STUDIO_PREVIEW_TREE_ROW_HEIGHT,
+  PATCH_STUDIO_PREVIEW_TREE_THRESHOLD,
+  flattenStudioTreePreview,
+  resolveStudioPreviewWindow
+} from './studio-preview-virtualization.js';
 
 export const PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0.2';
 
@@ -632,66 +640,123 @@ function createTreeElement(control, context) {
       current.closest('[role="treeitem"]')?.setAttribute('aria-selected', selected ? 'true' : 'false');
     }
   };
-  const renderNodes = (nodes, path = []) => {
+
+  const createNodeItem = (node, selectedPath, depth = 0, flat = false) => {
+    const item = document.createElement('li');
+    item.setAttribute('role', 'treeitem');
+    if (flat) item.setAttribute('aria-level', String(depth + 1));
+    const selected = samePath(selectedPath);
+    item.setAttribute('aria-selected', selected ? 'true' : 'false');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'patch-tree-node';
+    if (flat && depth > 0) button.style.marginLeft = `${depth * 18}px`;
+    if (node.hint) {
+      button.title = node.hint;
+      button.dataset.patchTreeHint = 'true';
+    }
+    if (node.state) {
+      button.dataset.patchTreeState = node.state;
+      button.setAttribute('aria-description', `Node state: ${node.state}`);
+    }
+    if (node.imageSource) {
+      const img = document.createElement('img');
+      img.className = 'patch-tree-node-image';
+      img.alt = '';
+      img.width = node.imageWidth || 16;
+      img.height = node.imageHeight || 16;
+      try {
+        img.src = pictureResourceDataUri(node.imageSource, getStudioProjectResources());
+      } catch {
+        img.src = node.imageSource;
+      }
+      button.appendChild(img);
+    }
+    button.append(node.text);
+    if (node.state) {
+      const stateBadge = document.createElement('span');
+      stateBadge.className = 'patch-tree-node-state';
+      stateBadge.setAttribute('aria-hidden', 'true');
+      stateBadge.textContent = node.state;
+      button.appendChild(stateBadge);
+    }
+    button.dataset.patchTreePath = JSON.stringify(selectedPath);
+    button.setAttribute('aria-label', selectedPath.join(' / '));
+    button.setAttribute('aria-selected', selected ? 'true' : 'false');
+    if (context.interactive) button.addEventListener('click', () => {
+      selectPath(selectedPath);
+      context.dispatch(control.id, 'changed', { value: selectedPath });
+    });
+    else button.disabled = true;
+    item.appendChild(button);
+    return item;
+  };
+
+  const renderNodes = (nodes, path = [], depth = 0) => {
     const fragment = document.createDocumentFragment();
     for (const node of nodes ?? []) {
-      const item = document.createElement('li');
-      item.setAttribute('role', 'treeitem');
       const selectedPath = [...path, node.text];
-      const selected = samePath(selectedPath);
-      item.setAttribute('aria-selected', selected ? 'true' : 'false');
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'patch-tree-node';
-      if (node.hint) {
-        button.title = node.hint;
-        button.dataset.patchTreeHint = 'true';
-      }
-      if (node.state) {
-        button.dataset.patchTreeState = node.state;
-        button.setAttribute('aria-description', `Node state: ${node.state}`);
-      }
-      if (node.imageSource) {
-        const img = document.createElement('img');
-        img.className = 'patch-tree-node-image';
-        img.alt = '';
-        img.width = node.imageWidth || 16;
-        img.height = node.imageHeight || 16;
-        try {
-          img.src = pictureResourceDataUri(node.imageSource, getStudioProjectResources());
-        } catch {
-          img.src = node.imageSource;
-        }
-        button.appendChild(img);
-      }
-      button.append(node.text);
-      if (node.state) {
-        const stateBadge = document.createElement('span');
-        stateBadge.className = 'patch-tree-node-state';
-        stateBadge.setAttribute('aria-hidden', 'true');
-        stateBadge.textContent = node.state;
-        button.appendChild(stateBadge);
-      }
-      button.dataset.patchTreePath = JSON.stringify(selectedPath);
-      button.setAttribute('aria-label', selectedPath.join(' / '));
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      if (context.interactive) button.addEventListener('click', () => {
-        selectPath(selectedPath);
-        context.dispatch(control.id, 'changed', { value: selectedPath });
-      });
-      else button.disabled = true;
-      item.appendChild(button);
+      const item = createNodeItem(node, selectedPath, depth, false);
       if (node.children?.length) {
         const group = document.createElement('ul');
         group.setAttribute('role', 'group');
-        group.appendChild(renderNodes(node.children, selectedPath));
+        group.appendChild(renderNodes(node.children, selectedPath, depth + 1));
         item.appendChild(group);
       }
       fragment.appendChild(item);
     }
     return fragment;
   };
-  root.appendChild(renderNodes(control.nodes));
+
+  const flatNodes = context.interactive ? null : flattenStudioTreePreview(control.nodes);
+  if (!context.interactive && flatNodes.length > PATCH_STUDIO_PREVIEW_TREE_THRESHOLD) {
+    root.dataset.patchPreviewVirtualized = 'tree';
+    root.dataset.patchVirtualItemCount = String(flatNodes.length);
+    root.style.overflow = 'auto';
+    root.style.maxHeight = '320px';
+    const appendSpacer = height => {
+      if (!(height > 0)) return;
+      const spacer = document.createElement('li');
+      spacer.className = 'patch-preview-virtual-spacer';
+      spacer.setAttribute('role', 'presentation');
+      spacer.setAttribute('aria-hidden', 'true');
+      spacer.style.height = `${height}px`;
+      spacer.style.margin = '0';
+      root.appendChild(spacer);
+    };
+    const renderPreviewWindow = () => {
+      const viewport = root.clientHeight || PATCH_STUDIO_PREVIEW_DEFAULT_VIEWPORT;
+      const window = resolveStudioPreviewWindow({
+        itemCount: flatNodes.length,
+        scrollOffset: root.scrollTop,
+        viewportSize: viewport,
+        itemExtent: PATCH_STUDIO_PREVIEW_TREE_ROW_HEIGHT,
+        threshold: PATCH_STUDIO_PREVIEW_TREE_THRESHOLD,
+        overscan: PATCH_STUDIO_PREVIEW_OVERSCAN
+      });
+      root.replaceChildren();
+      appendSpacer(window.beforeExtent);
+      for (let index = window.start; index < window.end; index += 1) {
+        const entry = flatNodes[index];
+        root.appendChild(createNodeItem(entry.node, entry.path, entry.depth, true));
+      }
+      appendSpacer(window.afterExtent);
+      root.dataset.patchVirtualStart = String(window.start);
+      root.dataset.patchVirtualEnd = String(window.end);
+    };
+    let frame = null;
+    root.addEventListener('scroll', () => {
+      if (frame !== null) return;
+      const schedule = globalThis.requestAnimationFrame ?? (callback => globalThis.setTimeout(callback, 0));
+      frame = schedule(() => {
+        frame = null;
+        renderPreviewWindow();
+      });
+    }, { passive: true });
+    renderPreviewWindow();
+  } else {
+    root.appendChild(renderNodes(control.nodes));
+  }
   return root;
 }
 
