@@ -139,7 +139,7 @@ Remaining:
 - [x] transient Table/Tree selection survives safe rebuilds;
 - [x] deterministic `?patch-runtime-render=full` recovery/diagnostics fallback;
 - [x] real-Chrome event-to-paint performance gate;
-- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists.
+- [x] `table-runtime-adapter/0.1` extends incremental reconciliation to the canonical Table adapter contract while preserving full-Form fallback for specialized controls without an explicit state contract.
 
 ## P0.5 Performance gates
 

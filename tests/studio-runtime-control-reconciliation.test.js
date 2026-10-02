@@ -9,20 +9,24 @@ test('runtime reconciler has a keyed control stage inside stable visible Forms',
   assert.match(playground, /createStudioWindowRenderer\(\{ dispatch: trigger \}\)/);
   assert.match(renderer, /const RUNTIME_CORE_CONTROL_TYPES = new Set/);
   assert.match(renderer, /function runtimeControlFingerprint\(/);
-  assert.match(renderer, /function runtimeSpecializedControlsFingerprint\(/);
+  assert.match(renderer, /function runtimeReconciledAdapterControlsFingerprint\(/);
+  assert.match(renderer, /function runtimeFallbackSpecializedControlsFingerprint\(/);
   assert.match(renderer, /function reconcileRuntimeCoreControls\(/);
   assert.match(renderer, /function reconcileRuntimeWindowShell\(/);
   assert.match(renderer, /patchRuntimeReconcile = 'keyed-control-v2'/);
   assert.match(renderer, /patchRuntimeReconciledForms/);
   assert.match(renderer, /patchRuntimeReusedControls/);
   assert.match(renderer, /patchRuntimeReplacedControls/);
+  assert.match(renderer, /patchRuntimeReconciledAdapters/);
 });
 
-test('core control DOM identity is fingerprinted and specialized control drift fails back to Form replacement', () => {
+test('known Table adapter drift reconciles while unknown specialized drift keeps the Form fallback', () => {
   assert.match(renderer, /el\.__patchControlFingerprint = runtimeControlFingerprint\(control\)/);
-  assert.match(renderer, /shell\.__patchRuntimeSpecializedFingerprint = runtimeSpecializedControlsFingerprint\(model\)/);
-  assert.match(renderer, /shell\.__patchRuntimeSpecializedFingerprint !== specializedFingerprint/);
-  assert.match(renderer, /return null;/);
+  assert.match(renderer, /shell\.__patchRuntimeAdapterFingerprint = runtimeReconciledAdapterControlsFingerprint\(model\)/);
+  assert.match(renderer, /shell\.__patchRuntimeFallbackSpecializedFingerprint = runtimeFallbackSpecializedControlsFingerprint\(model\)/);
+  assert.match(renderer, /shell\.__patchRuntimeFallbackSpecializedFingerprint !== fallbackSpecializedFingerprint/);
+  assert.match(renderer, /const adapterChanged = shell\.__patchRuntimeAdapterFingerprint !== adapterFingerprint/);
+  assert.match(renderer, /patch-studio-runtime-adapter-reconcile/);
   assert.match(renderer, /existingElement\.replaceWith\(nextElement\)/);
 });
 

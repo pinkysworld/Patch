@@ -2,7 +2,13 @@ import { pictureResourceDataUri } from '../src/webapp.js';
 import { clearRuntimeSelections, getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { getStudioProjectResources } from './project-lifecycle.js';
-import { clearAppListboxSelections, isRuntimeCoreReconcileChild } from './table-stage1.js';
+import {
+  PATCH_STUDIO_TABLE_RUNTIME_ADAPTER_CONTRACT_VERSION,
+  clearAppListboxSelections,
+  isRuntimeCoreReconcileChild,
+  isTableRuntimeAdapterControl,
+  tableRuntimeAdapterModelFingerprint
+} from './table-stage1.js';
 import {
   PATCH_STUDIO_PREVIEW_DEFAULT_VIEWPORT,
   PATCH_STUDIO_PREVIEW_OVERSCAN,
@@ -34,8 +40,17 @@ function runtimeControlFingerprint(control) {
   return JSON.stringify(control ?? null);
 }
 
-function runtimeSpecializedControlsFingerprint(model) {
-  return JSON.stringify((model?.controls ?? []).filter(control => !RUNTIME_CORE_CONTROL_TYPES.has(control?.type)));
+function runtimeReconciledAdapterControlsFingerprint(model) {
+  return JSON.stringify((model?.controls ?? [])
+    .filter(isTableRuntimeAdapterControl)
+    .map(tableRuntimeAdapterModelFingerprint));
+}
+
+function runtimeFallbackSpecializedControlsFingerprint(model) {
+  return JSON.stringify((model?.controls ?? []).filter(control =>
+    !RUNTIME_CORE_CONTROL_TYPES.has(control?.type) &&
+    !isTableRuntimeAdapterControl(control)
+  ));
 }
 
 function runtimeWindowTitleFingerprint(model) {
@@ -116,8 +131,10 @@ function reconcileRuntimeWindowShell(container, shell, windows, model, windowInd
   if (model.visible === false || shell.dataset.patchRenderDetail !== 'full') return null;
   const title = shell.querySelector(':scope > .patch-window-title');
   if (!title) return null;
-  const specializedFingerprint = runtimeSpecializedControlsFingerprint(model);
-  if (shell.__patchRuntimeSpecializedFingerprint !== specializedFingerprint) return null;
+  const fallbackSpecializedFingerprint = runtimeFallbackSpecializedControlsFingerprint(model);
+  if (shell.__patchRuntimeFallbackSpecializedFingerprint !== fallbackSpecializedFingerprint) return null;
+  const adapterFingerprint = runtimeReconciledAdapterControlsFingerprint(model);
+  const adapterChanged = shell.__patchRuntimeAdapterFingerprint !== adapterFingerprint;
   const stats = reconcileRuntimeCoreControls(container, shell, windows, model, windowIndex, tabSelections, dispatch);
   if (!stats) return null;
   syncRuntimeWindowTitle(title, model);
@@ -126,8 +143,18 @@ function reconcileRuntimeWindowShell(container, shell, windows, model, windowInd
   shell.dataset.patchWindowKey = runtimeWindowKey(model, windowIndex);
   shell.dataset.patchRenderDetail = 'full';
   shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
-  shell.__patchRuntimeSpecializedFingerprint = specializedFingerprint;
-  return stats;
+  shell.__patchRuntimeAdapterFingerprint = adapterFingerprint;
+  shell.__patchRuntimeFallbackSpecializedFingerprint = fallbackSpecializedFingerprint;
+  if (adapterChanged) {
+    container.dispatchEvent(new CustomEvent('patch-studio-runtime-adapter-reconcile', {
+      detail: {
+        contract: PATCH_STUDIO_TABLE_RUNTIME_ADAPTER_CONTRACT_VERSION,
+        adapter: 'table',
+        windowId: model.id ?? `window${windowIndex + 1}`
+      }
+    }));
+  }
+  return { ...stats, reconciledAdapters: adapterChanged ? 1 : 0 };
 }
 
 function createWindowShell(container, windows, model, windowIndex, interactive, materialization, tabSelections, dispatch) {
@@ -142,7 +169,8 @@ function createWindowShell(container, windows, model, windowIndex, interactive, 
   shell.dataset.patchWindowKey = windowKey;
   shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
   shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
-  shell.__patchRuntimeSpecializedFingerprint = runtimeSpecializedControlsFingerprint(model);
+  shell.__patchRuntimeAdapterFingerprint = runtimeReconciledAdapterControlsFingerprint(model);
+  shell.__patchRuntimeFallbackSpecializedFingerprint = runtimeFallbackSpecializedControlsFingerprint(model);
   if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
   const title = document.createElement('div');
   title.className = 'patch-window-title';
@@ -319,6 +347,7 @@ function reconcileRuntimeWindows(container, windows, dispatch) {
     container.dataset.patchRuntimeReconciledForms = '0';
     container.dataset.patchRuntimeReusedControls = '0';
     container.dataset.patchRuntimeReplacedControls = '0';
+    container.dataset.patchRuntimeReconciledAdapters = '0';
     return;
   }
   const transient = captureRuntimeTransientState(container);
@@ -333,6 +362,7 @@ function reconcileRuntimeWindows(container, windows, dispatch) {
   let reconciledForms = 0;
   let reusedControls = 0;
   let replacedControls = 0;
+  let reconciledAdapters = 0;
   windows.forEach((model, windowIndex) => {
     const key = runtimeWindowKey(model, windowIndex);
     const fingerprint = runtimeWindowFingerprint(model);
@@ -351,6 +381,7 @@ function reconcileRuntimeWindows(container, windows, dispatch) {
         reconciledForms += 1;
         reusedControls += controlStats.reusedControls;
         replacedControls += controlStats.replacedControls;
+        reconciledAdapters += controlStats.reconciledAdapters ?? 0;
       } else {
         shell.remove();
         shell = createWindowShell(container, windows, model, windowIndex, true, null, tabSelections, dispatch);
@@ -371,6 +402,7 @@ function reconcileRuntimeWindows(container, windows, dispatch) {
   container.dataset.patchRuntimeReconciledForms = String(reconciledForms);
   container.dataset.patchRuntimeReusedControls = String(reusedControls);
   container.dataset.patchRuntimeReplacedControls = String(replacedControls);
+  container.dataset.patchRuntimeReconciledAdapters = String(reconciledAdapters);
   commitRuntimeTransientRestore(container, transient);
 }
 
@@ -394,6 +426,7 @@ function renderRuntimeWindowsAfterEvent(container, windows, dispatch) {
   container.dataset.patchRuntimeReconciledForms = '0';
   container.dataset.patchRuntimeReusedControls = '0';
   container.dataset.patchRuntimeReplacedControls = String(rebuiltControls);
+  container.dataset.patchRuntimeReconciledAdapters = '0';
   commitRuntimeTransientRestore(container, transient);
 }
 

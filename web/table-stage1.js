@@ -32,6 +32,27 @@ const observed = new Map();
 const appListboxSelections = new Map();
 let scheduled = false;
 
+export const PATCH_STUDIO_TABLE_RUNTIME_ADAPTER_CONTRACT_VERSION = '0.1';
+
+export function isTableRuntimeAdapterControl(control) {
+  return Boolean(
+    control &&
+    (
+      control.type === 'table' ||
+      (control.kind === 'uiControl' && control.control === 'table')
+    )
+  );
+}
+
+export function tableRuntimeAdapterModelFingerprint(control) {
+  if (!isTableRuntimeAdapterControl(control)) return null;
+  return JSON.stringify({
+    type: 'table',
+    id: control?.id ?? null,
+    value: control?.value ?? null
+  });
+}
+
 export function isRuntimeCoreReconcileChild(child) {
   const key = child?.dataset?.patchControlKey;
   if (!key) return false;
@@ -67,6 +88,10 @@ if (doc) {
   installTool();
   observe(designerCanvas, true);
   observe(appView, false);
+  appView?.addEventListener('patch-studio-runtime-adapter-reconcile', event => {
+    if (event.detail?.adapter !== 'table') return;
+    scheduleSync();
+  });
   code?.addEventListener('input', scheduleSync);
   code?.addEventListener('change', scheduleSync);
   scheduleSync();

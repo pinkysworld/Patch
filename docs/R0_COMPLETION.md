@@ -1,6 +1,6 @@
 # Patch Studio R0 completion record
 
-Status date: **2026-08-30**
+Status date: **2026-10-02**
 
 This document records the evidence-based completion boundary for Patch Studio milestone **R0 – RAD foundation hardening**. It separates release-blocking correctness/responsiveness work from useful follow-up refactoring so that R0 is not kept open indefinitely by maintainability work that does not change the milestone exit criteria.
 
@@ -40,16 +40,15 @@ The policy therefore bounds the expression surface that design time actually eva
 
 ### Versioned worker boundary
 
-PR #307 adds `patch-studio-worker/0.1` and the UI-free `web/studio-language-worker.js` host.
+The original R0 work introduced the UI-free `web/studio-language-worker.js` host. Follow-up hardening on 2026-10-02 advances the versioned boundary to `patch-studio-worker/0.2` and wires it into the live Studio.
 
-The boundary supports only explicit tasks:
+The boundary now supports explicit tasks:
 
+- `parse`;
 - `design-model`;
 - `compile`.
 
-Requests use bounded source payloads and task-specific plain options. Responses are structured-clone-safe success/error envelopes. The contract creates a stable off-main-thread boundary without requiring R0 to move every existing synchronous call through a Worker immediately.
-
-Actual worker adoption remains incremental and measurement-driven after R0.
+`studio-language-client/0.1` runs those tasks through a module Worker when available and uses the exact same protocol handler as a synchronous compatibility fallback. Designer and Change Contract requests use stale-response guards, and exact design revisions retain a bounded client cache. Requests remain bounded, task-specific and structured-clone-safe.
 
 ### Active-Form materialization and shared design snapshots
 
@@ -72,10 +71,11 @@ Existing R0 work provides:
 - bounded focus/caret/scroll restoration;
 - shared Table/Tree transient selection state;
 - local Tabs updates;
+- `table-runtime-adapter/0.1`, which keeps the canonical source-backed Table adapter outside unknown-specialized drift and signals its own keyed/fingerprinted reconciler when its runtime envelope changes;
 - deterministic `?patch-runtime-render=full` recovery/debug fallback;
-- safe complete-Form fallback for adapter-owned model drift.
+- safe complete-Form fallback for specialized adapters that do not yet expose a canonical incremental state contract.
 
-R0 does **not** require every specialized adapter to implement control-level incremental reconciliation. A specialized adapter may use the deterministic Form fallback when it lacks a canonical incremental state contract. That is a safe bounded behavior, not an R0 correctness gap.
+The Table extension is intentionally narrow. StatusBar, PaintBox and other specialized controls are not inferred into the contract and therefore retain the deterministic Form fallback until they have an explicit canonical state contract.
 
 ### Performance gates
 
@@ -88,7 +88,7 @@ R0 does **not** require every specialized adapter to implement control-level inc
 
 The CI limits intentionally allow hosted-runner variance while rejecting multi-second freezes: 3000 ms Run-to-paint and 2000 ms event/Form-switch limits.
 
-Large Table/Tree preview virtualization is therefore **measurement-gated**. It is not an R0 blocker while the current large-project gates remain comfortably within thresholds. If measurements regress, virtualization can be introduced against a concrete failing workload instead of pre-emptively adding complexity.
+Follow-up hardening now includes `studio-preview-virtualization/0.1`. Very large Designer Table and TreeView previews render only the visible window plus bounded overscan, while ordinary previews and all interactive runtime Table/Tree rendering retain the full DOM path. The pure windowing policy is regression-tested independently of browser CI.
 
 ### Canonical Designer UI namespace
 
@@ -116,14 +116,7 @@ This closes the R0 requirement that adapter-specific source mutations must not s
 
 Pages keeps its release/digest integrity boundary but no longer treats a runtime release that is still publishing as an expected failure.
 
-Behavior is now:
-
-- automatic `push` / runtime `workflow_run`: missing pinned runtime release -> `ready=false`, deployment deferred successfully;
-- successful runtime workflow completion re-runs the readiness check;
-- manual `workflow_dispatch`: missing pinned runtime release -> fail closed;
-- runtime download, SHA-256 digest manifest generation, site validation, deployment and live Chrome verification execute only when `ready=true`.
-
-This removes expected red CI without converting missing runtime assets into a false successful deployment.
+The release-aware readiness logic remains fail-closed when a deployment is deliberately run. During active development as of 2026-10-02, all repository workflows are manual-only through `workflow_dispatch`; ordinary pushes and pull requests therefore do not consume GitHub Actions minutes. The runtime download, SHA-256 digest manifest generation, site validation, deployment and live Chrome verification remain available as deliberate evidence runs.
 
 ### Offline Compiler dependency closure
 
@@ -145,17 +138,9 @@ The Offline Compiler workflow may still be triggered by a broad repository path 
 
 ## R0 CI evidence
 
-PR #307 is required to pass the normal repository gates before R0 is declared integrated. The relevant gates include:
+Historical R0 integration evidence includes Patch CI, CodeQL, Reproducibility Bundle, Offline Studio and Offline Compiler coverage. The Offline Compiler matrix demonstrated dependency-closure packaging across Windows x64, Linux x64, macOS ARM64, macOS Intel and FreeBSD, including native Window/link smoke paths where supported.
 
-- Patch CI;
-- Patch CodeQL Security;
-- Patch Reproducibility Bundle;
-- Patch Offline Studio;
-- Patch Offline Compiler.
-
-The Offline Compiler matrix has already demonstrated the dependency-closure packaging across Windows x64, Linux x64, macOS ARM64, macOS Intel and FreeBSD, including native Window/link smoke paths where supported.
-
-The final PR head must be green before #282 is closed or the R0 status is merged to `main`.
+For the 2026-10-02 follow-up changes, automatic workflows are intentionally disabled to preserve private-repository Actions minutes. The Worker, preview-windowing and Table-adapter changes include focused regression tests and static syntax checks; full workflow evidence should be run manually at a deliberate release/evidence point.
 
 ## Explicitly deferred to R0.1 / later
 

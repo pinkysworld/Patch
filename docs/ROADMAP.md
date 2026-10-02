@@ -64,6 +64,7 @@ Completed foundations include:
 - [x] shared `studio-design-snapshots/0.1`
 - [x] `studio-form-materialization/0.1` with one active fully materialized Designer Form
 - [x] keyed runtime Form/control identities and `keyed-control-v2`
+- [x] `table-runtime-adapter/0.1` lets canonical Table adapter drift reconcile without replacing the Form; unknown specialized controls retain the safe Form fallback
 - [x] bounded transient Table/Tree selection restoration
 - [x] deterministic full-render diagnostics fallback
 - [x] real-Chrome Workshop and 10-Form/200-control performance gates
@@ -79,7 +80,6 @@ Completed foundations include:
 
 Remaining R0 work:
 
-- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
 - [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
 
 ## RAD R1 graphics/resources status

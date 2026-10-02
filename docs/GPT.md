@@ -89,6 +89,7 @@ Done. Do not reimplement:
 - hosted and Offline Studio package the same design-model/cache module closure;
 - `studio-form-materialization/0.1` materializes control DOM only for the active Designer Form;
 - keyed runtime Form/control identities and `keyed-control-v2`;
+- `table-runtime-adapter/0.1` separates canonical Table adapter changes from unknown specialized drift, signals the source-backed Table reconciler, and leaves other specialized controls on the deterministic Form fallback;
 - bounded transient Table/Tree selection restoration;
 - local Tabs reconciliation;
 - Designer selection/Object Inspector/structural-editor state survives Form materialization;
@@ -98,8 +99,7 @@ Done. Do not reimplement:
 
 Remaining unchecked R0 work, from `docs/ROADMAP.md`:
 
-1. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-2. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
+1. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
 
 Pages release-awareness and the Offline Compiler dependency closure were already complete. As of 2026-10-02 all repository GitHub Actions are additionally manual-only through `workflow_dispatch` during active development, so normal pushes and PRs consume no Actions minutes.
 
@@ -203,4 +203,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Do the remaining unchecked R0 items first: adapter-owned incremental reconciliation and extracting the rest of runtime lifecycle from `web/playground.js`. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
+Do the remaining unchecked R0 item first: extract the rest of runtime lifecycle and transient UI ownership from `web/playground.js` without recreating a second framework. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
