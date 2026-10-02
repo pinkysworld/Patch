@@ -70,16 +70,17 @@ Completed foundations include:
 - [x] local Tabs reconciliation
 - [x] Designer selection/Object Inspector/structural-editor state survives Form materialization transitions
 - [x] Build controller and Studio Window renderer extracted from the main playground orchestration path
+- [x] versioned `patch-studio-worker/0.2` boundary is live for parse/compile/design-model work through `studio-language-client/0.1` and the browser Worker host
+- [x] design-time expression evaluation is bounded by the versioned policy in `studio-design-model/0.2`, including per-expression and aggregate character budgets
+- [x] Pages deployment is release-aware and preserves fail-closed runtime/digest verification
+- [x] Offline Compiler dependency closure is narrowed to compiler-relevant files
+- [x] GitHub Actions are manual-only during active development; deliberate evidence runs remain available through `workflow_dispatch`
 
 Remaining R0 work:
 
 - [ ] virtualize very large Table/Tree previews where measurements justify it
-- [ ] define and implement a versioned Worker boundary for parse/compile/design-model work
-- [ ] bound any remaining design-time expression evaluation
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
 - [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
-- [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
-- [ ] reduce CI notification noise and shrink Offline Compiler triggers to the real dependency closure
 
 ## RAD R1 graphics/resources status
 

@@ -2,7 +2,7 @@
 
 Living briefing for coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-09-25**. Current Ready is Native GUI IR 1.9 / payload v19 / runtime v1.10. Keyed rendering, the design-model cache, active-Form materialization and that native promotion are done. Do not reimplement them.
+Last refreshed: **2026-10-02**. Current Ready is Native GUI IR 1.9 / payload v19 / runtime v1.10. Keyed rendering, the design-model cache, active-Form materialization and that native promotion are done. Do not reimplement them.
 
 ## What Patch is
 
@@ -33,7 +33,8 @@ Do not silently widen or flatten these labels. Future native features need a new
 | Button ImageList underlay | Native GUI IR **1.8** / payload **v18** / runtime **v1.9**, preserved inside Current Ready |
 | Studio project | multi-file/resource bundle **v4** |
 | Component registry | **0.10** |
-| Studio design model/cache | `studio-design-model/0.1`, `studio-design-cache/0.1` |
+| Studio design model/cache | `studio-design-model/0.2`, `studio-design-cache/0.1`; design-time evaluation policy `0.1` |
+| Studio language Worker | `patch-studio-worker/0.2`, browser host `0.1`, client `studio-language-client/0.1`; parse/compile/design-model tasks with synchronous compatibility fallback |
 | Studio Form materialization | `studio-form-materialization/0.1`, one full active Form plus lightweight inactive shells |
 | Studio brand | `compiler-p-v1` through the shared `web/icon.svg` browser/PWA/Offline Studio asset |
 | Button ImageList images | Current Ready on Windows, macOS and Linux. `native-imagelist-asset-plan/0.1` is only the pretransport planner. |
@@ -53,6 +54,7 @@ Workshop Desk (`examples/workshop-desk.patch`) is seven Forms.
 - `main` is package `0.2.0-beta.36`. Current Ready native promotion to 1.9 / 19 / 1.10 is complete, including Button ImageList and application/Form icons.
 - Active R0 tracker: [#282](https://github.com/pinkysworld/Patch/issues/282). Remaining work is the unchecked list in `docs/ROADMAP.md`, not the already-landed renderer/cache/materialization work.
 - Current status source: `docs/ROADMAP.md`.
+- Repository Actions are intentionally manual-only during active development. Do not re-add push/PR/schedule triggers unless that policy is explicitly changed.
 - Long-term execution backlog: `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
 - Architecture plan: `docs/RAD_STUDIO_MASTERPLAN.md`.
 - Offline installed-IDE contract: `docs/OFFLINE_STUDIO.md`.
@@ -79,7 +81,9 @@ Done. Do not reimplement:
 - lazy Change IR formatting;
 - hidden runtime Form materialization;
 - transactional Run/re-entry guard;
-- `studio-design-model/0.1` and bounded `studio-design-cache/0.1`;
+- `studio-design-model/0.2` and bounded `studio-design-cache/0.1`;
+- versioned design-time evaluation policy `0.1` bounds each evaluated expression and the aggregate expression surface;
+- `patch-studio-worker/0.2` is wired into live Designer and Change Contract paths through the browser Worker host/client, with stale-response guards and synchronous fallback;
 - primary `refreshDesigner()` uses the bounded declaration-only design snapshot cache and no longer executes unrelated application behavior;
 - hosted and Offline Studio package the same design-model/cache module closure;
 - `studio-form-materialization/0.1` materializes control DOM only for the active Designer Form;
@@ -94,12 +98,10 @@ Done. Do not reimplement:
 Remaining unchecked R0 work, from `docs/ROADMAP.md`:
 
 1. virtualize very large Table/Tree previews where measurements justify it;
-2. define and implement a versioned Worker boundary for parse/compile/design-model work;
-3. bound any remaining design-time expression evaluation;
-4. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-5. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`;
-6. make Pages deployment release-aware so expected runtime-publication races do not generate failure noise;
-7. reduce CI notification noise and shrink Offline Compiler triggers to the real dependency closure.
+2. extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
+3. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
+
+Pages release-awareness and the Offline Compiler dependency closure were already complete. As of 2026-10-02 all repository GitHub Actions are additionally manual-only through `workflow_dispatch` during active development, so normal pushes and PRs consume no Actions minutes.
 
 ## R1 status
 
@@ -187,6 +189,8 @@ node src/cli-entry.js doctor --json
 | `src/native-picture-format-policy.js` | PNG/JPEG Ready vs WebP/SVG deferred policy |
 | `src/studio-design-model.js` | Non-executing design model foundation |
 | `src/studio-design-cache.js` | Bounded design snapshot cache |
+| `src/studio-worker-protocol.js` | Versioned parse/compile/design-model request/response boundary and synchronous fallback handler |
+| `web/studio-language-client.js` / `web/studio-language-worker.js` | Browser Worker client/host for live Studio language tasks |
 | `src/studio-form-materialization.js` | Canonical active-Form Designer materialization policy |
 | `scripts/build-offline-studio.js` | Self-contained Offline Studio builder |
 | `.github/workflows/offline-studio.yml` | Cross-platform Offline Studio build/release contract |
@@ -198,4 +202,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Do the remaining unchecked R0 items first: large Table/Tree preview virtualization, a versioned Worker boundary, bounding leftover design-time expression evaluation, adapter-owned incremental reconciliation, extracting the rest of runtime lifecycle from `web/playground.js`, release-aware Pages deploys, and quieter CI. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
+Do the remaining unchecked R0 items first: large Table/Tree preview virtualization, adapter-owned incremental reconciliation, and extracting the rest of runtime lifecycle from `web/playground.js`. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.

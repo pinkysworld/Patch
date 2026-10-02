@@ -13,8 +13,8 @@ const roadmap = fs.readFileSync('docs/ROADMAP.md', 'utf8');
 const backlog = fs.readFileSync('docs/RAD_STUDIO_MASTER_BACKLOG.md', 'utf8');
 const handoff = fs.readFileSync('docs/GPT.md', 'utf8');
 
-test('Designer refresh consumes the shared declaration-only design snapshot service', () => {
-  assert.match(playground, /import \{ getStudioDesignSnapshot \} from '\.\/studio-design-snapshots\.js';/);
+test('Designer refresh consumes the versioned language-worker boundary', () => {
+  assert.match(playground, /import \{ createStudioLanguageClient \} from '\.\/studio-language-client\.js';/);
   assert.doesNotMatch(playground, /const designerDesignCache = createStudioDesignSnapshotCache\(\);/);
 
   const start = playground.indexOf('function refreshDesigner(');
@@ -23,7 +23,8 @@ test('Designer refresh consumes the shared declaration-only design snapshot serv
   assert.notEqual(end, -1, 'scheduleDesigner must follow refreshDesigner');
   const refresh = playground.slice(start, end);
 
-  assert.match(refresh, /const preview = getStudioDesignSnapshot\(code\.value\);/);
+  assert.match(refresh, /const preview = await studioLanguageClient\.designModel\(source\);/);
+  assert.doesNotMatch(refresh, /getStudioDesignSnapshot\(code\.value\)/);
   assert.doesNotMatch(refresh, /PatchInterpreter/);
   assert.doesNotMatch(refresh, /\.run\(code\.value\)/);
   assert.match(refresh, /studioWindowRenderer\.renderDesigner\(designerCanvas, preview\.ui, \{ materialization \}\)/);

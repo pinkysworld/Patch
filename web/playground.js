@@ -1,7 +1,6 @@
-import { compile } from '../src/compiler.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
-import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
+import { createStudioLanguageClient } from './studio-language-client.js';
 import { installStudioBuildController } from './studio-build-controller.js';
 import { installStudioRunController } from './studio-run-controller.js';
 import { createStudioWindowRenderer } from './studio-window-renderer.js';
@@ -140,6 +139,10 @@ const saveState = document.querySelector('#saveState');
 const runButton = document.querySelector('#run');
 let designerTimer = null;
 let changeContractTimer = null;
+let designerLanguageRevision = 0;
+let changeContractLanguageRevision = 0;
+
+const studioLanguageClient = createStudioLanguageClient();
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -212,13 +215,17 @@ for (const tab of document.querySelectorAll('.tab')) {
   });
 }
 
-function refreshChangeContract() {
+async function refreshChangeContract() {
   clearTimeout(changeContractTimer);
   changeContractTimer = null;
+  const revision = ++changeContractLanguageRevision;
+  const source = code.value;
   try {
-    const compiled = compile(code.value, projectOptions());
+    const compiled = await studioLanguageClient.compile(source, languageProjectOptions());
+    if (revision !== changeContractLanguageRevision || source !== code.value) return;
     changesView.textContent = formatChangeAnalysis(compiled.ir);
   } catch (err) {
+    if (revision !== changeContractLanguageRevision || source !== code.value) return;
     changesView.textContent = `Change contract stopped:\n${formatStudioStop(err, 'compile')}`;
   }
 }
@@ -263,17 +270,21 @@ function formatChangeAnalysis(ir) {
   return lines.join('\n').trimEnd();
 }
 
-function refreshDesigner(requestedFormIndex = null) {
+async function refreshDesigner(requestedFormIndex = null) {
   clearTimeout(designerTimer);
+  const revision = ++designerLanguageRevision;
+  const source = code.value;
+  const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined
+    ? document.querySelector('#patchFormSelect')?.value
+    : requestedFormIndex;
   try {
-    const preview = getStudioDesignSnapshot(code.value);
-    const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined
-      ? document.querySelector('#patchFormSelect')?.value
-      : requestedFormIndex;
+    const preview = await studioLanguageClient.designModel(source);
+    if (revision !== designerLanguageRevision || source !== code.value) return;
     const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);
     studioWindowRenderer.renderDesigner(designerCanvas, preview.ui, { materialization });
     if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This console project has no Form to design.</p>';
   } catch (err) {
+    if (revision !== designerLanguageRevision || source !== code.value) return;
     designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
   }
 }
@@ -348,6 +359,11 @@ function projectOptions() {
     entry: 'main.patch',
     resources: getStudioProjectResources()
   };
+}
+
+function languageProjectOptions() {
+  const options = projectOptions();
+  return { name: options.name, kind: options.kind, entry: options.entry };
 }
 
 function formatStudioStop(error, phase) {

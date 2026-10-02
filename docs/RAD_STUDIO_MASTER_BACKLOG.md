@@ -126,8 +126,8 @@ Completed:
 Remaining:
 
 - [ ] virtualize very large Table/Tree previews where measurements justify it;
-- [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
-- [ ] bound any expression evaluation that remains necessary at design time.
+- [x] `patch-studio-worker/0.2` protocol plus `studio-language-client/0.1` and browser Worker host for parse/compile/design-model work;
+- [x] `studio-design-model/0.2` design-time evaluation policy bounds each evaluated expression and the aggregate expression surface.
 
 ## P0.4 Incremental runtime renderer
 
@@ -174,7 +174,8 @@ Remaining:
 - [x] live HTTP/Chrome verification after deploy;
 - [x] deployed Tutorials/Examples handbook surfaces live-smoked after Pages deployment;
 - [x] reduce PR notification noise with draft suppression and one canonical ready-PR Patch CI matrix;
-- [x] shrink Offline Compiler triggers/package closure to the real compiler dependency graph.
+- [x] shrink Offline Compiler triggers/package closure to the real compiler dependency graph;
+- [x] switch all repository Actions to manual-only `workflow_dispatch` during active development so ordinary pushes and PRs consume no Actions minutes.
 
 **R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI. The milestone itself is complete; unchecked entries above are post-R0 follow-ups tracked by #308 unless another owner is named.
 

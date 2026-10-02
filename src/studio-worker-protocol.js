@@ -1,13 +1,16 @@
 import { compile } from './compiler.js';
+import { parse } from './parser.js';
 import { buildStudioDesignModel } from './studio-design-model.js';
 
 export const PATCH_STUDIO_WORKER_PROTOCOL = 'patch-studio-worker';
-export const PATCH_STUDIO_WORKER_PROTOCOL_VERSION = '0.1';
+export const PATCH_STUDIO_WORKER_PROTOCOL_VERSION = '0.2';
 export const PATCH_STUDIO_WORKER_MAX_SOURCE_CHARS = 2_000_000;
+export const PATCH_STUDIO_WORKER_TASK_PARSE = 'parse';
 export const PATCH_STUDIO_WORKER_TASK_DESIGN_MODEL = 'design-model';
 export const PATCH_STUDIO_WORKER_TASK_COMPILE = 'compile';
 
 const TASKS = new Set([
+  PATCH_STUDIO_WORKER_TASK_PARSE,
   PATCH_STUDIO_WORKER_TASK_DESIGN_MODEL,
   PATCH_STUDIO_WORKER_TASK_COMPILE
 ]);
@@ -89,6 +92,9 @@ export function validateStudioWorkerRequest(input) {
 }
 
 function runTask(request) {
+  if (request.task === PATCH_STUDIO_WORKER_TASK_PARSE) {
+    return Object.freeze({ ast: parse(request.source) });
+  }
   if (request.task === PATCH_STUDIO_WORKER_TASK_DESIGN_MODEL) {
     return buildStudioDesignModel(request.source, request.options);
   }
@@ -145,6 +151,9 @@ function normalizeSource(source) {
 function normalizeOptions(task, options) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
     throw new PatchStudioWorkerProtocolError('Studio worker options must be an object.', 'STUDIO_WORKER_OPTIONS');
+  }
+  if (task === PATCH_STUDIO_WORKER_TASK_PARSE) {
+    return compactPlainOptions(options, []);
   }
   if (task === PATCH_STUDIO_WORKER_TASK_DESIGN_MODEL) {
     return compactPlainOptions(options, [

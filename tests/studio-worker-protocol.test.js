@@ -5,10 +5,23 @@ import {
   PATCH_STUDIO_WORKER_PROTOCOL_VERSION,
   PATCH_STUDIO_WORKER_TASK_COMPILE,
   PATCH_STUDIO_WORKER_TASK_DESIGN_MODEL,
+  PATCH_STUDIO_WORKER_TASK_PARSE,
   createStudioWorkerRequest,
   handleStudioWorkerRequest
 } from '../src/studio-worker-protocol.js';
 import { installStudioLanguageWorkerHost } from '../web/studio-language-worker.js';
+
+test('Studio worker parse task returns a structured-clone-safe AST', () => {
+  const response = handleStudioWorkerRequest(createStudioWorkerRequest({
+    id: 'parse-1',
+    task: PATCH_STUDIO_WORKER_TASK_PARSE,
+    source: 'create number score = 0\nshow score'
+  }));
+  assert.equal(response.ok, true);
+  assert.equal(response.result.ast[0].kind, 'create');
+  assert.equal(response.result.ast[1].kind, 'show');
+  assert.doesNotThrow(() => structuredClone(response));
+});
 
 test('Studio worker design-model task keeps application behavior out of design time', () => {
   const request = createStudioWorkerRequest({
@@ -53,7 +66,7 @@ test('Studio worker protocol rejects incompatible versions in a structured error
   assert.equal(response.ok, false);
   assert.equal(response.id, 'old-client');
   assert.equal(response.error.code, 'STUDIO_WORKER_PROTOCOL_VERSION');
-  assert.match(response.error.message, /expected 0\.1/);
+  assert.match(response.error.message, /expected 0\.2/);
 });
 
 test('Studio worker protocol rejects task-specific option leakage', () => {
