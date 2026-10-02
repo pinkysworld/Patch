@@ -1,20 +1,6 @@
 name: Patch CodeQL Security
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '**/*.js'
-      - package.json
-      - .github/workflows/codeql.yml
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - '**/*.js'
-      - package.json
-      - .github/workflows/codeql.yml
-  schedule:
-    - cron: '37 4 * * 1'
   workflow_dispatch:
 
 permissions:

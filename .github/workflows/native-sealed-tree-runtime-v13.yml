@@ -1,34 +1,6 @@
 name: Patch Native Sealed TreeView Runtime v1.3
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - src/sealed-native-gui-v12.js
-      - src/native-gui-ir-v12.js
-      - src/native-tree-backend-adapter.js
-      - native-runtime/sealed-tree-v13.hpp
-      - native-runtime/sealed-menu-v12.hpp
-      - native-runtime/win32-sealed-gui-v13.cpp
-      - native-runtime/appkit-sealed-gui-v13.mm
-      - native-runtime/gtk-sealed-gui-v13.cpp
-      - examples/treeview-window.patch
-      - tests/sealed-tree-payload-v12.test.js
-      - .github/workflows/native-sealed-tree-runtime-v13.yml
-  push:
-    branches: [main]
-    paths:
-      - src/sealed-native-gui-v12.js
-      - src/native-gui-ir-v12.js
-      - src/native-tree-backend-adapter.js
-      - native-runtime/sealed-tree-v13.hpp
-      - native-runtime/sealed-menu-v12.hpp
-      - native-runtime/win32-sealed-gui-v13.cpp
-      - native-runtime/appkit-sealed-gui-v13.mm
-      - native-runtime/gtk-sealed-gui-v13.cpp
-      - examples/treeview-window.patch
-      - tests/sealed-tree-payload-v12.test.js
-      - .github/workflows/native-sealed-tree-runtime-v13.yml
   workflow_dispatch:
 
 concurrency:

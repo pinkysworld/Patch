@@ -28,53 +28,6 @@ on:
         description: Studio request identifier
         required: false
         default: manual
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/native-window-aot.yml
-      - scripts/build-native-gui.js
-      - scripts/build-native-appkit.js
-      - scripts/build-native-gtk.js
-      - src/native-gui-host.js
-      - src/native-current-contract.js
-      - src/native-frozen-contract.js
-      - src/native-gui-build-plan.js
-      - src/appkit-gui-v13.js
-      - src/appkit-gui-v14.js
-      - src/gtk-gui-v13.js
-      - src/gtk-gui-v14.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - examples/forms-navigation.patch
-      - web/native-build.js
-      - tests/studio-native-window-aot.test.js
-      - docs/NATIVE_GUI.md
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/native-window-aot.yml
-      - scripts/build-native-gui.js
-      - scripts/build-native-appkit.js
-      - scripts/build-native-gtk.js
-      - src/native-gui-host.js
-      - src/native-current-contract.js
-      - src/native-frozen-contract.js
-      - src/native-gui-build-plan.js
-      - src/appkit-gui-v13.js
-      - src/appkit-gui-v14.js
-      - src/gtk-gui-v13.js
-      - src/gtk-gui-v14.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - examples/forms-navigation.patch
-      - web/native-build.js
-      - tests/studio-native-window-aot.test.js
-      - docs/NATIVE_GUI.md
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

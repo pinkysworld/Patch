@@ -1,42 +1,6 @@
 name: Patch Native Sealed Chrome Runtime v1.5
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v14.js'
-      - 'src/native-gui-ir-v14.js'
-      - 'src/native-chrome-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-chrome-v15.hpp'
-      - 'native-runtime/sealed-slider-v14.hpp'
-      - 'native-runtime/picture-data-v15.hpp'
-      - 'native-runtime/win32-sealed-gui-v15.cpp'
-      - 'native-runtime/appkit-sealed-gui-v15.mm'
-      - 'native-runtime/gtk-sealed-gui-v15.cpp'
-      - 'examples/chrome-window.patch'
-      - 'examples/slider-window.patch'
-      - 'tests/sealed-chrome-payload-v14.test.js'
-      - 'tests/native-runtime-v15-sources.test.js'
-      - '.github/workflows/native-sealed-chrome-runtime-v15.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/sealed-native-gui-v14.js'
-      - 'src/native-gui-ir-v14.js'
-      - 'src/native-chrome-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-chrome-v15.hpp'
-      - 'native-runtime/sealed-slider-v14.hpp'
-      - 'native-runtime/picture-data-v15.hpp'
-      - 'native-runtime/win32-sealed-gui-v15.cpp'
-      - 'native-runtime/appkit-sealed-gui-v15.mm'
-      - 'native-runtime/gtk-sealed-gui-v15.cpp'
-      - 'examples/chrome-window.patch'
-      - 'examples/slider-window.patch'
-      - 'tests/sealed-chrome-payload-v14.test.js'
-      - 'tests/native-runtime-v15-sources.test.js'
-      - '.github/workflows/native-sealed-chrome-runtime-v15.yml'
   workflow_dispatch:
 
 concurrency:

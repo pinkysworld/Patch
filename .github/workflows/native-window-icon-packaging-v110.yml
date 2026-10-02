@@ -1,19 +1,6 @@
 name: Patch Native Window Icon Packaging v1.10
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/native-window-icon-packaging.js'
-      - 'src/native-window-icon-package-v110.js'
-      - 'src/windows-pe-icon-v110.js'
-      - 'src/native-window-icon-backend-adapter.js'
-      - 'src/native-gui-ir-v19.js'
-      - 'src/sealed-native-gui-v19.js'
-      - 'tests/native-window-icon-packaging.test.js'
-      - 'tests/native-window-icon-package-v110.test.js'
-      - 'tests/windows-pe-icon-v110.test.js'
-      - '.github/workflows/native-window-icon-packaging-v110.yml'
   workflow_dispatch:
 
 concurrency:

@@ -1,48 +1,6 @@
 name: Patch Reproducibility Bundle
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/reproducibility-bundle.yml
-      - package.json
-      - src/**
-      - formal/**
-      - examples/**
-      - case-studies/**
-      - scripts/reproducibility-bundle.js
-      - scripts/evaluate-security-cases.js
-      - scripts/evaluate-checkout-extension.js
-      - scripts/evaluate-extension-case.js
-      - scripts/generate-transitive-call-body-certificate.js
-      - scripts/generate-transitive-runtime-certificate.js
-      - tests/reproducibility-bundle.test.js
-      - docs/REPRODUCIBILITY_BUNDLE.md
-      - docs/EVALUATION.md
-      - docs/EXTENSION_CORPUS.md
-      - docs/ROADMAP.md
-      - paper/README.md
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/reproducibility-bundle.yml
-      - package.json
-      - src/**
-      - formal/**
-      - examples/**
-      - case-studies/**
-      - scripts/reproducibility-bundle.js
-      - scripts/evaluate-security-cases.js
-      - scripts/evaluate-checkout-extension.js
-      - scripts/evaluate-extension-case.js
-      - scripts/generate-transitive-call-body-certificate.js
-      - scripts/generate-transitive-runtime-certificate.js
-      - tests/reproducibility-bundle.test.js
-      - docs/REPRODUCIBILITY_BUNDLE.md
-      - docs/EVALUATION.md
-      - docs/EXTENSION_CORPUS.md
-      - docs/ROADMAP.md
-      - paper/README.md
   workflow_dispatch:
 
 concurrency:

@@ -1,10 +1,7 @@
 name: Patch Tagged Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-
+  workflow_dispatch:
 concurrency:
   group: patch-release-${{ github.ref }}
   cancel-in-progress: false

@@ -1,12 +1,6 @@
 name: Programming Journal submission PDF
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'paper/**'
-      - 'scripts/build-programming-submission-source.js'
-      - '.github/workflows/programming-submission.yml'
   workflow_dispatch:
 
 permissions:

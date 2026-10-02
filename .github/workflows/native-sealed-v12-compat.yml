@@ -1,29 +1,7 @@
 name: Patch Native Sealed Runtime v1.2 Compatibility
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - native-runtime/win32-sealed-gui-v12.cpp
-      - native-runtime/appkit-sealed-gui-v12.mm
-      - native-runtime/gtk-sealed-gui-v12.cpp
-      - native-runtime/sealed-menu-v12.hpp
-      - src/sealed-native-gui-v11.js
-      - src/native-gui-ir-v11.js
-      - examples/responsive-window.patch
-      - .github/workflows/native-sealed-v12-compat.yml
-  push:
-    branches: [main]
-    paths:
-      - native-runtime/win32-sealed-gui-v12.cpp
-      - native-runtime/appkit-sealed-gui-v12.mm
-      - native-runtime/gtk-sealed-gui-v12.cpp
-      - native-runtime/sealed-menu-v12.hpp
-      - src/sealed-native-gui-v11.js
-      - src/native-gui-ir-v11.js
-      - examples/responsive-window.patch
-      - .github/workflows/native-sealed-v12-compat.yml
-
+  workflow_dispatch:
 permissions:
   contents: read
 

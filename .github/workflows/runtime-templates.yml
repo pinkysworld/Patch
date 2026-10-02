@@ -2,59 +2,6 @@ name: Patch Studio Runtime Templates
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - scripts/build-native-sea-template.js
-      - scripts/build-native-window-template.js
-      - src/interpreter.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - src/window-events.js
-      - src/form-layout.js
-      - src/window-compiled.js
-      - src/prebuilt-native.js
-      - src/prebuilt-window.js
-      - src/wasm-direct.js
-      - src/compiler.js
-      - src/cli.js
-      - examples/direct-wasm-recipes.patch
-      - examples/counter-window.patch
-      - examples/checkbox-window.patch
-      - examples/combo-window.patch
-      - examples/listbox-window.patch
-      - examples/tabs-window.patch
-      - examples/forms-navigation.patch
-      - tests/tabs-window.test.js
-      - .github/workflows/runtime-templates.yml
-  push:
-    branches: [main]
-    paths:
-      - scripts/build-native-sea-template.js
-      - scripts/build-native-window-template.js
-      - src/interpreter.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - src/window-events.js
-      - src/form-layout.js
-      - src/window-compiled.js
-      - src/prebuilt-native.js
-      - src/prebuilt-window.js
-      - src/wasm-direct.js
-      - src/compiler.js
-      - src/cli.js
-      - examples/direct-wasm-recipes.patch
-      - examples/counter-window.patch
-      - examples/checkbox-window.patch
-      - examples/combo-window.patch
-      - examples/listbox-window.patch
-      - examples/tabs-window.patch
-      - examples/forms-navigation.patch
-      - tests/tabs-window.test.js
-      - .github/workflows/runtime-templates.yml
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

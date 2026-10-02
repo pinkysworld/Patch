@@ -1,9 +1,6 @@
 name: Patch Offline Compiler Release Metadata
 
 on:
-  workflow_run:
-    workflows: ['Patch Offline Compiler']
-    types: [completed]
   workflow_dispatch:
 
 permissions:

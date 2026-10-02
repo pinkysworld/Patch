@@ -1,41 +1,6 @@
 name: Patch Native Responsive Runtime
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/native-responsive-runtime.yml
-      - native-runtime/sealed-responsive-v09.hpp
-      - native-runtime/win32-sealed-gui-v09.cpp
-      - native-runtime/appkit-sealed-gui-v09.mm
-      - native-runtime/gtk-sealed-gui-v09.cpp
-      - native-runtime/win32-sealed-gui-v07.cpp
-      - native-runtime/appkit-sealed-gui-v07.mm
-      - native-runtime/gtk-sealed-gui-v07.cpp
-      - src/sealed-native-gui.js
-      - src/native-gui-ir.js
-      - src/compiler.js
-      - src/parser.js
-      - scripts/seal-native-win32.js
-      - scripts/seal-native-macos.js
-      - scripts/seal-native-linux.js
-      - examples/responsive-window.patch
-      - tests/sealed-native-gui.test.js
-      - tests/sealed-native-responsive.test.js
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/native-responsive-runtime.yml
-      - native-runtime/sealed-responsive-v09.hpp
-      - native-runtime/win32-sealed-gui-v09.cpp
-      - native-runtime/appkit-sealed-gui-v09.mm
-      - native-runtime/gtk-sealed-gui-v09.cpp
-      - src/sealed-native-gui.js
-      - scripts/seal-native-win32.js
-      - scripts/seal-native-macos.js
-      - scripts/seal-native-linux.js
-      - examples/responsive-window.patch
-      - tests/sealed-native-responsive.test.js
   workflow_dispatch:
 
 concurrency:

@@ -1,42 +1,6 @@
 name: Patch Native Sealed Shape Runtime v1.6
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v15.js'
-      - 'src/native-gui-ir-v15.js'
-      - 'src/native-shape-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-shape-v16.hpp'
-      - 'native-runtime/sealed-chrome-v15.hpp'
-      - 'native-runtime/picture-data-v15.hpp'
-      - 'native-runtime/win32-sealed-gui-v16.cpp'
-      - 'native-runtime/appkit-sealed-gui-v16.mm'
-      - 'native-runtime/gtk-sealed-gui-v16.cpp'
-      - 'examples/shape-window.patch'
-      - 'examples/chrome-window.patch'
-      - 'tests/native-shape.test.js'
-      - 'tests/native-runtime-v16-sources.test.js'
-      - '.github/workflows/native-sealed-shape-runtime-v16.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/sealed-native-gui-v15.js'
-      - 'src/native-gui-ir-v15.js'
-      - 'src/native-shape-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-shape-v16.hpp'
-      - 'native-runtime/sealed-chrome-v15.hpp'
-      - 'native-runtime/picture-data-v15.hpp'
-      - 'native-runtime/win32-sealed-gui-v16.cpp'
-      - 'native-runtime/appkit-sealed-gui-v16.mm'
-      - 'native-runtime/gtk-sealed-gui-v16.cpp'
-      - 'examples/shape-window.patch'
-      - 'examples/chrome-window.patch'
-      - 'tests/native-shape.test.js'
-      - 'tests/native-runtime-v16-sources.test.js'
-      - '.github/workflows/native-sealed-shape-runtime-v16.yml'
   workflow_dispatch:
 
 concurrency:

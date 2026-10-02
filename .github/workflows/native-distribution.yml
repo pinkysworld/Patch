@@ -33,30 +33,6 @@ on:
         type: choice
         options: [unsigned, require]
         default: unsigned
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/native-distribution.yml
-      - src/native-current-contract.js
-      - src/native-frozen-contract.js
-      - src/native-gui-build-plan.js
-      - src/native-accessibility.js
-      - src/win32-gui-v13.js
-      - src/win32-gui-v14.js
-      - src/appkit-gui-v13.js
-      - src/appkit-gui-v14.js
-      - src/gtk-gui-v13.js
-      - src/gtk-gui-v14.js
-      - scripts/sign-windows.ps1
-      - scripts/sign-notarize-macos.sh
-      - scripts/write-signing-status.js
-      - scripts/build-native-gui.js
-      - scripts/build-native-win32.js
-      - scripts/build-native-appkit.js
-      - scripts/build-native-gtk.js
-      - scripts/build-native-sea.js
-      - examples/forms-navigation.patch
-
 concurrency:
   group: patch-native-distribution-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true

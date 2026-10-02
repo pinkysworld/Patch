@@ -1,50 +1,6 @@
 name: Patch Native Sealed Window Icon Runtime v1.10
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v19.js'
-      - 'src/native-gui-ir-v19.js'
-      - 'src/native-window-icon-backend-adapter.js'
-      - 'src/windows-pe-icon-v110.js'
-      - 'native-runtime/sealed-button-image-v19.hpp'
-      - 'native-runtime/sealed-window-icon-v110.hpp'
-      - 'native-runtime/win32-sealed-gui-v19.cpp'
-      - 'native-runtime/appkit-sealed-gui-v19.mm'
-      - 'native-runtime/gtk-sealed-gui-v19.cpp'
-      - 'native-runtime/win32-sealed-gui-v110.cpp'
-      - 'native-runtime/appkit-sealed-gui-v110.mm'
-      - 'native-runtime/gtk-sealed-gui-v110.cpp'
-      - 'examples/window-icons-native.patch'
-      - 'tests/native-window-icon-v19.test.js'
-      - 'tests/native-window-icon-payload-v19.test.js'
-      - 'tests/native-runtime-v110-sources.test.js'
-      - 'tests/native-runtime-v110-release-workflow.test.js'
-      - 'tests/windows-pe-icon-v110.test.js'
-      - '.github/workflows/native-sealed-window-icon-runtime-v110.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/sealed-native-gui-v19.js'
-      - 'src/native-gui-ir-v19.js'
-      - 'src/native-window-icon-backend-adapter.js'
-      - 'src/windows-pe-icon-v110.js'
-      - 'native-runtime/sealed-button-image-v19.hpp'
-      - 'native-runtime/sealed-window-icon-v110.hpp'
-      - 'native-runtime/win32-sealed-gui-v19.cpp'
-      - 'native-runtime/appkit-sealed-gui-v19.mm'
-      - 'native-runtime/gtk-sealed-gui-v19.cpp'
-      - 'native-runtime/win32-sealed-gui-v110.cpp'
-      - 'native-runtime/appkit-sealed-gui-v110.mm'
-      - 'native-runtime/gtk-sealed-gui-v110.cpp'
-      - 'examples/window-icons-native.patch'
-      - 'tests/native-window-icon-v19.test.js'
-      - 'tests/native-window-icon-payload-v19.test.js'
-      - 'tests/native-runtime-v110-sources.test.js'
-      - 'tests/native-runtime-v110-release-workflow.test.js'
-      - 'tests/windows-pe-icon-v110.test.js'
-      - '.github/workflows/native-sealed-window-icon-runtime-v110.yml'
   workflow_dispatch:
 
 concurrency:

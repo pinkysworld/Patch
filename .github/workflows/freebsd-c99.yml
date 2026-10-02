@@ -27,22 +27,6 @@ on:
         description: Patch Studio request identifier
         required: false
         default: manual
-  pull_request:
-    paths:
-      - src/c99.js
-      - src/cli.js
-      - tests/c99.test.js
-      - .github/workflows/freebsd-c99.yml
-      - examples/direct-wasm-recipes.patch
-  push:
-    branches: [main]
-    paths:
-      - src/c99.js
-      - src/cli.js
-      - tests/c99.test.js
-      - .github/workflows/freebsd-c99.yml
-      - examples/direct-wasm-recipes.patch
-
 permissions:
   contents: read
 

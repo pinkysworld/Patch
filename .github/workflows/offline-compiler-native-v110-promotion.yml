@@ -2,32 +2,6 @@ name: Patch Offline Compiler Native v1.10 Contract
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - src/native-current-contract.js
-      - src/offline-linker.js
-      - src/offline-link-input.js
-      - src/cli-entry.js
-      - scripts/build-offline-compiler.js
-      - scripts/offline-compiler-runner.cjs
-      - tests/offline-linker-v19.test.js
-      - tests/offline-compiler-v110-promotion-workflow.test.js
-      - .github/workflows/offline-compiler.yml
-      - .github/workflows/offline-compiler-native-v110-promotion.yml
-  push:
-    branches: [main]
-    paths:
-      - src/native-current-contract.js
-      - src/offline-linker.js
-      - src/cli-entry.js
-      - scripts/build-offline-compiler.js
-      - scripts/offline-compiler-runner.cjs
-      - tests/offline-linker-v19.test.js
-      - tests/offline-compiler-v110-promotion-workflow.test.js
-      - .github/workflows/offline-compiler.yml
-      - .github/workflows/offline-compiler-native-v110-promotion.yml
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

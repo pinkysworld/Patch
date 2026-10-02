@@ -2,61 +2,6 @@ name: Patch Offline Compiler
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - src/**
-      - native-runtime/**
-      - scripts/build-offline-compiler.js
-      - scripts/offline-compiler-runner.cjs
-      - scripts/build-native-sea-template.js
-      - scripts/offline-compiler-source-graph.js
-      - scripts/offline-compiler-affected.js
-      - scripts/copy-offline-compiler-source.js
-      - package.json
-      - docs/OFFLINE_COMPILER.md
-      - web/downloads.html
-      - examples/direct-wasm-recipes.patch
-      - examples/responsive-window.patch
-      - examples/table-native-v09.patch
-      - examples/listbox-multiselect-native.patch
-      - examples/menu-state-window.patch
-      - examples/treeview-window.patch
-      - examples/slider-window.patch
-      - examples/chrome-window.patch
-      - examples/shape-window.patch
-      - examples/paintbox-window.patch
-      - examples/paintbox-image-window.patch
-      - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-sealed-window-icon-runtime-v110.yml
-  push:
-    branches: [main]
-    paths:
-      - src/**
-      - native-runtime/**
-      - scripts/build-offline-compiler.js
-      - scripts/offline-compiler-runner.cjs
-      - scripts/build-native-sea-template.js
-      - scripts/offline-compiler-source-graph.js
-      - scripts/offline-compiler-affected.js
-      - scripts/copy-offline-compiler-source.js
-      - package.json
-      - docs/OFFLINE_COMPILER.md
-      - web/downloads.html
-      - examples/direct-wasm-recipes.patch
-      - examples/responsive-window.patch
-      - examples/table-native-v09.patch
-      - examples/listbox-multiselect-native.patch
-      - examples/menu-state-window.patch
-      - examples/treeview-window.patch
-      - examples/slider-window.patch
-      - examples/chrome-window.patch
-      - examples/shape-window.patch
-      - examples/paintbox-window.patch
-      - examples/paintbox-image-window.patch
-      - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-sealed-window-icon-runtime-v110.yml
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

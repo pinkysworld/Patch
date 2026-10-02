@@ -1,22 +1,6 @@
 name: Patch Native Sealed Button Image Runtime v1.9
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v18.js'
-      - 'src/native-gui-ir-v18.js'
-      - 'src/native-button-image-backend-adapter.js'
-      - 'native-runtime/sealed-paintbox-image-v18.hpp'
-      - 'native-runtime/sealed-button-image-v19.hpp'
-      - 'native-runtime/win32-sealed-gui-v19.cpp'
-      - 'native-runtime/appkit-sealed-gui-v19.mm'
-      - 'native-runtime/gtk-sealed-gui-v19.cpp'
-      - 'examples/button-imagelist-window.patch'
-      - 'tests/native-button-image-v18.test.js'
-      - 'tests/native-button-image-payload-v18.test.js'
-      - 'tests/native-runtime-v19-sources.test.js'
-      - '.github/workflows/native-sealed-button-image-runtime-v19.yml'
   workflow_dispatch:
 
 concurrency:

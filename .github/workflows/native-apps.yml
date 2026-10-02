@@ -37,45 +37,6 @@ on:
         description: Studio request identifier
         required: false
         default: manual
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - scripts/build-native-sea.js
-      - scripts/build-native-window.js
-      - src/native-app.js
-      - src/interpreter.js
-      - src/parser.js
-      - src/window-build.js
-      - src/window-compiled.js
-      - src/webapp.js
-      - src/wasm-direct.js
-      - src/cli.js
-      - web/index.html
-      - web/native-build.js
-      - web/playground.js
-      - .github/workflows/native-apps.yml
-      - examples/direct-wasm-recipes.patch
-      - examples/counter-window.patch
-      - examples/forms-navigation.patch
-  push:
-    branches: [main]
-    paths:
-      - scripts/build-native-sea.js
-      - scripts/build-native-window.js
-      - src/native-app.js
-      - src/interpreter.js
-      - src/parser.js
-      - src/window-build.js
-      - src/window-compiled.js
-      - src/webapp.js
-      - src/wasm-direct.js
-      - src/cli.js
-      - web/index.html
-      - web/native-build.js
-      - web/playground.js
-      - .github/workflows/native-apps.yml
-      - examples/forms-navigation.patch
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

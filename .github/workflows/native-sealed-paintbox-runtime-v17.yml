@@ -1,40 +1,6 @@
 name: Patch Native Sealed PaintBox Runtime v1.7
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v16.js'
-      - 'src/native-gui-ir-v16.js'
-      - 'src/native-paintbox-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-paintbox-v17.hpp'
-      - 'native-runtime/sealed-shape-v16.hpp'
-      - 'native-runtime/win32-sealed-gui-v17.cpp'
-      - 'native-runtime/appkit-sealed-gui-v17.mm'
-      - 'native-runtime/gtk-sealed-gui-v17.cpp'
-      - 'examples/paintbox-window.patch'
-      - 'examples/shape-window.patch'
-      - 'tests/native-paintbox.test.js'
-      - 'tests/native-runtime-v17-sources.test.js'
-      - '.github/workflows/native-sealed-paintbox-runtime-v17.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/sealed-native-gui-v16.js'
-      - 'src/native-gui-ir-v16.js'
-      - 'src/native-paintbox-backend-adapter.js'
-      - 'src/native-current-contract.js'
-      - 'native-runtime/sealed-paintbox-v17.hpp'
-      - 'native-runtime/sealed-shape-v16.hpp'
-      - 'native-runtime/win32-sealed-gui-v17.cpp'
-      - 'native-runtime/appkit-sealed-gui-v17.mm'
-      - 'native-runtime/gtk-sealed-gui-v17.cpp'
-      - 'examples/paintbox-window.patch'
-      - 'examples/shape-window.patch'
-      - 'tests/native-paintbox.test.js'
-      - 'tests/native-runtime-v17-sources.test.js'
-      - '.github/workflows/native-sealed-paintbox-runtime-v17.yml'
   workflow_dispatch:
 
 concurrency:

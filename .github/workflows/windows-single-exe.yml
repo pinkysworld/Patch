@@ -20,39 +20,6 @@ on:
         description: Studio request identifier
         required: false
         default: manual
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - .github/workflows/windows-single-exe.yml
-      - scripts/build-native-win32.js
-      - src/native-current-contract.js
-      - src/native-frozen-contract.js
-      - src/native-gui-build-plan.js
-      - src/win32-gui-v13.js
-      - src/win32-gui-v14.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - web/native-build.js
-      - tests/studio-windows-single-exe.test.js
-      - examples/forms-navigation.patch
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/windows-single-exe.yml
-      - scripts/build-native-win32.js
-      - src/native-current-contract.js
-      - src/native-frozen-contract.js
-      - src/native-gui-build-plan.js
-      - src/win32-gui-v13.js
-      - src/win32-gui-v14.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
-      - examples/forms-navigation.patch
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

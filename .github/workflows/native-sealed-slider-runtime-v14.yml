@@ -1,36 +1,6 @@
 name: Patch Native Sealed Slider Runtime v1.4
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'src/sealed-native-gui-v13.js'
-      - 'src/native-gui-ir-v13.js'
-      - 'src/native-slider-backend-adapter.js'
-      - 'native-runtime/sealed-slider-v14.hpp'
-      - 'native-runtime/sealed-tree-v13.hpp'
-      - 'native-runtime/win32-sealed-gui-v14.cpp'
-      - 'native-runtime/appkit-sealed-gui-v14.mm'
-      - 'native-runtime/gtk-sealed-gui-v14.cpp'
-      - 'examples/slider-window.patch'
-      - 'tests/sealed-slider-payload-v13.test.js'
-      - 'tests/native-slider.test.js'
-      - '.github/workflows/native-sealed-slider-runtime-v14.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/sealed-native-gui-v13.js'
-      - 'src/native-gui-ir-v13.js'
-      - 'src/native-slider-backend-adapter.js'
-      - 'native-runtime/sealed-slider-v14.hpp'
-      - 'native-runtime/sealed-tree-v13.hpp'
-      - 'native-runtime/win32-sealed-gui-v14.cpp'
-      - 'native-runtime/appkit-sealed-gui-v14.mm'
-      - 'native-runtime/gtk-sealed-gui-v14.cpp'
-      - 'examples/slider-window.patch'
-      - 'tests/sealed-slider-payload-v13.test.js'
-      - 'tests/native-slider.test.js'
-      - '.github/workflows/native-sealed-slider-runtime-v14.yml'
   workflow_dispatch:
 
 concurrency:
