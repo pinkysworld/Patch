@@ -148,12 +148,13 @@ The following work remains useful but does not block the R0 exit contract:
 
 ### Studio maintainability decomposition
 
-`web/playground.js` still owns substantial orchestration. Continue extracting, with behavior-preserving tests:
+`web/playground.js` is now orchestration-only for the bounded lifecycle surfaces. The behavior-preserving extraction sequence is complete:
 
-- Run/runtime lifecycle;
-- Window/control DOM renderer;
+- Run/runtime lifecycle through `studio-run-controller/0.1`;
+- Window/control DOM renderer through `studio-window-renderer/0.2`;
 - transient runtime state helpers that have not already moved to shared modules;
 - Build controller;
+- Designer/Change Contract preview scheduling, stale-response guards and active-Form rematerialization through `studio-preview-controller/0.1`;
 - obsolete compatibility/sample source after migration coverage no longer needs it.
 
 This is maintainability work. It should not force a risky big-bang refactor immediately before an otherwise-green R0 integration.

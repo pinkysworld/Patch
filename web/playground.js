@@ -1,10 +1,9 @@
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
-import { createStudioLanguageClient } from './studio-language-client.js';
+import { installStudioPreviewController } from './studio-preview-controller.js';
 import { installStudioBuildController } from './studio-build-controller.js';
 import { installStudioRunController } from './studio-run-controller.js';
 import { createStudioWindowRenderer } from './studio-window-renderer.js';
-import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
 const samples = {
@@ -137,13 +136,6 @@ const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
 const saveState = document.querySelector('#saveState');
 const runButton = document.querySelector('#run');
-let designerTimer = null;
-let changeContractTimer = null;
-let designerLanguageRevision = 0;
-let changeContractLanguageRevision = 0;
-
-const studioLanguageClient = createStudioLanguageClient();
-
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
 projectName.value = saved?.name ?? 'MyPatchApp';
@@ -154,20 +146,16 @@ sample.addEventListener('change', () => {
   code.value = samples[sample.value];
   projectKind.value = ['counterWindow', 'tabsWindow', 'sliderWindow'].includes(sample.value) ? 'window' : 'console';
   saveProject();
-  refreshDesigner();
+  studioPreviewController.refreshDesigner();
   showTab(sample.value === 'capabilities' ? 'changes' : (projectKind.value === 'window' ? 'designer' : 'output'));
-  if (sample.value === 'capabilities') refreshChangeContract();
+  if (sample.value === 'capabilities') studioPreviewController.refreshChangeContract();
 });
 
 for (const input of [code, projectName, projectKind]) {
-  input.addEventListener('input', () => { saveProject(); scheduleDesigner(); scheduleChangeContract(); });
-  input.addEventListener('change', () => { saveProject(); refreshDesigner(); refreshChangeContract(); });
+  input.addEventListener('input', () => { saveProject(); studioPreviewController.scheduleDesigner(); studioPreviewController.scheduleChangeContract(); });
+  input.addEventListener('change', () => { saveProject(); studioPreviewController.refreshDesigner(); studioPreviewController.refreshChangeContract(); });
 }
 
-designerCanvas?.addEventListener('patch-designer-active-form-change', event => {
-  const requested = Number(event.detail?.windowIndex);
-  refreshDesigner(Number.isInteger(requested) ? requested : null);
-});
 appView.addEventListener('patch-studio-table-changed', event => {
   const detail = event.detail ?? {};
   if (typeof detail.control !== 'string' || !Array.isArray(detail.value) || !detail.value.every(cell => typeof cell === 'string')) return;
@@ -186,6 +174,15 @@ installStudioBuildController({
 });
 
 const studioWindowRenderer = createStudioWindowRenderer({ dispatch: trigger });
+const studioPreviewController = installStudioPreviewController({
+  code,
+  changesView,
+  designerCanvas,
+  studioWindowRenderer,
+  languageProjectOptions,
+  formatChangeAnalysis,
+  formatStudioStop
+});
 const studioRunController = installStudioRunController({
   code,
   runButton,
@@ -209,30 +206,10 @@ const studioRunController = installStudioRunController({
 
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
-    if (tab.dataset.tab === 'changes') refreshChangeContract();
+    if (tab.dataset.tab === 'changes') studioPreviewController.refreshChangeContract();
     if (tab.dataset.tab === 'ir') studioRunController.refreshIrView();
     showTab(tab.dataset.tab);
   });
-}
-
-async function refreshChangeContract() {
-  clearTimeout(changeContractTimer);
-  changeContractTimer = null;
-  const revision = ++changeContractLanguageRevision;
-  const source = code.value;
-  try {
-    const compiled = await studioLanguageClient.compile(source, languageProjectOptions());
-    if (revision !== changeContractLanguageRevision || source !== code.value) return;
-    changesView.textContent = formatChangeAnalysis(compiled.ir);
-  } catch (err) {
-    if (revision !== changeContractLanguageRevision || source !== code.value) return;
-    changesView.textContent = `Change contract stopped:\n${formatStudioStop(err, 'compile')}`;
-  }
-}
-
-function scheduleChangeContract() {
-  clearTimeout(changeContractTimer);
-  changeContractTimer = setTimeout(refreshChangeContract, 220);
 }
 
 function formatChangeAnalysis(ir) {
@@ -268,30 +245,6 @@ function formatChangeAnalysis(ir) {
     lines.push('');
   }
   return lines.join('\n').trimEnd();
-}
-
-async function refreshDesigner(requestedFormIndex = null) {
-  clearTimeout(designerTimer);
-  const revision = ++designerLanguageRevision;
-  const source = code.value;
-  const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined
-    ? document.querySelector('#patchFormSelect')?.value
-    : requestedFormIndex;
-  try {
-    const preview = await studioLanguageClient.designModel(source);
-    if (revision !== designerLanguageRevision || source !== code.value) return;
-    const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);
-    studioWindowRenderer.renderDesigner(designerCanvas, preview.ui, { materialization });
-    if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This console project has no Form to design.</p>';
-  } catch (err) {
-    if (revision !== designerLanguageRevision || source !== code.value) return;
-    designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
-  }
-}
-
-function scheduleDesigner() {
-  clearTimeout(designerTimer);
-  designerTimer = setTimeout(refreshDesigner, 220);
 }
 
 function installDesignerInspector() {
@@ -398,6 +351,6 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 }
 
-refreshDesigner();
-refreshChangeContract();
+studioPreviewController.refreshDesigner();
+studioPreviewController.refreshChangeContract();
 showTab(projectKind.value === 'window' ? 'designer' : 'output');

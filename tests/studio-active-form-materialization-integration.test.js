@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const playground = fs.readFileSync('web/playground.js', 'utf8');
+const previewController = fs.readFileSync('web/studio-preview-controller.js', 'utf8');
 const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 const siteBuilder = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
 
 test('Designer renderer materializes controls only for the canonical active Form', () => {
-  assert.match(playground, /createStudioFormMaterializationPlan/);
-  assert.match(playground, /studioWindowRenderer\.renderDesigner\(designerCanvas, preview\.ui, \{ materialization \}\)/);
+  assert.match(playground, /installStudioPreviewController/);
+  assert.match(previewController, /createStudioFormMaterializationPlan/);
+  assert.match(previewController, /studioWindowRenderer\.renderDesigner\(designerCanvas, ui, \{ materialization \}\)/);
   assert.match(renderer, /const deferDesignerForm = Boolean\(!interactive && materialization\?\.modes\?\.\[windowIndex\] === 'shell'\)/);
   assert.match(renderer, /const deferForm = deferHiddenForm \|\| deferDesignerForm/);
   assert.match(renderer, /if \(!deferForm\) \{/);
@@ -21,7 +23,7 @@ test('Form selector remains the active-Form owner and requests rematerialization
   assert.match(formsDesigner, /select\.addEventListener\('change',[\s\S]*requestActiveFormMaterialization\(\)/);
   assert.match(formsDesigner, /function requestActiveFormMaterialization\(\)/);
   assert.match(formsDesigner, /patch-designer-active-form-change/);
-  assert.match(playground, /patch-designer-active-form-change/);
+  assert.match(previewController, /patch-designer-active-form-change/);
 });
 
 test('nested Designer tab-page rendering inherits the active-Form materialization context without rebuilding sibling Forms', () => {
@@ -63,4 +65,6 @@ test('hosted and Offline Studio package the shared materialization policy and re
   assert.ok(serviceWorker.includes('../src/studio-form-materialization.js'));
   assert.ok(siteBuilder.includes("'studio-window-renderer.js'"));
   assert.ok(serviceWorker.includes('./studio-window-renderer.js'));
+  assert.ok(siteBuilder.includes("'studio-preview-controller.js'"));
+  assert.ok(serviceWorker.includes('./studio-preview-controller.js'));
 });

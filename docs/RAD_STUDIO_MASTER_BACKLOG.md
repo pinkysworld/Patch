@@ -1,6 +1,6 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-09-13**
+Status synchronized: **2026-10-04**
 
 This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the now-completed native Window-icon implementation/promotion sequence and can close with the Current Ready v1.10 promotion. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
@@ -164,8 +164,9 @@ Remaining:
 - [x] extract Window/control DOM renderer;
 - [x] extract bounded transient runtime selection/state helpers;
 - [x] extract Build controller;
+- [x] extract Designer/Change Contract preview scheduling and stale-response ownership into `studio-preview-controller/0.1`;
 - [x] keep `playground.js` as orchestration rather than a second framework for the extracted paths;
-- [ ] remove obsolete duplicate Workshop/Harbor compatibility source once migration coverage no longer needs it.
+- [x] remove obsolete duplicate Workshop/Harbor compatibility source once migration coverage no longer needs it.
 
 ## P0.8 CI/deployment reliability
 

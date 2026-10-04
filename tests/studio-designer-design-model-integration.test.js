@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
 
 const playground = fs.readFileSync('web/playground.js', 'utf8');
+const previewController = fs.readFileSync('web/studio-preview-controller.js', 'utf8');
 const statusBar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 const snapshotService = fs.readFileSync('web/studio-design-snapshots.js', 'utf8');
@@ -13,21 +14,24 @@ const roadmap = fs.readFileSync('docs/ROADMAP.md', 'utf8');
 const backlog = fs.readFileSync('docs/RAD_STUDIO_MASTER_BACKLOG.md', 'utf8');
 const handoff = fs.readFileSync('docs/GPT.md', 'utf8');
 
-test('Designer refresh consumes the versioned language-worker boundary', () => {
-  assert.match(playground, /import \{ createStudioLanguageClient \} from '\.\/studio-language-client\.js';/);
-  assert.doesNotMatch(playground, /const designerDesignCache = createStudioDesignSnapshotCache\(\);/);
+test('Designer refresh consumes the versioned language-worker boundary behind the Preview controller', () => {
+  assert.match(playground, /import \{ installStudioPreviewController \} from '\.\/studio-preview-controller\.js';/);
+  assert.doesNotMatch(playground, /createStudioLanguageClient/);
+  assert.doesNotMatch(playground, /designerLanguageRevision/);
+  assert.doesNotMatch(playground, /designerTimer/);
+  assert.match(previewController, /import \{ createStudioLanguageClient \} from '\.\/studio-language-client\.js';/);
 
-  const start = playground.indexOf('function refreshDesigner(');
-  const end = playground.indexOf('function scheduleDesigner()', start);
-  assert.notEqual(start, -1, 'refreshDesigner must exist');
+  const start = previewController.indexOf('async function refreshDesigner(');
+  const end = previewController.indexOf('function scheduleDesigner()', start);
+  assert.notEqual(start, -1, 'refreshDesigner must exist in the Preview controller');
   assert.notEqual(end, -1, 'scheduleDesigner must follow refreshDesigner');
-  const refresh = playground.slice(start, end);
+  const refresh = previewController.slice(start, end);
 
-  assert.match(refresh, /const preview = await studioLanguageClient\.designModel\(source\);/);
-  assert.doesNotMatch(refresh, /getStudioDesignSnapshot\(code\.value\)/);
+  assert.match(refresh, /const preview = await languageClient\.designModel\(source\);/);
+  assert.match(refresh, /createStudioFormMaterializationPlan\(ui\.length, selectedFormIndex\)/);
   assert.doesNotMatch(refresh, /PatchInterpreter/);
-  assert.doesNotMatch(refresh, /\.run\(code\.value\)/);
-  assert.match(refresh, /studioWindowRenderer\.renderDesigner\(designerCanvas, preview\.ui, \{ materialization \}\)/);
+  assert.doesNotMatch(refresh, /\.run\(source\)/);
+  assert.match(previewController, /studioWindowRenderer\.renderDesigner\(designerCanvas, ui, \{ materialization \}\)/);
 });
 
 test('specialized StatusBar and steady-state Form readers share revision snapshots', () => {
@@ -76,7 +80,9 @@ test('public and Offline Studio module closure packages the design model, cache 
     assert.ok(serviceWorker.includes(`../src/${name}`), `offline cache must package src/${name}`);
   }
   assert.ok(siteBuilder.includes("'studio-design-snapshots.js'"), 'site builder must package shared browser snapshot service');
+  assert.ok(siteBuilder.includes("'studio-preview-controller.js'"), 'site builder must package Preview controller');
   assert.ok(serviceWorker.includes("'./studio-design-snapshots.js'"), 'offline cache must package shared browser snapshot service');
+  assert.ok(serviceWorker.includes("'./studio-preview-controller.js'"), 'offline cache must package Preview controller');
 });
 
 test('R0 status documents do not keep primary Designer integration in the open queue', () => {

@@ -100,7 +100,7 @@ The R0 architecture foundation includes `studio-design-model/0.1`, the bounded d
 
 Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The performance harness includes a deterministic **10-Form / 200-control** stress fixture and real-Chrome Workshop measurements. Main-thread Worker adoption and large Table/Tree virtualization remain measurement-gated rather than being added without evidence.
 
-The post-R0 maintainability work has also extracted the Build controller, Run/runtime lifecycle and Window/control DOM renderer, converged Object Inspector dirty/apply/error paths, removed the obsolete Harbor sample source, and added control-level incremental reconciliation for Table where a canonical transient-state contract exists.
+The post-R0 maintainability work has also extracted the Build controller, Run/runtime lifecycle, Window/control DOM renderer and `studio-preview-controller/0.1` for Designer/Change Contract scheduling plus stale-response ownership. It converged Object Inspector dirty/apply/error paths, removed the obsolete Harbor sample source, and added control-level incremental reconciliation for Table where a canonical transient-state contract exists.
 
 ## Nonvisual tray and ImageList
 

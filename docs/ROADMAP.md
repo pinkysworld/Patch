@@ -48,7 +48,7 @@ The Current Ready Window-icon line includes platform packaging evidence:
 
 The native R1 promotion gate is complete. Near-term work is now split between:
 
-1. completing the remaining R0 Studio architecture/reliability work;
+1. preserving the completed R0 Studio architecture/reliability boundary while moving into R2 follow-through;
 2. extending the now-shipped R2 Designer workflow contracts and Panel Stage 2 foundation without weakening the promoted native boundary;
 3. extending Offline Studio Stage 2 local-native-build integration;
 4. moving through R4 component parity with explicit Studio/Web contracts and fail-closed native boundaries until a later native contract is promoted.
@@ -80,7 +80,7 @@ Completed foundations include:
 
 Remaining R0 work:
 
-- [ ] finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`
+- [x] `studio-preview-controller/0.1` owns Designer/Change Contract scheduling, stale-response guards and active-Form rematerialization; Run, Build and Window rendering already live behind their bounded controllers, leaving `web/playground.js` as orchestration
 
 ## RAD R1 graphics/resources status
 

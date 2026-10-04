@@ -99,7 +99,7 @@ Done. Do not reimplement:
 
 Remaining unchecked R0 work, from `docs/ROADMAP.md`:
 
-1. finish extracting runtime lifecycle and remaining transient UI state from `web/playground.js`.
+None. `studio-preview-controller/0.1` now owns Designer/Change Contract scheduling, stale-response guards and active-Form rematerialization; Run, Build, Window rendering and transient runtime selection already have bounded owners.
 
 Pages release-awareness and the Offline Compiler dependency closure were already complete. As of 2026-10-02 all repository GitHub Actions are additionally manual-only through `workflow_dispatch` during active development, so normal pushes and PRs consume no Actions minutes.
 
@@ -203,4 +203,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Do the remaining unchecked R0 item first: extract the rest of runtime lifecycle and transient UI ownership from `web/playground.js` without recreating a second framework. Then R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
+R0 architecture follow-up is complete. Continue with R2/Panel follow-through (container-relative Anchors/Dock, nested Panels, visual reparent, and native Panel containment only through a new native contract). Then Offline Studio Stage 2 leftovers listed above. Then R4 parity that stays Studio/Web-only and fail-closed on Current Ready until a new native contract. Future native features need a new IR rather than widening v19.
