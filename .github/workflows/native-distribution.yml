@@ -115,7 +115,7 @@ jobs:
           name: patch-windows-distribution-${{ github.run_id }}
           path: dist/*-windows-distribution.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   macos:
     if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name == 'pull_request' || inputs.platform == 'macos')
@@ -194,7 +194,7 @@ jobs:
           name: patch-macos-distribution-${{ github.run_id }}
           path: dist/*-macos-distribution.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   linux:
     if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name == 'pull_request' || inputs.platform == 'linux')
@@ -270,4 +270,4 @@ jobs:
           name: patch-linux-distribution-${{ github.run_id }}
           path: dist/*-linux-distribution.tar.gz
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
