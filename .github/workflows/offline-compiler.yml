@@ -250,7 +250,7 @@ jobs:
           name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
           path: dist-offline/${{ matrix.asset }}
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   macos-intel-kit:
     needs: affected
@@ -353,7 +353,7 @@ jobs:
           name: offline-compiler-macos-intel
           path: dist-intel/patch-macos-x64.tar.gz
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   freebsd-kit:
     needs: affected
@@ -412,7 +412,7 @@ jobs:
           name: offline-compiler-freebsd
           path: dist-freebsd/patch-freebsd-x64.tar.gz
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   publish:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true'
