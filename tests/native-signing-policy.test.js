@@ -122,9 +122,9 @@ test('signed manifest claims are bound to platform verification evidence', () =>
   assert.doesNotMatch(workflow, /\$verified = if \(\$env:PATCH_SIGNING_MODE -eq 'require'\)/);
 });
 
-test('native distribution PR smoke runs unsigned without exposing signing secrets to build steps', () => {
-  assert.match(workflow, /pull_request:\s*\n\s*types: \[opened, synchronize, reopened, ready_for_review\]/);
-  assert.match(workflow, /github\.event\.pull_request\.draft == false/);
+test('manual Native Distribution keeps signing secrets scoped to explicit signing steps', () => {
+  assert.match(workflow, /^on:\s*\n  workflow_dispatch:/m);
+  assert.doesNotMatch(workflow, /^  (?:push|pull_request|pull_request_target|schedule|workflow_run):/m);
   const winStep = workflow.indexOf('- name: Require and verify Windows Authenticode signature');
   const winSecret = workflow.indexOf('PATCH_WINDOWS_PFX_BASE64');
   const macStep = workflow.indexOf('- name: Require verify and notarize macOS signature');
