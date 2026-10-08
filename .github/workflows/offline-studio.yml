@@ -152,7 +152,7 @@ jobs:
           name: patch-offline-studio-${{ matrix.artifact }}
           path: dist-offline-studio/**
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   macos-intel-runtime-kit:
     name: Offline Studio (macOS Intel runtime kit)
@@ -190,7 +190,7 @@ jobs:
             PatchStudio-macos-x64.tar.gz
             offline-studio-manifest.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   portable:
     name: Portable Node / generic Unix compatibility
@@ -216,7 +216,7 @@ jobs:
           name: patch-offline-studio-portable-node18
           path: PatchStudio-portable-node18.tar.gz
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   freebsd-portable:
     name: Portable Offline Studio (FreeBSD 15 x64)
@@ -330,7 +330,7 @@ jobs:
             release/offline-studio-manifest.json
             release/SHA256SUMS
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
   publish:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
