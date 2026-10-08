@@ -5,9 +5,12 @@ import { snapDesignerGrid } from './designer-z-order-model.js';
 
 const canvas = document.querySelector('#designerCanvas');
 const code = document.querySelector('#code');
-const ALIGNMENT_TOLERANCE = 5;
+const DEFAULT_ALIGNMENT_TOLERANCE = 5;
+const SMART_GUIDE_TOLERANCES = Object.freeze([3, 5, 8, 12]);
 const SMART_GUIDES_STORAGE_KEY = 'patch-studio-smart-guides-v1';
+const SMART_GUIDE_TOLERANCE_STORAGE_KEY = 'patch-studio-smart-guide-tolerance-v1';
 let smartGuidesEnabled = loadSmartGuidePreference();
+let smartGuideTolerance = loadSmartGuideTolerance();
 let verticalGuide = null;
 let horizontalGuide = null;
 let horizontalSpacingGuide = null;
@@ -28,10 +31,36 @@ function installSmartGuideToggle() {
   toggle.title = 'Toggle edge, center and equal-spacing smart guides. Hold Alt/Option during a drag to bypass them temporarily.';
   toolbar.appendChild(toggle);
 
+  const toleranceLabel = document.createElement('label');
+  toleranceLabel.className = 'designer-smart-guides-sensitivity';
+  toleranceLabel.textContent = 'Snap ';
+  const toleranceSelect = document.createElement('select');
+  toleranceSelect.id = 'designerSmartGuideTolerance';
+  toleranceSelect.className = 'secondary small';
+  toleranceSelect.setAttribute('aria-label', 'Smart Guide snap distance');
+  toleranceSelect.title = 'Snap to matching edges, centers and equal gaps within this distance.';
+  for (const pixels of SMART_GUIDE_TOLERANCES) {
+    const option = document.createElement('option');
+    option.value = String(pixels);
+    option.textContent = `${pixels} px`;
+    toleranceSelect.appendChild(option);
+  }
+  toleranceSelect.value = String(smartGuideTolerance);
+  toleranceLabel.appendChild(toleranceSelect);
+  toolbar.appendChild(toleranceLabel);
+  toleranceSelect.addEventListener('change', () => {
+    const next = Number(toleranceSelect.value);
+    if (!SMART_GUIDE_TOLERANCES.includes(next)) return;
+    smartGuideTolerance = next;
+    saveSmartGuideTolerance(next);
+    hideGuides();
+  });
+
   const render = () => {
     toggle.setAttribute('aria-pressed', smartGuidesEnabled ? 'true' : 'false');
     toggle.textContent = smartGuidesEnabled ? 'Smart Guides · On' : 'Smart Guides · Off';
     canvas.dataset.smartGuides = smartGuidesEnabled ? 'on' : 'off';
+    toleranceSelect.disabled = !smartGuidesEnabled;
   };
   toggle.addEventListener('click', () => {
     smartGuidesEnabled = !smartGuidesEnabled;
@@ -76,7 +105,7 @@ function beginAlignmentAssist(event) {
       : current;
     // Grid is the coarse baseline; semantic smart guides win inside the small
     // tolerance so the visible guide always describes the final position.
-    const snapped = snapFormControlAlignment(gridSnapped, peers, { tolerance: ALIGNMENT_TOLERANCE });
+    const snapped = snapFormControlAlignment(gridSnapped, peers, { tolerance: smartGuideTolerance });
     target.style.left = `${snapped.x}px`;
     target.style.top = `${snapped.y}px`;
     positionResizeHandle(target, selector);
@@ -294,6 +323,23 @@ function loadSmartGuidePreference() {
     return localStorage.getItem(SMART_GUIDES_STORAGE_KEY) !== 'off';
   } catch {
     return true;
+  }
+}
+
+function loadSmartGuideTolerance() {
+  try {
+    const saved = Number(localStorage.getItem(SMART_GUIDE_TOLERANCE_STORAGE_KEY));
+    return SMART_GUIDE_TOLERANCES.includes(saved) ? saved : DEFAULT_ALIGNMENT_TOLERANCE;
+  } catch {
+    return DEFAULT_ALIGNMENT_TOLERANCE;
+  }
+}
+
+function saveSmartGuideTolerance(pixels) {
+  try {
+    localStorage.setItem(SMART_GUIDE_TOLERANCE_STORAGE_KEY, String(pixels));
+  } catch {
+    // Snap sensitivity is local IDE chrome, not Patch project state.
   }
 }
 
