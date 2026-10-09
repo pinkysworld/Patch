@@ -57,3 +57,24 @@ test('Studio alignment assistance stays web-only, group-aware, syntax-valid and 
   assert.match(moduleSource, /pointercancel/);
   assert.doesNotMatch(helperSource, /\.\.\/src\//);
 });
+
+test('Smart Guide snap threshold distinguishes precise and relaxed matching', () => {
+  const moving = { x: 94, y: 40, width: 40, height: 20 };
+  const distant = [{ x: 100, y: 150, width: 80, height: 20 }];
+  const precise = snapFormControlAlignment(moving, distant, { tolerance: 3 });
+  const relaxed = snapFormControlAlignment(moving, distant, { tolerance: 8 });
+  assert.equal(precise.x, 94);
+  assert.equal(precise.guideX, null);
+  assert.equal(relaxed.x, 100);
+  assert.equal(relaxed.guideX, 100);
+});
+
+test('Smart Guide sensitivity is an accessible local-only preference', () => {
+  assert.match(moduleSource, /designerSmartGuideTolerance/);
+  assert.match(moduleSource, /Smart Guide snap distance/);
+  assert.match(moduleSource, /SMART_GUIDE_TOLERANCES = Object\.freeze\(\[3, 5, 8, 12\]\)/);
+  assert.match(moduleSource, /loadSmartGuideTolerance\(\)/);
+  assert.match(moduleSource, /saveSmartGuideTolerance\(next\)/);
+  assert.match(moduleSource, /toleranceSelect\.disabled = !smartGuidesEnabled/);
+  assert.match(moduleSource, /tolerance: smartGuideTolerance/);
+});

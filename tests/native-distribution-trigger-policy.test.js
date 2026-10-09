@@ -8,40 +8,11 @@ function readRepoText(file) {
 
 const workflow = readRepoText('.github/workflows/native-distribution.yml');
 
-function pullRequestPaths(text) {
-  const match = text.match(/pull_request:\n[\s\S]*?paths:\n([\s\S]*?)\n\nconcurrency:/);
-  assert.ok(match, 'native-distribution pull_request paths block must remain explicit');
-  return match[1];
-}
-
-test('Native Distribution only watches distribution-affecting PR paths', () => {
-  const paths = pullRequestPaths(workflow);
-  for (const required of [
-    '.github/workflows/native-distribution.yml',
-    'src/native-current-contract.js',
-    'src/native-frozen-contract.js',
-    'src/native-gui-build-plan.js',
-    'src/native-accessibility.js',
-    'src/win32-gui-v13.js',
-    'src/win32-gui-v14.js',
-    'src/appkit-gui-v13.js',
-    'src/appkit-gui-v14.js',
-    'src/gtk-gui-v13.js',
-    'src/gtk-gui-v14.js',
-    'scripts/build-native-gui.js',
-    'scripts/build-native-win32.js',
-    'scripts/build-native-appkit.js',
-    'scripts/build-native-gtk.js',
-    'scripts/build-native-sea.js',
-    'scripts/sign-windows.ps1',
-    'scripts/sign-notarize-macos.sh',
-    'scripts/write-signing-status.js',
-    'examples/forms-navigation.patch'
-  ]) assert.match(paths, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-
-  assert.doesNotMatch(paths, /\n\s*- web\/docs\.html\b/);
-  assert.doesNotMatch(paths, /\n\s*- docs\//);
-  assert.doesNotMatch(paths, /\n\s*- tests\//);
+test('Native Distribution remains manual-only during active development', () => {
+  assert.match(workflow, /^on:\s*\n  workflow_dispatch:/m);
+  assert.doesNotMatch(workflow, /^  (?:push|pull_request|pull_request_target|schedule|workflow_run|release|repository_dispatch):/m);
+  assert.match(workflow, /options: \[windows, macos, linux\]/);
+  assert.match(workflow, /options: \[unsigned, require\]/);
 });
 
 test('Linux GTK dependency setup is bounded, retry-aware and preserves the real failure code', () => {

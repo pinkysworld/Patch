@@ -2,7 +2,7 @@
 
 Living briefing for coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-10-02**. Current Ready is Native GUI IR 1.9 / payload v19 / runtime v1.10. Keyed rendering, the design-model cache, active-Form materialization and that native promotion are done. Do not reimplement them.
+Last refreshed: **2026-10-08**. Current Ready is Native GUI IR 1.9 / payload v19 / runtime v1.10. Keyed rendering, the design-model cache, active-Form materialization and that native promotion are done. Do not reimplement them.
 
 ## What Patch is
 
@@ -55,6 +55,7 @@ Workshop Desk (`examples/workshop-desk.patch`) is seven Forms.
 - Active R0 tracker: [#282](https://github.com/pinkysworld/Patch/issues/282). Remaining work is the unchecked list in `docs/ROADMAP.md`, not the already-landed renderer/cache/materialization work.
 - Current status source: `docs/ROADMAP.md`.
 - Repository Actions are intentionally manual-only during active development. Do not re-add push/PR/schedule triggers unless that policy is explicitly changed.
+- `tests/manual-actions-policy.test.js` guards every workflow against automatic triggers. The Designer now offers local-only Smart Guides sensitivity (3/5/8/12 px).
 - Long-term execution backlog: `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
 - Architecture plan: `docs/RAD_STUDIO_MASTERPLAN.md`.
 - Offline installed-IDE contract: `docs/OFFLINE_STUDIO.md`.

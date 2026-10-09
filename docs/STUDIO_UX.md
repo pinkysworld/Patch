@@ -47,6 +47,8 @@ Studio scroll surfaces use explicit overflow, stable scrollbar gutters and visib
 
 Toolbox controls remain compact. Form selection and geometry tools stay secondary to the canvas. Arrange commands, grid behavior, structural editors and Resource Manager actions all delegate to the same source/project mutation boundaries rather than keeping private component state.
 
+Smart Guides are on by default with a 5 px snap distance. The Designer toolbar offers 3, 5, 8 or 12 px sensitivity, plus an on/off switch. Alt/Option temporarily bypasses snapping during a drag. Both preferences are local IDE settings, not Patch project source or portable project-v4 state.
+
 ## Target truthfulness
 
 Studio may author a component before every runtime target supports it, but the UI/docs must say so. Current examples:

@@ -79,6 +79,28 @@
 #designer .designer-grid-toggle[aria-pressed="true"]::before {
   color: currentColor;
 }
+#designer .designer-smart-guides-sensitivity {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+#designer .designer-smart-guides-sensitivity > select {
+  width: auto;
+  min-width: 68px;
+  min-height: 32px;
+  padding: 4px 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+#designer .designer-smart-guides-sensitivity > select:disabled {
+  opacity: .5;
+}
+
 .designer-grid-toggle[aria-pressed="true"] {
   background: var(--text);
   color: var(--surface);

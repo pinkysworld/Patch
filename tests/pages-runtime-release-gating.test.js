@@ -34,7 +34,8 @@ test('release-aware orchestration verifies downloaded bytes against the release 
   assert.match(workflow, /runtime-integrity-manifest\.js/);
 });
 
-test('Pages deployment triggers include ScrollBox Standalone Web dependencies', () => {
-  assert.match(workflow, /- src\/panel-scroll\.js/);
-  assert.match(workflow, /- src\/window-web-accessibility\.js/);
+test('manual Pages deployment builds the complete public site without PR path filters', () => {
+  assert.match(workflow, /^on:\s*\n  workflow_dispatch:/m);
+  assert.doesNotMatch(workflow, /^  (?:push|pull_request|workflow_run|schedule):/m);
+  assert.match(workflow, /run: npm run build:site/);
 });

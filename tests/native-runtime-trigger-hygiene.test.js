@@ -23,30 +23,15 @@ const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
 const formal = fs.readFileSync('.github/workflows/formal.yml', 'utf8');
 
-test('native runtime workflows do not rebuild for site-only build plumbing', () => {
+test('historical native runtime workflows are manual-only and remain site-independent', () => {
   for (const [platform, workflow] of workflows) {
-    assert.equal(workflow.includes('scripts/build-site.js'), false, `${platform} should not trigger on build-site.js`);
-    assert.equal(workflow.includes('scripts/check-site.js'), false, `${platform} should not trigger on check-site.js`);
-    assert.equal(workflow.includes('web/native-build.js'), false, `${platform} historical v0.8 line should not trigger on Studio Ready packaging`);
-    assert.match(workflow, /src\/native-gui-ir\.js/, `${platform} keeps historical native IR coverage`);
-    assert.match(workflow, /src\/sealed-native-gui\.js/, `${platform} keeps historical sealed runtime coverage`);
+    assert.match(workflow, /^on:\s*\n  workflow_dispatch:/m, platform);
+    assert.doesNotMatch(workflow, /^  (?:push|pull_request|pull_request_target|schedule|workflow_run):/m, platform);
+    assert.match(workflow, /HISTORICAL v0\.8/, platform);
+    assert.equal(workflow.includes('scripts/build-site.js'), false, platform);
+    assert.equal(workflow.includes('web/native-build.js'), false, platform);
+    assert.equal(workflow.includes('.github/workflows/pages.yml'), false, platform);
   }
-});
-
-test('general roadmap edits do not rebuild legacy native runtime templates', () => {
-  for (const [platform, workflow] of workflows) {
-    assert.equal(workflow.includes('docs/ROADMAP.md'), false, `${platform} should not couple native runtime rebuilds to the general roadmap`);
-  }
-});
-
-test('macOS native runtime is not coupled to the Pages workflow itself', () => {
-  assert.equal(workflows.get('macos').includes('.github/workflows/pages.yml'), false);
-});
-
-test('each native runtime still self-triggers when its workflow changes', () => {
-  assert.match(workflows.get('win32'), /\.github\/workflows\/native-win32-runtime\.yml/);
-  assert.match(workflows.get('linux'), /\.github\/workflows\/native-linux-runtime\.yml/);
-  assert.match(workflows.get('macos'), /\.github\/workflows\/native-macos-runtime\.yml/);
 });
 
 test('frozen direct-native compatibility workflows are manual-only', () => {

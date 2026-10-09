@@ -42,6 +42,7 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Button, Input, Text, Memo, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel authoring, plus source-backed PasswordEdit, MaskedEdit, CheckedListBox and ProgressBar presentation contracts;
 - source-backed Anchors/Dock, independent TabOrder, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Layers/Object Tree, Lock Controls and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
+- local-only Smart Guides snap-distance selector (3/5/8/12 px), independent of project source;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
 - project Resource Manager with deterministic resource metadata and recovery/export/import;
 - canonical multi-file Project-v4 Patch Studio Showcase, explicitly loadable in hosted and Offline Studio;
